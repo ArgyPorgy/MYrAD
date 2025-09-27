@@ -1,29 +1,102 @@
 import React, { useState } from "react";
-import { Upload, Plus, CheckCircle, AlertCircle, Copy } from "lucide-react";
+import { Upload, Plus, CheckCircle, AlertCircle, Copy, Shield } from "lucide-react";
 
 const LighthouseUpload = ({ walletAddress }) => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [scanResults, setScanResults] = useState(null);
 
-  // Upload file via backend
+  // VirusTotal API key - add this to your environment
+  const VT_API_KEY = process.env.REACT_APP_VT_API_KEY;
+
   const uploadFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setIsUploading(true);
-    setUploadStatus("Uploading to Lighthouse...");
+    setScanResults(null);
+    setUploadStatus("Scanning file with VirusTotal...");
 
     try {
+      // Step 1: Upload file to VirusTotal for scanning
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:5002/upload", {
+      const vtUploadResponse = await fetch("https://www.virustotal.com/api/v3/files", {
         method: "POST",
+        headers: {
+          "x-apikey": VT_API_KEY,
+        },
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Upload failed");
+      if (!vtUploadResponse.ok) {
+        throw new Error("VirusTotal scan failed");
+      }
+
+      const vtUploadData = await vtUploadResponse.json();
+      const analysisId = vtUploadData.data.id;
+
+      setUploadStatus("Waiting for scan results...");
+
+      // Step 2: Poll for scan results
+      let analysisComplete = false;
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      while (!analysisComplete && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+        const vtReportResponse = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+          method: "GET",
+          headers: {
+            "x-apikey": VT_API_KEY,
+          },
+        });
+
+        if (vtReportResponse.ok) {
+          const reportData = await vtReportResponse.json();
+          
+          if (reportData.data.attributes.status === "completed") {
+            analysisComplete = true;
+            const stats = reportData.data.attributes.stats;
+            setScanResults(stats);
+
+            // Check if file is malicious
+            if (stats.malicious > 0) {
+              setUploadStatus("⚠️ File flagged as malicious - Upload blocked");
+              setIsUploading(false);
+              return;
+            }
+
+            if (stats.suspicious > 2) {
+              setUploadStatus("⚠️ File flagged as suspicious - Upload blocked");
+              setIsUploading(false);
+              return;
+            }
+
+            // File is clean, proceed to Lighthouse
+            setUploadStatus("✅ File is clean - Uploading to Lighthouse...");
+          }
+        }
+        attempts++;
+      }
+
+      if (!analysisComplete) {
+        throw new Error("Scan timeout - please try again");
+      }
+
+      // Step 3: Upload to Lighthouse if file is clean
+      const lighthouseFormData = new FormData();
+      lighthouseFormData.append("file", file);
+
+      const res = await fetch("http://localhost:5002/upload", {
+        method: "POST",
+        body: lighthouseFormData,
+      });
+
+      if (!res.ok) throw new Error("Lighthouse upload failed");
 
       const data = await res.json();
       console.log("✅ File uploaded:", data);
@@ -65,8 +138,8 @@ const LighthouseUpload = ({ walletAddress }) => {
         <div className="flex items-center space-x-3">
           <Upload className="w-8 h-8" />
           <div>
-            <h2 className="text-2xl font-bold">Upload to Lighthouse</h2>
-            <p className="opacity-90">Decentralized storage for your files</p>
+            <h2 className="text-2xl font-bold">Secure Upload to Lighthouse</h2>
+            <p className="opacity-90">VirusTotal scan + Decentralized storage</p>
           </div>
         </div>
       </div>
@@ -94,10 +167,10 @@ const LighthouseUpload = ({ walletAddress }) => {
 
                 <div>
                   <p className="text-lg font-medium text-gray-700 mb-2">
-                    {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
+                    {isUploading ? "Processing..." : "Click to upload or drag and drop"}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Supports all file types • Max size: 100MB
+                    Files scanned by VirusTotal • Max size: 100MB
                   </p>
                 </div>
               </div>
@@ -111,19 +184,47 @@ const LighthouseUpload = ({ walletAddress }) => {
             className={`p-4 rounded-lg mb-6 flex items-center space-x-3 ${
               uploadStatus.includes("successful")
                 ? "bg-green-50 border border-green-200"
-                : uploadStatus.includes("failed")
+                : uploadStatus.includes("flagged") || uploadStatus.includes("blocked")
                 ? "bg-red-50 border border-red-200"
                 : "bg-blue-50 border border-blue-200"
             }`}
           >
             {uploadStatus.includes("successful") ? (
               <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : uploadStatus.includes("failed") ? (
+            ) : uploadStatus.includes("flagged") || uploadStatus.includes("blocked") ? (
               <AlertCircle className="w-5 h-5 text-red-600" />
             ) : (
               <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
             )}
             <span>{uploadStatus}</span>
+          </div>
+        )}
+
+        {/* Scan Results */}
+        {scanResults && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <Shield className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-900">Security Scan Results</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Clean:</span>
+                <span className="font-medium text-green-600">{scanResults.harmless}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Malicious:</span>
+                <span className="font-medium text-red-600">{scanResults.malicious}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Suspicious:</span>
+                <span className="font-medium text-yellow-600">{scanResults.suspicious}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Undetected:</span>
+                <span className="font-medium text-gray-600">{scanResults.undetected}</span>
+              </div>
+            </div>
           </div>
         )}
 
