@@ -11,7 +11,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     const response = await lighthouse.uploadBuffer(
       req.file.buffer,
-      LH_API
+      process.env.LH_API
     );
     res.json(response);
   } catch (err) {
