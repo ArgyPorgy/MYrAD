@@ -13,7 +13,7 @@ const LighthouseUpload = ({ walletAddress }) => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/upload", {
+      const res = await fetch("http://localhost:5002/upload", {
         method: "POST",
         body: formData,
       });

@@ -8,9 +8,9 @@ const ReclaimVerification = ({ onSuccess }) => {
     try {
       setIsLoading(true);
 
-      const APP_ID = process.env.RECLAIM_APP;
-      const APP_SECRET = process.env.RECLAIM_APP;
-      const PROVIDER_ID = process.env.RECLAIM_PROVIDER;
+      const APP_ID = process.env.REACT_APP_RECLAIM_ID;
+      const APP_SECRET = process.env.REACT_APP_RECLAIM_APP;
+      const PROVIDER_ID = process.env.REACT_APP_RECLAIM_PROVIDER;
 
       // Initialize Reclaim SDK
       const reclaimProofRequest = await ReclaimProofRequest.init(
