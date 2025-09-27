@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Upload, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, Plus, CheckCircle, AlertCircle, Copy } from "lucide-react";
 
 const LighthouseUpload = ({ walletAddress }) => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
 
-  // Upload file to backend
+  // Upload file via backend
   const uploadFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -14,29 +14,27 @@ const LighthouseUpload = ({ walletAddress }) => {
     setIsUploading(true);
     setUploadStatus("Uploading to Lighthouse...");
 
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    // Optionally append wallet address if you want the server to know it
-    if (walletAddress) {
-      formData.append("walletAddress", walletAddress);
-    }
-
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+
       const res = await fetch("http://localhost:5002/upload", {
         method: "POST",
         body: formData,
       });
+
+      if (!res.ok) throw new Error("Upload failed");
+
       const data = await res.json();
-      console.log("Uploaded:", data);
-      
+      console.log("✅ File uploaded:", data);
+
       setUploadedFile({
-        name: file.name,
-        size: file.size,
+        name: data.Name,
+        size: data.Size,
         type: file.type,
-        hash: data.hash || "QmXXXXXX...",
-        url: data.url || "#"
+        hash: data.Hash,
       });
+
       setUploadStatus("Upload successful!");
     } catch (err) {
       console.error("Upload error:", err);
@@ -47,11 +45,17 @@ const LighthouseUpload = ({ walletAddress }) => {
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const copyToClipboard = (hash) => {
+    const link = `https://gateway.lighthouse.storage/ipfs/${hash}`;
+    navigator.clipboard.writeText(link);
+    alert("✅ IPFS link copied!");
   };
 
   return (
@@ -71,8 +75,8 @@ const LighthouseUpload = ({ walletAddress }) => {
         {/* Upload Area */}
         <div className="mb-6">
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50">
-            <input 
-              type="file" 
+            <input
+              type="file"
               onChange={uploadFile}
               className="hidden"
               id="file-upload"
@@ -87,7 +91,7 @@ const LighthouseUpload = ({ walletAddress }) => {
                 ) : (
                   <Plus className="w-12 h-12 mx-auto text-gray-400" />
                 )}
-                
+
                 <div>
                   <p className="text-lg font-medium text-gray-700 mb-2">
                     {isUploading ? "Uploading..." : "Click to upload or drag and drop"}
@@ -103,29 +107,23 @@ const LighthouseUpload = ({ walletAddress }) => {
 
         {/* Upload Status */}
         {uploadStatus && (
-          <div className={`p-4 rounded-lg mb-6 flex items-center space-x-3 ${
-            uploadStatus.includes('successful') 
-              ? 'bg-green-50 border border-green-200' 
-              : uploadStatus.includes('failed')
-              ? 'bg-red-50 border border-red-200'
-              : 'bg-blue-50 border border-blue-200'
-          }`}>
-            {uploadStatus.includes('successful') ? (
+          <div
+            className={`p-4 rounded-lg mb-6 flex items-center space-x-3 ${
+              uploadStatus.includes("successful")
+                ? "bg-green-50 border border-green-200"
+                : uploadStatus.includes("failed")
+                ? "bg-red-50 border border-red-200"
+                : "bg-blue-50 border border-blue-200"
+            }`}
+          >
+            {uploadStatus.includes("successful") ? (
               <CheckCircle className="w-5 h-5 text-green-600" />
-            ) : uploadStatus.includes('failed') ? (
+            ) : uploadStatus.includes("failed") ? (
               <AlertCircle className="w-5 h-5 text-red-600" />
             ) : (
               <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
             )}
-            <span className={
-              uploadStatus.includes('successful') 
-                ? 'text-green-700 font-medium' 
-                : uploadStatus.includes('failed')
-                ? 'text-red-700 font-medium'
-                : 'text-blue-700 font-medium'
-            }>
-              {uploadStatus}
-            </span>
+            <span>{uploadStatus}</span>
           </div>
         )}
 
@@ -140,7 +138,9 @@ const LighthouseUpload = ({ walletAddress }) => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Size:</span>
-                <span className="font-medium">{formatFileSize(uploadedFile.size)}</span>
+                <span className="font-medium">
+                  {formatFileSize(uploadedFile.size)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Type:</span>
@@ -153,27 +153,31 @@ const LighthouseUpload = ({ walletAddress }) => {
                 </span>
               </div>
             </div>
-            
-            <div className="mt-4 flex space-x-3">
-              <button className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
-                Share File
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => copyToClipboard(uploadedFile.hash)}
+                className="flex-1 flex items-center justify-center gap-2 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Copy className="w-4 h-4" />
+                Copy IPFS Link
               </button>
-              <button className="flex-1 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors">
-                Copy Link
-              </button>
+              <a
+                href={`https://gateway.lighthouse.storage/ipfs/${uploadedFile.hash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 border border-blue-500 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                View File
+              </a>
             </div>
           </div>
         )}
 
         {/* Wallet Info */}
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium">Connected Wallet</p>
-              <p className="text-xs text-blue-500 font-mono">{walletAddress}</p>
-            </div>
-            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          </div>
+          <p className="text-sm text-blue-600 font-medium">Connected Wallet</p>
+          <p className="text-xs text-blue-500 font-mono">{walletAddress}</p>
         </div>
       </div>
     </div>
