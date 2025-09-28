@@ -20,11 +20,9 @@ const Header = ({ walletAddress, searchQuery, setSearchQuery }) => {
           {/* Logo and Search */}
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MS</span>
-              </div>
+              
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                MYrND
+                MYRAD
               </h1>
             </div>
             
