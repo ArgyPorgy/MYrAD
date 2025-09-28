@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Upload, Plus, CheckCircle, AlertCircle, Copy, Shield, Key } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Upload, Plus, CheckCircle, AlertCircle, Copy, Shield, Key, Coins, ShoppingCart } from "lucide-react";
 
 const LighthouseUpload = ({ walletAddress }) => {
   const [uploadStatus, setUploadStatus] = useState("");
@@ -8,15 +8,136 @@ const LighthouseUpload = ({ walletAddress }) => {
   const [scanResults, setScanResults] = useState(null);
   const [revealedEnvVars, setRevealedEnvVars] = useState([]);
   const [isRevealingEnvVars, setIsRevealingEnvVars] = useState(false);
+  const [tokenLaunched, setTokenLaunched] = useState(false); // New state to track token launch
+  
+  // Token functionality state
+  const [tokenBalance, setTokenBalance] = useState("0");
+  const [buyAmount, setBuyAmount] = useState("");
+  const [sellAmount, setSellAmount] = useState("");
+  const [isTokenLoading, setIsTokenLoading] = useState(false);
+  const [tokenPrice] = useState("0.01"); // 0.01 ETH per token
 
-  // API keys
+  // API keys and addresses
   const VT_API_KEY = process.env.REACT_APP_VT_API_KEY;
+  const TOKEN_ADDRESS = "0x1004C62953b2ca3f3dca57Efb6be21D3657009Aa";
+  const TOTAL_SUPPLY = 100;
 
   // Environment variables from .env
   const ENV_VARS = [
+   
     { name: "DATATOKEN_ADDRESS", value: process.env.REACT_APP_DATATOKEN_ADDRESS, description: "Data token contract" },
     { name: "CREATOR_ADDRESS", value: process.env.REACT_APP_CREATOR_ADDRESS, description: "Creator wallet" }
   ];
+
+  // Check token balance using Web3 provider
+  const checkTokenBalance = async () => {
+    try {
+      if (window.ethereum && walletAddress && tokenLaunched) {
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        
+        // ERC20 balanceOf function call
+        const tokenContract = new window.ethers.Contract(
+          TOKEN_ADDRESS,
+          ["function balanceOf(address) view returns (uint256)"],
+          provider
+        );
+        
+        const balance = await tokenContract.balanceOf(walletAddress);
+        const formattedBalance = window.ethers.formatUnits(balance, 18);
+        setTokenBalance(formattedBalance);
+      }
+    } catch (error) {
+      console.error("Error checking token balance:", error);
+      setTokenBalance("0");
+    }
+  };
+
+  // Check token balance when token is launched and wallet changes
+  useEffect(() => {
+    if (walletAddress && window.ethers && tokenLaunched) {
+      checkTokenBalance();
+    }
+  }, [walletAddress, tokenLaunched]);
+
+  const buyTokens = async () => {
+    if (!buyAmount || parseFloat(buyAmount) <= 0) {
+      alert("Please enter a valid amount to buy");
+      return;
+    }
+
+    setIsTokenLoading(true);
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Calculate ETH needed (buyAmount * tokenPrice)
+      const ethNeeded = (parseFloat(buyAmount) * parseFloat(tokenPrice)).toString();
+      
+      // Send ETH to treasury (simplified token purchase)
+      const tx = await signer.sendTransaction({
+        to: process.env.REACT_APP_TREASURY,
+        value: window.ethers.parseEther(ethNeeded)
+      });
+
+      await tx.wait();
+      
+      alert(`✅ Successfully bought ${buyAmount} tokens for ${ethNeeded} ETH!`);
+      setBuyAmount("");
+      checkTokenBalance();
+      
+    } catch (error) {
+      console.error("Error buying tokens:", error);
+      alert("Failed to buy tokens. Please try again.");
+    } finally {
+      setIsTokenLoading(false);
+    }
+  };
+
+  const sellTokens = async () => {
+    if (!sellAmount || parseFloat(sellAmount) <= 0) {
+      alert("Please enter a valid amount to sell");
+      return;
+    }
+
+    if (parseFloat(sellAmount) > parseFloat(tokenBalance)) {
+      alert("Insufficient token balance");
+      return;
+    }
+
+    setIsTokenLoading(true);
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // Token contract for transfer
+      const tokenContract = new window.ethers.Contract(
+        TOKEN_ADDRESS,
+        [
+          "function transfer(address to, uint256 amount) returns (bool)",
+          "function balanceOf(address) view returns (uint256)"
+        ],
+        signer
+      );
+      
+      // Transfer tokens to treasury
+      const tx = await tokenContract.transfer(
+        process.env.REACT_APP_TREASURY,
+        window.ethers.parseUnits(sellAmount, 18)
+      );
+
+      await tx.wait();
+      
+      alert(`✅ Successfully sold ${sellAmount} tokens!`);
+      setSellAmount("");
+      checkTokenBalance();
+      
+    } catch (error) {
+      console.error("Error selling tokens:", error);
+      alert("Failed to sell tokens. Please try again.");
+    } finally {
+      setIsTokenLoading(false);
+    }
+  };
 
   // Function to reveal environment variables with delays
   const revealEnvironmentVariables = async () => {
@@ -24,11 +145,16 @@ const LighthouseUpload = ({ walletAddress }) => {
     setRevealedEnvVars([]);
 
     for (let i = 0; i < ENV_VARS.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 6000)); // 6 second delay
+      await new Promise(resolve => setTimeout(resolve, 6000));
       setRevealedEnvVars(prev => [...prev, ENV_VARS[i]]);
     }
 
     setIsRevealingEnvVars(false);
+    
+    // Launch token trading interface after all env vars are revealed
+    setTimeout(() => {
+      setTokenLaunched(true);
+    }, 2000); // 2 second delay after env vars are revealed
   };
 
   const uploadFile = async (e) => {
@@ -37,7 +163,8 @@ const LighthouseUpload = ({ walletAddress }) => {
 
     setIsUploading(true);
     setScanResults(null);
-    setRevealedEnvVars([]); // Reset env vars
+    setRevealedEnvVars([]);
+    setTokenLaunched(false); // Reset token launch state
     setUploadStatus("Scanning file with VirusTotal...");
 
     try {
@@ -68,7 +195,7 @@ const LighthouseUpload = ({ walletAddress }) => {
       const maxAttempts = 20;
 
       while (!analysisComplete && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         const vtReportResponse = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
           method: "GET",
@@ -85,7 +212,6 @@ const LighthouseUpload = ({ walletAddress }) => {
             const stats = reportData.data.attributes.stats;
             setScanResults(stats);
 
-            // Check if file is malicious
             if (stats.malicious > 0) {
               setUploadStatus("⚠️ File flagged as malicious - Upload blocked");
               setIsUploading(false);
@@ -98,7 +224,6 @@ const LighthouseUpload = ({ walletAddress }) => {
               return;
             }
 
-            // File is clean, proceed to Lighthouse
             setUploadStatus("✅ File is clean - Uploading to Lighthouse...");
           }
         }
@@ -131,7 +256,7 @@ const LighthouseUpload = ({ walletAddress }) => {
       });
 
       setUploadStatus("Upload successful!");
-
+      
       // Start revealing environment variables after successful upload
       revealEnvironmentVariables();
 
@@ -161,6 +286,9 @@ const LighthouseUpload = ({ walletAddress }) => {
     copyToClipboard(envText);
   };
 
+  // Check if user has tokens for file access
+  const hasTokenAccess = parseFloat(tokenBalance) > 0;
+
   return (
     <div className="bg-white rounded-2xl shadow-lg border overflow-hidden">
       {/* Header */}
@@ -169,12 +297,92 @@ const LighthouseUpload = ({ walletAddress }) => {
           <Upload className="w-8 h-8" />
           <div>
             <h2 className="text-2xl font-bold">Secure Upload to Lighthouse</h2>
-            <p className="opacity-90">VirusTotal scan + Decentralized storage</p>
+            <p className="opacity-90">
+              {tokenLaunched ? "VirusTotal scan + Token-gated storage" : "VirusTotal scan + Decentralized storage"}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="p-6">
+        {/* Token Balance & Trading - Only show after token is launched */}
+        {tokenLaunched && (
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 mb-6 border animate-fadeIn">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Coins className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold text-gray-900">Test Token Balance</h3>
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">🚀 Launched!</span>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-green-600">{parseFloat(tokenBalance).toFixed(4)}</p>
+                <p className="text-xs text-gray-500">Total Supply: {TOTAL_SUPPLY}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Buy Tokens */}
+              <div className="bg-white rounded-lg p-4 border">
+                <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+                  <ShoppingCart className="w-4 h-4 mr-1 text-blue-500" />
+                  Buy Tokens
+                </h4>
+                <div className="space-y-2">
+                  <input
+                    type="number"
+                    placeholder="Amount to buy"
+                    value={buyAmount}
+                    onChange={(e) => setBuyAmount(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    min="0"
+                    step="0.1"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Cost: {buyAmount ? (parseFloat(buyAmount) * parseFloat(tokenPrice)).toFixed(4) : "0"} ETH
+                  </p>
+                  <button
+                    onClick={buyTokens}
+                    disabled={isTokenLoading || !buyAmount || !window.ethers}
+                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:opacity-50 text-sm"
+                  >
+                    {isTokenLoading ? "Processing..." : "Buy Tokens"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sell Tokens */}
+              <div className="bg-white rounded-lg p-4 border">
+                <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+                  <Coins className="w-4 h-4 mr-1 text-green-500" />
+                  Sell Tokens
+                </h4>
+                <div className="space-y-2">
+                  <input
+                    type="number"
+                    placeholder="Amount to sell"
+                    value={sellAmount}
+                    onChange={(e) => setSellAmount(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                    min="0"
+                    max={tokenBalance}
+                    step="0.1"
+                  />
+                  <p className="text-xs text-gray-500">
+                    You'll receive: {sellAmount ? (parseFloat(sellAmount) * parseFloat(tokenPrice)).toFixed(4) : "0"} ETH
+                  </p>
+                  <button
+                    onClick={sellTokens}
+                    disabled={isTokenLoading || !sellAmount || parseFloat(tokenBalance) === 0 || !window.ethers}
+                    className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 disabled:opacity-50 text-sm"
+                  >
+                    {isTokenLoading ? "Processing..." : "Sell Tokens"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Upload Area */}
         <div className="mb-6">
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-50 hover:bg-blue-50">
@@ -295,7 +503,7 @@ const LighthouseUpload = ({ walletAddress }) => {
           </div>
         )}
 
-        {/* Uploaded File Info */}
+        {/* Uploaded File Info with Token Gating */}
         {uploadedFile && (
           <div className="bg-gray-50 rounded-lg p-4">
             <h3 className="font-semibold text-gray-900 mb-3">File Details</h3>
@@ -330,14 +538,41 @@ const LighthouseUpload = ({ walletAddress }) => {
                 <Copy className="w-4 h-4" />
                 Copy IPFS Link
               </button>
-              <a
-                href={`https://gateway.lighthouse.storage/ipfs/${uploadedFile.hash}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 border border-blue-500 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
-              >
-                View File
-              </a>
+              
+              {/* Token-gated View File button - only show if token is launched */}
+              {tokenLaunched ? (
+                hasTokenAccess ? (
+                  <a
+                    href={`https://gateway.lighthouse.storage/ipfs/${uploadedFile.hash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 border border-blue-500 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    View File
+                  </a>
+                ) : (
+                  <div className="flex-1 flex flex-col">
+                    <button
+                      disabled
+                      className="flex items-center justify-center gap-2 border border-red-300 text-red-400 py-2 px-4 rounded-lg cursor-not-allowed"
+                    >
+                      🔒 View File (Token Required)
+                    </button>
+                    <p className="text-xs text-red-500 mt-1 text-center">
+                      Buy test tokens to access files
+                    </p>
+                  </div>
+                )
+              ) : (
+                <a
+                  href={`https://gateway.lighthouse.storage/ipfs/${uploadedFile.hash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 border border-blue-500 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  View File
+                </a>
+              )}
             </div>
           </div>
         )}
