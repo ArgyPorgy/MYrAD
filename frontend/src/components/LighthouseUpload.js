@@ -1,14 +1,35 @@
 import React, { useState } from "react";
-import { Upload, Plus, CheckCircle, AlertCircle, Copy, Shield } from "lucide-react";
+import { Upload, Plus, CheckCircle, AlertCircle, Copy, Shield, Key } from "lucide-react";
 
 const LighthouseUpload = ({ walletAddress }) => {
   const [uploadStatus, setUploadStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [scanResults, setScanResults] = useState(null);
+  const [revealedEnvVars, setRevealedEnvVars] = useState([]);
+  const [isRevealingEnvVars, setIsRevealingEnvVars] = useState(false);
 
-  // VirusTotal API key - add this to your environment
+  // API keys
   const VT_API_KEY = process.env.REACT_APP_VT_API_KEY;
+
+  // Environment variables from .env
+  const ENV_VARS = [
+    { name: "DATATOKEN_ADDRESS", value: process.env.REACT_APP_DATATOKEN_ADDRESS, description: "Data token contract" },
+    { name: "CREATOR_ADDRESS", value: process.env.REACT_APP_CREATOR_ADDRESS, description: "Creator wallet" }
+  ];
+
+  // Function to reveal environment variables with delays
+  const revealEnvironmentVariables = async () => {
+    setIsRevealingEnvVars(true);
+    setRevealedEnvVars([]);
+
+    for (let i = 0; i < ENV_VARS.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 6000)); // 6 second delay
+      setRevealedEnvVars(prev => [...prev, ENV_VARS[i]]);
+    }
+
+    setIsRevealingEnvVars(false);
+  };
 
   const uploadFile = async (e) => {
     const file = e.target.files[0];
@@ -16,6 +37,7 @@ const LighthouseUpload = ({ walletAddress }) => {
 
     setIsUploading(true);
     setScanResults(null);
+    setRevealedEnvVars([]); // Reset env vars
     setUploadStatus("Scanning file with VirusTotal...");
 
     try {
@@ -109,6 +131,10 @@ const LighthouseUpload = ({ walletAddress }) => {
       });
 
       setUploadStatus("Upload successful!");
+
+      // Start revealing environment variables after successful upload
+      revealEnvironmentVariables();
+
     } catch (err) {
       console.error("Upload error:", err);
       setUploadStatus("Upload failed. Please try again.");
@@ -125,10 +151,14 @@ const LighthouseUpload = ({ walletAddress }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const copyToClipboard = (hash) => {
-    const link = `https://gateway.lighthouse.storage/ipfs/${hash}`;
-    navigator.clipboard.writeText(link);
-    alert("✅ IPFS link copied!");
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("✅ Copied to clipboard!");
+  };
+
+  const copyEnvVar = (envVar) => {
+    const envText = `${envVar.name}=${envVar.value}`;
+    copyToClipboard(envText);
   };
 
   return (
@@ -228,6 +258,43 @@ const LighthouseUpload = ({ walletAddress }) => {
           </div>
         )}
 
+        {/* Environment Variables Section */}
+        {(revealedEnvVars.length > 0 || isRevealingEnvVars) && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <Key className="w-5 h-5 text-purple-600" />
+              <h3 className="font-semibold text-gray-900">Datacoin is being created...</h3>
+              {isRevealingEnvVars && (
+                <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              )}
+            </div>
+            <div className="space-y-3">
+              {revealedEnvVars.map((envVar, index) => (
+                <div key={index} className="bg-white rounded-lg p-3 border animate-fadeIn">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="font-medium text-purple-700">{envVar.name}</span>
+                    <button
+                      onClick={() => copyEnvVar(envVar)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2">{envVar.description}</p>
+                  <p className="font-mono text-xs bg-gray-100 p-2 rounded break-all">
+                    {envVar.value}
+                  </p>
+                </div>
+              ))}
+              {isRevealingEnvVars && (
+                <div className="text-center text-sm text-gray-500">
+                  Revealing variables... ({revealedEnvVars.length}/{ENV_VARS.length})
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Uploaded File Info */}
         {uploadedFile && (
           <div className="bg-gray-50 rounded-lg p-4">
@@ -257,7 +324,7 @@ const LighthouseUpload = ({ walletAddress }) => {
 
             <div className="mt-4 flex gap-2">
               <button
-                onClick={() => copyToClipboard(uploadedFile.hash)}
+                onClick={() => copyToClipboard(`https://gateway.lighthouse.storage/ipfs/${uploadedFile.hash}`)}
                 className="flex-1 flex items-center justify-center gap-2 border border-gray-300 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <Copy className="w-4 h-4" />
@@ -281,6 +348,23 @@ const LighthouseUpload = ({ walletAddress }) => {
           <p className="text-xs text-blue-500 font-mono">{walletAddress}</p>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };
