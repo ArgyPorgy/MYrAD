@@ -66,7 +66,6 @@ MYRAD introduces a new paradigm for dataset exchange:
 
 ## 🛠️ Workflow  
 
-![MYRAD Workflow](./workflow.png)
 
 1. **User Verification** → Authenticate via Gmail, Reclaim Protocol, or Privy Auth  
 2. **Dataset Upload** → Store securely on Lighthouse (anchored on Filecoin)  
@@ -78,7 +77,8 @@ MYRAD introduces a new paradigm for dataset exchange:
 ---
 
 ## 📊 Workflow Diagram  
-_(Insert diagram here if you have one — e.g., from `/assets/workflow.png`)_
+
+![MYRAD Workflow](./workflow.jpg)
 
 ---
 
