@@ -3,19 +3,21 @@ import { Grid, ShoppingBag, Upload, User, TrendingUp, Hash, Users } from "lucide
 
 const Sidebar = ({ activeTab, setActiveTab, selectedCategory, setSelectedCategory }) => {
   const mockCategories = [
-    { name: "All", icon: Grid, count: 156 },
-    { name: "NFT", icon: Hash, count: 42 },
-    { name: "Electronics", icon: TrendingUp, count: 28 },
-    { name: "Fashion", icon: Users, count: 31 },
-    { name: "Art", icon: Hash, count: 19 },
-    { name: "Furniture", icon: Grid, count: 15 },
-    { name: "Books", icon: Grid, count: 21 }
+    { name: "All", icon: Grid, count: 256 },
+    { name: "Banking", icon: Hash, count: 32 },
+    { name: "FoodTech", icon: TrendingUp, count: 28 },
+    { name: "Development", icon: Users, count: 45 },
+    { name: "FinTech", icon: Hash, count: 38 },
+    { name: "E-commerce", icon: Grid, count: 42 },
+    { name: "Healthcare", icon: Grid, count: 25 },
+    { name: "Travel", icon: Grid, count: 18 },
+    { name: "Education", icon: Grid, count: 28 }
   ];
 
   const navigationItems = [
-    { id: "feed", label: "Feed", icon: Grid, description: "Latest posts and updates" },
-    { id: "marketplace", label: "Marketplace", icon: ShoppingBag, description: "Buy and sell items" },
-    { id: "upload", label: "Upload", icon: Upload, description: "Add new content" },
+    { id: "feed", label: "Feed", icon: Grid, description: "Latest dataset posts" },
+    { id: "marketplace", label: "Marketplace", icon: ShoppingBag, description: "Browse datasets" },
+    { id: "upload", label: "Upload", icon: Upload, description: "Upload datasets" },
     { id: "profile", label: "Profile", icon: User, description: "Your profile settings" }
   ];
 
@@ -84,7 +86,7 @@ const Sidebar = ({ activeTab, setActiveTab, selectedCategory, setSelectedCategor
         <h3 className="font-semibold mb-3">Your Activity</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-white/80">Items Listed</span>
+            <span className="text-white/80">Datasets Listed</span>
             <span className="font-bold">12</span>
           </div>
           <div className="flex justify-between items-center">
@@ -98,20 +100,20 @@ const Sidebar = ({ activeTab, setActiveTab, selectedCategory, setSelectedCategor
         </div>
         <div className="mt-4 pt-3 border-t border-white/20">
           <div className="text-xs text-white/70">
-            🔥 You're in the top 10% of sellers this week!
+            🔥 You're in the top 10% of data providers this week!
           </div>
         </div>
       </div>
 
       {/* Trending Topics */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border">
-        <h3 className="font-semibold text-gray-900 mb-4">Trending Now</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">Trending Datasets</h3>
         <div className="space-y-3">
           {[
-            { tag: "#DigitalArt", posts: "2.1k posts" },
-            { tag: "#VintageItems", posts: "847 posts" },
-            { tag: "#TechGadgets", posts: "1.3k posts" },
-            { tag: "#Handmade", posts: "924 posts" }
+            { tag: "#Banking", posts: "2.1k datasets" },
+            { tag: "#FoodTech", posts: "847 datasets" },
+            { tag: "#GitHub", posts: "1.3k datasets" },
+            { tag: "#Paytm", posts: "924 datasets" }
           ].map(({ tag, posts }, index) => (
             <div key={tag} className="flex items-center justify-between">
               <div>

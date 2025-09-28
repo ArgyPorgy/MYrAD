@@ -210,75 +210,41 @@ const Profile = ({ walletAddress }) => {
         </div>
       </div>
 
-      {/* Stats and Badges */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Stats */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border">
-          <h3 className="font-semibold text-gray-900 mb-4">Statistics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-2xl font-bold text-blue-600">{userProfile.stats.listings}</div>
-              <div className="text-sm text-blue-600">Active Listings</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-xl">
-              <div className="text-2xl font-bold text-green-600">{userProfile.stats.sold}</div>
-              <div className="text-sm text-green-600">Items Sold</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <div className="text-2xl font-bold text-purple-600">{userProfile.stats.followers}</div>
-              <div className="text-sm text-purple-600">Followers</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-xl">
-              <div className="text-2xl font-bold text-orange-600">{userProfile.stats.totalEarnings}</div>
-              <div className="text-sm text-orange-600">Total Earnings</div>
-            </div>
-          </div>
-
-          {/* Rating */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(userProfile.stats.rating)
-                          ? 'text-yellow-500 fill-current'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-semibold text-gray-900">
-                  {userProfile.stats.rating} ({userProfile.stats.reviews} reviews)
-                </span>
-              </div>
-              <TrendingUp className="w-5 h-5 text-green-500" />
-            </div>
-          </div>
+      {/* Category Filters */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border">
+        <h3 className="font-semibold text-gray-900 mb-4">Browse Datasets by Category</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { name: "Zomato", icon: "🍕", color: "bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100" },
+            { name: "Paytm", icon: "💳", color: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" },
+            { name: "GitHub", icon: "👨‍💻", color: "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100" },
+            { name: "ICICI Bank", icon: "🏦", color: "bg-green-50 border-green-200 text-green-700 hover:bg-green-100" },
+            { name: "Amazon", icon: "🛒", color: "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100" },
+            { name: "Apollo", icon: "🏥", color: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100" },
+            { name: "MakeMyTrip", icon: "✈️", color: "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100" },
+            { name: "BYJU'S", icon: "📚", color: "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100" }
+          ].map((category, index) => (
+            <button
+              key={index}
+              className={`p-4 rounded-xl border-2 transition-all duration-200 ${category.color}`}
+              onClick={() => {
+                // This would filter datasets by category
+                console.log(`Filtering by ${category.name}`);
+              }}
+            >
+              <div className="text-2xl mb-2">{category.icon}</div>
+              <div className="font-medium">{category.name}</div>
+            </button>
+          ))}
         </div>
-
-        {/* Badges and Achievements */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border">
-          <h3 className="font-semibold text-gray-900 mb-4">Achievements</h3>
-          <div className="space-y-3">
-            {userProfile.badges.map((badge, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                <Award className="w-5 h-5 text-blue-500" />
-                <span className="font-medium text-gray-900">{badge}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Wallet Info */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Connected Wallet</h4>
-            <p className="text-sm text-gray-600 font-mono break-all">{walletAddress}</p>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-xs text-green-600">Connected</span>
-            </div>
+        
+        {/* Wallet Info */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="font-medium text-gray-900 mb-2">Connected Wallet</h4>
+          <p className="text-sm text-gray-600 font-mono break-all">{walletAddress}</p>
+          <div className="flex items-center space-x-2 mt-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <span className="text-xs text-green-600">Connected</span>
           </div>
         </div>
       </div>

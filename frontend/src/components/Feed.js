@@ -10,78 +10,194 @@ const Feed = ({ searchQuery, selectedCategory }) => {
     {
       id: 1,
       user: { 
-        name: "Alex Chen", 
-        avatar: "👨‍💼", 
+        name: "DataCorp Analytics", 
+        avatar: "🏢", 
         verified: true,
-        followers: "2.1k",
-        badge: "Top Seller"
+        followers: "5.2k",
+        badge: "Premium Provider"
       },
-      content: "Just listed my NFT collection! Check out these amazing digital artworks 🎨 Each piece tells a unique story and represents hours of creative work.",
-      image: "https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?w=400&h=300&fit=crop",
-      likes: 24,
-      comments: 8,
-      shares: 3,
-      price: "0.5 ETH",
-      category: "NFT",
+      content: "🔥 HOT: ICICI Bank Customer Transaction Dataset now available! 50K+ transactions from 2023 with fraud detection patterns, customer demographics, and risk scores. Perfect for fintech research and ML models!",
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
+      likes: 156,
+      comments: 23,
+      shares: 8,
+      price: "15 DTT",
+      category: "Banking",
       timestamp: "2 hours ago",
-      tags: ["#DigitalArt", "#NFT", "#Crypto"]
+      tags: ["#Banking", "#FraudDetection", "#CustomerData", "#ICICI"],
+      dataset: {
+        size: "2.3GB",
+        records: "52,847",
+        format: "CSV"
+      }
     },
     {
       id: 2,
       user: { 
-        name: "Sarah Kim", 
-        avatar: "👩‍🎨", 
+        name: "FoodTech Insights", 
+        avatar: "🍕", 
         verified: true,
-        followers: "1.8k",
-        badge: "Artist"
+        followers: "3.8k",
+        badge: "Top Seller"
       },
-      content: "New vintage camera collection available! Perfect for photography enthusiasts 📸 These beauties have been carefully restored and tested.",
-      image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=300&fit=crop",
-      likes: 18,
-      comments: 12,
-      shares: 5,
-      price: "$299",
-      category: "Electronics",
+      content: "📊 Zomato Users & Restaurant Dataset - 100K+ users, 10K+ restaurants across major Indian cities! Includes order history, ratings, cuisine preferences, delivery patterns. Essential for foodtech startups!",
+      image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop",
+      likes: 89,
+      comments: 17,
+      shares: 12,
+      price: "12 DTT",
+      category: "FoodTech",
       timestamp: "4 hours ago",
-      tags: ["#VintageItems", "#Photography", "#Cameras"]
+      tags: ["#FoodTech", "#Zomato", "#UserBehavior", "#RestaurantData"],
+      dataset: {
+        size: "1.8GB",
+        records: "125,432",
+        format: "JSON"
+      }
     },
     {
       id: 3,
       user: { 
-        name: "Mike Johnson", 
-        avatar: "👨‍🚀", 
-        verified: false,
-        followers: "892",
-        badge: "Craftsman"
+        name: "CodeMetrics Pro", 
+        avatar: "👨‍💻", 
+        verified: true,
+        followers: "7.1k",
+        badge: "Developer Choice"
       },
-      content: "Handcrafted wooden furniture pieces. Each item is unique and made with sustainable materials 🌱 Custom orders welcome!",
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop",
-      likes: 31,
-      comments: 6,
-      shares: 8,
-      price: "$450",
-      category: "Furniture",
-      timestamp: "1 day ago",
-      tags: ["#Handmade", "#Sustainable", "#Furniture"]
+      content: "💻 GitHub Repository Analytics Dataset - 500K+ repos with commit history, language distribution, contributor data! Perfect for understanding software development trends and patterns.",
+      image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=300&fit=crop",
+      likes: 203,
+      comments: 31,
+      shares: 15,
+      price: "25 DTT",
+      category: "Development",
+      timestamp: "6 hours ago",
+      tags: ["#GitHub", "#CodeAnalytics", "#Development", "#Repositories"],
+      dataset: {
+        size: "4.1GB",
+        records: "487,293",
+        format: "Parquet"
+      }
     },
     {
       id: 4,
       user: { 
-        name: "Emma Davis", 
-        avatar: "👩‍🎨", 
+        name: "PayTech Solutions", 
+        avatar: "💳", 
+        verified: true,
+        followers: "4.5k",
+        badge: "Financial Expert"
+      },
+      content: "💸 Paytm Digital Wallet Dataset - 200K+ users with transaction patterns, merchant categories, recharge history! Great for building fintech apps and understanding digital payment behaviors.",
+      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop",
+      likes: 127,
+      comments: 19,
+      shares: 9,
+      price: "18 DTT",
+      category: "FinTech",
+      timestamp: "1 day ago",
+      tags: ["#Paytm", "#DigitalWallet", "#FinTech", "#Payments"],
+      dataset: {
+        size: "3.2GB",
+        records: "198,765",
+        format: "CSV"
+      }
+    },
+    {
+      id: 5,
+      user: { 
+        name: "E-commerce Insights", 
+        avatar: "🛒", 
+        verified: false,
+        followers: "2.3k",
+        badge: "Rising Star"
+      },
+      content: "🛍️ Amazon Product Reviews & Sales Dataset - 75K+ products with reviews, ratings, sales data, customer sentiment! Perfect for building recommendation systems and understanding e-commerce trends.",
+      image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400&h=300&fit=crop",
+      likes: 94,
+      comments: 14,
+      shares: 6,
+      price: "14 DTT",
+      category: "E-commerce",
+      timestamp: "2 days ago",
+      tags: ["#Amazon", "#Reviews", "#E-commerce", "#Recommendations"],
+      dataset: {
+        size: "2.7GB",
+        records: "89,432",
+        format: "JSON"
+      }
+    },
+    {
+      id: 6,
+      user: { 
+        name: "HealthData Pro", 
+        avatar: "🏥", 
+        verified: true,
+        followers: "6.8k",
+        badge: "Medical Expert"
+      },
+      content: "🏥 Apollo Hospitals Patient Records Dataset - Anonymized data from 30K+ patients including diagnosis, treatment history, outcomes. Essential for healthcare analytics and medical research!",
+      image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop",
+      likes: 178,
+      comments: 26,
+      shares: 11,
+      price: "22 DTT",
+      category: "Healthcare",
+      timestamp: "3 days ago",
+      tags: ["#Healthcare", "#MedicalData", "#PatientRecords", "#Apollo"],
+      dataset: {
+        size: "1.9GB",
+        records: "34,567",
+        format: "CSV"
+      }
+    },
+    {
+      id: 7,
+      user: { 
+        name: "TravelTech Data", 
+        avatar: "✈️", 
         verified: true,
         followers: "3.2k",
-        badge: "Featured Artist"
+        badge: "Travel Expert"
       },
-      content: "Abstract painting series inspired by ocean waves 🌊 Mixed media on canvas, ready to ship worldwide!",
-      image: "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop",
-      likes: 67,
-      comments: 23,
-      shares: 12,
-      price: "$850",
-      category: "Art",
-      timestamp: "6 hours ago",
-      tags: ["#AbstractArt", "#Painting", "#Ocean"]
+      content: "✈️ MakeMyTrip Booking Dataset - Flight and hotel bookings with pricing, seasonal trends, user preferences! Great for travel industry analysis and pricing optimization strategies.",
+      image: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400&h=300&fit=crop",
+      likes: 76,
+      comments: 12,
+      shares: 4,
+      price: "16 DTT",
+      category: "Travel",
+      timestamp: "4 days ago",
+      tags: ["#Travel", "#MakeMyTrip", "#BookingData", "#Pricing"],
+      dataset: {
+        size: "2.1GB",
+        records: "67,234",
+        format: "CSV"
+      }
+    },
+    {
+      id: 8,
+      user: { 
+        name: "EdTech Analytics", 
+        avatar: "📚", 
+        verified: false,
+        followers: "1.9k",
+        badge: "Education Specialist"
+      },
+      content: "📚 BYJU'S Learning Patterns Dataset - Student performance, course completion rates, engagement metrics! Perfect for educational technology research and personalized learning algorithms.",
+      image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop",
+      likes: 58,
+      comments: 9,
+      shares: 3,
+      price: "13 DTT",
+      category: "Education",
+      timestamp: "5 days ago",
+      tags: ["#Education", "#BYJUS", "#LearningAnalytics", "#EdTech"],
+      dataset: {
+        size: "1.5GB",
+        records: "45,678",
+        format: "JSON"
+      }
     }
   ];
 
@@ -180,6 +296,26 @@ const Feed = ({ searchQuery, selectedCategory }) => {
       <div className="p-4">
         <p className="text-gray-700 mb-3 leading-relaxed">{post.content}</p>
         
+        {/* Dataset Info */}
+        {post.dataset && (
+          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div className="text-center">
+                <div className="font-semibold text-gray-900">{post.dataset.size}</div>
+                <div className="text-gray-600">Size</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-gray-900">{post.dataset.records}</div>
+                <div className="text-gray-600">Records</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-gray-900">{post.dataset.format}</div>
+                <div className="text-gray-600">Format</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
           {post.tags.map(tag => (
@@ -213,7 +349,7 @@ const Feed = ({ searchQuery, selectedCategory }) => {
             </button>
           </div>
           <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg">
-            Buy Now
+            Buy Dataset
           </button>
         </div>
       </div>
