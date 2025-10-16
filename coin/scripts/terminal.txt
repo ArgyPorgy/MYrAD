@@ -1,0 +1,99 @@
+PS C:\Users\Anindya Roy\Desktop\data-dao-deployment> node .\scripts\createDataCoin.js 
+[dotenv@17.2.2] injecting env (5) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+🚀 DataCoin Creation Script
+============================
+
+🎯 Starting DataCoin creation process...
+
+🔍 Validating user inputs...
+✅ All inputs are valid!
+🔗 Setting up blockchain connection...
+✅ Connected to sepolia network
+👤 Wallet address: 0x68827A9Fa11B716091f4B599D54a2484fb599a4C
+🔒 Validating lock asset configuration...
+📊 Lock Asset: USDC
+📍 Address: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+🔢 Decimals: 6
+💰 Minimum Lock Amount: 500000
+✅ Lock amount (5) meets minimum requirement
+💹 Calculating initial pricing...
+📈 DataCoin amount for liquidity: 30,00,00,00,000
+💰 Lock token amount after fees: 4.75
+💱 Initial price: 1 USDC = 6,31,57,89,473.684 AND
+👤 Creator address: 0x68827A9Fa11B716091f4B599D54a2484fb599a4C
+🔓 Approving token spending...
+decimal 6
+✅ Token approval successful
+🧂 Generating salt for unique deployment...
+🏗️  Creating DataCoin...
+📝 Transaction submitted: 0x00f2be449a4a392308071771987e6ff86af927a37288c313d5505000cc53ae18
+⏳ Waiting for confirmation...
+✅ Transaction confirmed in block: 9289948
+
+🔍 Extracting creation results...
+
+🎉 DATACOIN SUCCESSFULLY CREATED!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 DataCoin Address: 0xC540B73FC1849DBe94305Cdfc56Ef21405Fe12cE
+🏊 Pool Address: 0x188d0A59ED113cf04BEe86f0bf20176AEA35813C
+👤 Creator: 0x68827A9Fa11B716091f4B599D54a2484fb599a4C
+🔒 Lock Token: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+📝 Name: Andy Coin
+🏷️  Symbol: AND
+🔗 TokenURI: bafkreifpymts2rinunnptk6pejo3znkuag7yevcty2qmuhuu7jmglmyo34
+📝 Transaction Hash: 0x00f2be449a4a392308071771987e6ff86af927a37288c313d5505000cc53ae18
+🌐 Network: sepolia
+⛽ Gas Used: 3766887
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Script completed successfully!
+PS C:\Users\Anindya Roy\Desktop\data-dao-deployment> 
+
+
+
+
+
+PS C:\Users\Anindya Roy\Desktop\data-dao-deployment> node .\scripts\datacoin.js
+[dotenv@17.2.2] injecting env (5) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.2] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+🚀 DataCoin Management Script
+============================
+🔗 Setting up connection to sepolia
+👤 Connected wallet: 0x68827A9Fa11B716091f4B599D54a2484fb599a4C
+🌐 Network: sepolia Chain ID: 11155111
+⛽ ETH Balance: 0.549988145904488737 ETH
+✅ Successfully connected to DataCoin: Andy Coin
+
+📊 Getting DataCoin information...
+==================================================
+🪙  Token Name: Andy Coin
+🏷️  Token Symbol: AND
+👤 Creator: 0x68827A9Fa11B716091f4B599D54a2484fb599a4C
+📈 Max Supply: 100000000.0
+👨‍💼 Creator Allocation: 20000000.0 (20%)
+⏰ Creator Vesting: 365.0 days
+👥 Contributors Allocation: 50000000.0 (50%)
+✅ Contributors Minted: 0.0
+🏊 Liquidity Allocation: 30000000.0 (30%)
+==================================================
+
+🔓 Granting minter role to 0x68827A9Fa11B716091f4B599D54a2484fb599a4C...
+📤 Transaction submitted: 0x940939610ceb9bfedd8577412943cd219c9306c5aeb63a4706e63f1e94452261
+✅ Minter role granted successfully!
+⛽ Gas used: 54035
+
+🏭 Minting 10000 tokens to 0x68827A9Fa11B716091f4B599D54a2484fb599a4C...
+📤 Transaction submitted: 0xa38cf62e4485cf5bf6942bf745896d08634d2380c8563e07636583a1ce57c737
+✅ Tokens minted successfully!
+⛽ Gas used: 147097
+💰 New balance: 9950.0 tokens
+
+✅ All operations completed successfully!
+
+🎯 Script finished!
+PS C:\Users\Anindya Roy\Desktop\data-dao-deployment> 
+
+
+
+ DataTokenMarketplace deployed at: 0xfb9e0Fc1527459BAf79D654bF1bCda2104f70A07
