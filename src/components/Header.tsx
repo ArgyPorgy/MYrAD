@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { shortenAddress } from '@/utils/web3';
 import WalletModal from './WalletModal';
+import { Avatar, Name } from '@coinbase/onchainkit/identity';
 import './Header.css';
+import { base } from 'viem/chains';
 
 interface HeaderProps {
   userAddress: string;
@@ -12,6 +14,12 @@ interface HeaderProps {
 
 const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps) => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+ // ✅ Simple unified way
+const displayAddress = (userAddress ) as `0x${string}`;
+
+//const displayAddress = ('0x06a7CfeFC9358181544166832889a970BdE557EA') as `0x${string}`;
+
 
   const handleConnectClick = () => {
     setIsWalletModalOpen(true);
@@ -31,10 +39,25 @@ const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps
 
           <div className="header-right">
             {connected ? (
-              <div className="wallet-actions">
+              <div className="wallet-actions flex items-center gap-4">
+                {/* Avatar + Name Section */}
+                <div className="wallet-info">
+                  <Avatar
+                    address={displayAddress}
+                    chain={base}
+                    className="avatar"
+                  />
+                  <Name
+                    address={displayAddress}
+                    chain={base}
+                    className="wallet-name"
+                  />
+                </div>
+
+                {/* Shortened Address + Disconnect */}
                 <div className="wallet-badge">
                   <div className="wallet-status"></div>
-                  <span>{shortenAddress(userAddress)}</span>
+                  <span>{shortenAddress(displayAddress)}</span>
                 </div>
                 <button className="disconnect-button" onClick={onDisconnect}>
                   Disconnect
@@ -59,4 +82,3 @@ const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps
 };
 
 export default Header;
-

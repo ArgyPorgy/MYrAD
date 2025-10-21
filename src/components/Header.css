@@ -139,3 +139,61 @@
   box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
 }
 
+.wallet-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wallet-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.wallet-info:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: #3d3d3d;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  transition: transform 0.2s ease;
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
+
+.wallet-name {
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.wallet-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  color: #cfcfcf;
+  font-size: 0.85rem;
+  transition: background 0.3s ease;
+}
+
+.wallet-badge:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
