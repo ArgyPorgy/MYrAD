@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import DatasetCard from '@/components/DatasetCard';
 import { DatasetsMap } from '@/types/web3';
+import { getApiUrl } from '@/config/api';
 import './MarketplacePage.css';
 
 const MarketplacePage = () => {
@@ -19,7 +20,7 @@ const MarketplacePage = () => {
   const loadDatasets = async () => {
     setLoading(true);
     try {
-      const resp = await fetch("/datasets");
+      const resp = await fetch(getApiUrl("/datasets"));
       const data = await resp.json();
       setDatasets(data);
     } catch (err) {

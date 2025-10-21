@@ -4,6 +4,7 @@ import { useWeb3 } from '@/hooks/useWeb3';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { formatFileSize } from '@/utils/web3';
+import { getApiUrl } from '@/config/api';
 import './CreateDatasetPage.css';
 
 const CreateDatasetPage = () => {
@@ -142,7 +143,7 @@ const CreateDatasetPage = () => {
         description: description,
       };
 
-      const response = await fetch('/create-dataset', {
+      const response = await fetch(getApiUrl('/create-dataset'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

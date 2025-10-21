@@ -9,6 +9,7 @@ import {
   BASE_SEPOLIA_CHAIN_ID
 } from '@/constants/contracts';
 import { retryContractCall } from '@/utils/web3';
+import { getApiUrl } from '@/config/api';
 import './DatasetCard.css';
 
 interface DatasetCardProps {
@@ -294,7 +295,7 @@ const DatasetCard = ({
       for (let i = 0; i < 20; i++) {
         await new Promise(r => setTimeout(r, 1000));
         try {
-          const r = await fetch(`/access/${userAddress}/${dataset.symbol}`);
+          const r = await fetch(getApiUrl(`/access/${userAddress}/${dataset.symbol}`));
           if (r.status === 200) {
             const j = await r.json();
             if (j.download) {
