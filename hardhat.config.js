@@ -5,7 +5,7 @@ module.exports = {
   defaultNetwork: "baseSepolia",
   networks: {
     baseSepolia: {
-      url: process.env.BASE_SEPOLIA_RPC_URL,
+      url:  "https://base-sepolia-rpc.publicnode.com" ||   "https://base-sepolia.gateway.tenderly.co" || "https://sepolia.base.org",
       chainId: 84532,
       accounts: [process.env.PRIVATE_KEY]
     }
