@@ -89,7 +89,7 @@ const CreateDatasetPage = () => {
         setUploading(false);
       });
 
-      xhr.open('POST', '/upload', true);
+      xhr.open('POST', getApiUrl('/upload'), true);
       xhr.send(formData);
     } catch (err: any) {
       showStatus(`Upload error: ${err.message}`, 'error');

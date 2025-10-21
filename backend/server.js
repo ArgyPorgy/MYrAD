@@ -9,7 +9,7 @@ const { createDatasetToken } = require("./createDatasetAPI");
 
 const app = express();
 
-// Enable CORS for all origins (production frontend on Vercel)
+// Enable CORS for all origins
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -300,8 +300,13 @@ app.get("/health", (req, res) => {
 });
 
 // Serve frontend for all other routes (SPA fallback)
+// Only if the request accepts HTML (not for API calls)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+  if (req.accepts('html')) {
+    res.sendFile(path.join(__dirname, "../dist/index.html"));
+  } else {
+    res.status(404).json({ error: "Not found" });
+  }
 });
 
 app.listen(PORT, () => {
