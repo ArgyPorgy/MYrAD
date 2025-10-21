@@ -6,6 +6,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "backend": "node backend/start-all.js",
+    "start": "npm run build && node backend/start-all.js",
     "deploy": "npx hardhat run scripts/deployFactory.js --network baseSepolia",
     "deploy:marketplace": "npx hardhat run scripts/deployMarketplace.js --network baseSepolia",
     "create": "node scripts/createDataCoin.js",

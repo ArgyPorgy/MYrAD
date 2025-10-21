@@ -30,7 +30,9 @@ const upload = multer({
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use(express.static(path.join(__dirname, "../frontend")));
+
+// Serve static frontend files from 'dist' folder (production build)
+app.use(express.static(path.join(__dirname, "../dist")));
 
 const MARKETPLACE_ABI = [
   "function getPriceUSDCperToken(address token) external view returns (uint256)",
@@ -295,6 +297,11 @@ app.post("/create-dataset", async (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
+});
+
+// Serve frontend for all other routes (SPA fallback)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../dist/index.html"));
 });
 
 app.listen(PORT, () => {
