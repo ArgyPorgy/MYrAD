@@ -4,8 +4,10 @@ const path = require("path");
 // Multiple RPC URLs for fallback
 const RPC_URLS = [
   process.env.BASE_SEPOLIA_RPC_URL,
+  "https://sepolia.base.org",
   "https://base-sepolia.drpc.org",
-  "https://sepolia.base.org"
+  "https://base-sepolia-rpc.publicnode.com",
+  "https://base-sepolia.blockpi.network/v1/rpc/public"
 ].filter(Boolean); // Remove any undefined/null values
 
 module.exports = {
