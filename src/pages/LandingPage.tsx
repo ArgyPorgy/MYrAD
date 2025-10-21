@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Snowflake, ArrowLeftRight, Gem, BarChart3, Globe2, Lock, UserCheck, UploadCloud, Coins, Repeat, Flame, TrendingUp } from 'lucide-react';
 
@@ -11,11 +11,13 @@ const navigate = useNavigate();
     navigate('/marketplace'); // 👈 navigates to Marketplace
   };
 
-  const bgDotsRef = useRef(null);
+  const bgDotsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Create animated background dots
     const bgDots = bgDotsRef.current;
+    if (!bgDots) return;
+    
     const numDots = 50;
 
     for (let i = 0; i < numDots; i++) {
