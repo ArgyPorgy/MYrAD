@@ -1,14 +1,14 @@
 require("dotenv").config();
 const path = require("path");
 
-// Multiple RPC URLs for fallback
+// Multiple RPC URLs for automatic fallback
+// Will try each one in order until one works
 const RPC_URLS = [
-  process.env.BASE_SEPOLIA_RPC_URL,
   "https://sepolia.base.org",
-  "https://base-sepolia.drpc.org",
   "https://base-sepolia-rpc.publicnode.com",
+  "https://base-sepolia.gateway.tenderly.co",
   "https://base-sepolia.blockpi.network/v1/rpc/public"
-].filter(Boolean); // Remove any undefined/null values
+];
 
 module.exports = {
   RPC: RPC_URLS[0], // Primary RPC

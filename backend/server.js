@@ -285,7 +285,8 @@ app.get("/health", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend API running on port ${PORT}`);
-  console.log(`📊 Open http://localhost:${PORT}`);
+  const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  console.log(`📊 Available at: ${url}`);
 });
 
 
