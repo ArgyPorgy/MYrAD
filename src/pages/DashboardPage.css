@@ -1,0 +1,87 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.dashboard-card {
+  background: #0f0f0f;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.dashboard-card.large {
+  grid-column: span 2;
+}
+
+.dashboard-card:hover {
+  border-color: #00d4ff30;
+  transform: translateY(-2px);
+}
+
+.card-title {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+  letter-spacing: -1px;
+}
+
+.card-change {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.card-change.positive {
+  color: #00ff88;
+}
+
+.card-change.negative {
+  color: #ff6b6b;
+}
+
+.activity-section {
+  margin-top: 40px;
+}
+
+.activity-list {
+  background: #0f0f0f;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 32px;
+  min-height: 300px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+

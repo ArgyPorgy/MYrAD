@@ -1,0 +1,228 @@
+.dataset-card {
+  background: #0f0f0f;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.dataset-card:hover {
+  border-color: #00d4ff30;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.dataset-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dataset-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dataset-info {
+  flex: 1;
+}
+
+.dataset-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 4px 0;
+}
+
+.dataset-symbol {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  font-family: monospace;
+}
+
+.dataset-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #0a0a0a;
+  border-radius: 8px;
+}
+
+.meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-value {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.meta-value-price {
+  font-size: 14px;
+  color: #00d4ff;
+  font-weight: 700;
+}
+
+.dataset-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.action-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.action-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+
+.action-input::placeholder {
+  color: #555;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-burn {
+  padding: 10px 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+  color: #000;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  color: #333;
+  border: 1px solid #d0d0d0;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-secondary:hover::before {
+  left: 100%;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+  border-color: #c0c0c0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+}
+
+.btn-burn {
+  width: 100%;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  color: #333;
+  border: 1px solid #d0d0d0;
+}
+
+.btn-burn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-burn:hover::before {
+  left: 100%;
+}
+
+.btn-burn:hover {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: #fff;
+  border-color: #ff6b6b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.dataset-footer {
+  padding-top: 16px;
+  border-top: 1px solid #1a1a1a;
+}
+
+.contract-address {
+  font-size: 11px;
+  color: #555;
+  font-family: monospace;
+}
+

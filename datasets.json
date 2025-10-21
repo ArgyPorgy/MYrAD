@@ -1,0 +1,32 @@
+{
+  "0xfd9b086d4c89a6c3725e71ecbe15da1106c9c891": {
+    "name": "medical doc",
+    "symbol": "MED",
+    "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
+    "description": "",
+    "token_address": "0xFd9B086d4C89A6c3725e71eCBe15Da1106c9c891",
+    "marketplace_address": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "bonding_curve": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "created_at": 1760965063623
+  },
+  "0xb9b60b7907c583ab4cca76ca7164573ed85a9d42": {
+    "name": "yea",
+    "symbol": "YEA",
+    "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
+    "description": "",
+    "token_address": "0xB9b60B7907c583aB4ccA76ca7164573Ed85A9d42",
+    "marketplace_address": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "bonding_curve": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "created_at": 1761022773826
+  },
+  "0x4a9031a1f2b968885e386777012e0c78d263549d": {
+    "name": "beee",
+    "symbol": "SIGMA",
+    "cid": "bafkreiclyf6udrjj2r4naehnkvqmxk2cv7mghkhydahs77j7xtk6yl75m4",
+    "description": "",
+    "token_address": "0x4A9031a1f2B968885e386777012e0C78d263549d",
+    "marketplace_address": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "bonding_curve": "0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b",
+    "created_at": 1761031390415
+  }
+}

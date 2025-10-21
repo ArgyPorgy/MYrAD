@@ -1,0 +1,75 @@
+.create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 212, 255, 0.3);
+}
+
+.my-datasets-content {
+  background: #0f0f0f;
+  border: 1px solid #1a1a1a;
+  border-radius: 12px;
+  padding: 80px 40px;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-large {
+  text-align: center;
+  max-width: 400px;
+}
+
+.empty-icon-large {
+  font-size: 120px;
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.empty-state-large h3 {
+  font-size: 28px;
+  color: #fff;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+}
+
+.empty-state-large p {
+  font-size: 16px;
+  color: #666;
+  margin: 0 0 32px 0;
+}
+
+.btn-create-large {
+  display: inline-block;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-create-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 212, 255, 0.3);
+}
+

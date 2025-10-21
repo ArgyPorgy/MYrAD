@@ -1,0 +1,91 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 20px;
+  margin: 20px 0 12px 0;
+}
+
+button {
+  background: #0ea5e9;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  margin: 4px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: #0284c7;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+input {
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1f2937;
+  color: #eee;
+  font-size: 14px;
+  margin: 4px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+input::placeholder {
+  color: #9ca3af;
+}
+
+.token {
+  background: #1f2937;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.col {
+  flex: 1;
+}
+
+.small {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+#status {
+  margin-top: 18px;
+  color: #9ca3af;
+  padding: 12px;
+  border-radius: 8px;
+  background: #1f2937;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #374151;
+  margin: 24px 0;
+}
+
