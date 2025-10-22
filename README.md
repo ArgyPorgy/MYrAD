@@ -226,7 +226,7 @@ Please follow existing code patterns and include tests for new features.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+See [LICENSE](LICENSE) for details.
 
 ## Support
 
