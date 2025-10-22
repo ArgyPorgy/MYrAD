@@ -1,6 +1,6 @@
 # System Architecture
 
-MYrAD follows a **modular, decentralized architecture** combining blockchain logic, backend orchestration, and an interactive frontend.
+MYRAD follows a **modular, decentralized architecture** combining blockchain logic, backend orchestration, and an interactive frontend.
 
 ---
 
