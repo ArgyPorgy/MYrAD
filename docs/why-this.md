@@ -1,9 +1,9 @@
-# Why MYrAD
+# Why MYRAD
 
-MYrAD transforms how data is owned, priced, and distributed.
+MYRAD transforms how data is owned, priced, and distributed.
 
 ### 🔗 Why This Approach
-Traditional data marketplaces rely on centralized pricing and access systems. MYrAD eliminates the middleman by:
+Traditional data marketplaces rely on centralized pricing and access systems. MYRAD eliminates the middleman by:
 - Tokenizing datasets as **ERC20 DataCoins**
 - Using **automated market makers (AMM)** for price discovery
 - Enforcing access through **token burning and JWT authorization**
