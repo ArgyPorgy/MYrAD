@@ -1,6 +1,6 @@
-# MYrAD — Decentralized Data Marketplace
+# MYRAD — Decentralized Data Marketplace
 
-A blockchain-powered marketplace for tokenizing, trading, and monetizing datasets. MYrAD enables data creators to mint ERC20 tokens representing their datasets, trade them using automated market makers (AMM), and grant dataset access through a burn-to-download mechanism.
+A blockchain-powered marketplace for tokenizing, trading, and monetizing datasets. MYRAD enables data creators to mint ERC20 tokens representing their datasets, trade them using automated market makers (AMM), and grant dataset access through a burn-to-download mechanism.
 
 **Live Demo:** [https://myradhq.xyz/](https://myradhq.xyz/)
 
@@ -12,7 +12,7 @@ MYrAD revolutionizes how datasets are valued and traded by:
 - **Creating liquidity pools** pairing dataset tokens with USDC
 - **Enabling permissionless trading** through constant product AMMs
 - **Granting dataset access** through token burning with JWT-based download authorization
-- **Providing transparent pricing** and fee distribution (80% creator, 20% treasury)
+- **Providing transparent pricing** and fee distribution (80% Liqudity Pool, 5% Creator, 5% treasury)
 
 ## Key Features
 
@@ -23,8 +23,7 @@ MYrAD revolutionizes how datasets are valued and traded by:
 
 ### 💱 Decentralized Trading
 - Trade dataset tokens against USDC using an automated market maker
-- 5% trading fee on buys (0% on sells)
-- Fee split: 80% to dataset creator, 20% to protocol treasury
+- Fee split: 0% Fees for buy and sell
 - Real-time price quotes and slippage protection
 
 ### 🔥 Burn-for-Download Access Control
@@ -41,30 +40,7 @@ MYrAD revolutionizes how datasets are valued and traded by:
 
 ## How It Works
 
-### 1. Create a Dataset Token
-
-```bash
-POST /api/create-dataset
-
-{
-  "cid": "QmXxxx...",           // IPFS CID of dataset metadata
-  "name": "Medical Research Data",
-  "symbol": "MEDREC",
-  "description": "De-identified medical research dataset"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "tokenAddress": "0x...",
-  "marketplaceAddress": "0x...",
-  "symbol": "MEDREC",
-  "name": "Medical Research Data",
-  "cid": "QmXxxx..."
-}
-```
+### 1. Dataset Upload and Create a Dataset Token
 
 ### 2. Initialize the Liquidity Pool
 
@@ -78,10 +54,6 @@ This creates the initial price: 1 MEDREC ≈ 0.0000011 USDC
 
 Users swap USDC for dataset tokens:
 
-```bash
-GET /api/quote/buy/:marketplaceAddress/:tokenAddress/:usdcAmount
-```
-
 **Example:** Buy with 0.1 USDC → Receive ~77,946 tokens
 
 The AMM uses constant product formula: `k = reserve_token × reserve_usdc`
@@ -89,10 +61,6 @@ The AMM uses constant product formula: `k = reserve_token × reserve_usdc`
 ### 4. Sell Dataset Tokens
 
 Users swap tokens back to USDC (no fee on sells):
-
-```bash
-GET /api/quote/sell/:marketplaceAddress/:tokenAddress/:tokenAmount
-```
 
 ### 5. Burn Tokens for Download Access
 
@@ -102,22 +70,6 @@ After buying tokens, users burn them to unlock the dataset:
 2. Backend listener detects burn event (5-20 seconds)
 3. JWT access token is issued
 4. User receives download link with 30-minute expiry
-
-**Access Endpoint:**
-```bash
-GET /api/access/:userAddress/:symbol
-```
-
-**JWT Payload:**
-```json
-{
-  "user": "0x...",
-  "symbol": "MEDREC",
-  "download": "ipfs://Qm...",
-  "ts": 1234567890,
-  "exp": 1234569690
-}
-```
 
 ## Smart Contracts
 
@@ -199,82 +151,6 @@ pnpm dev
 
 The app runs on `http://localhost:5173` with the backend API on `http://localhost:4000`.
 
-## API Reference
-
-### Health Check
-```bash
-GET /
-```
-
-### List All Datasets
-```bash
-GET /api/datasets
-```
-
-**Response:**
-```json
-{
-  "0xTokenAddress": {
-    "symbol": "MEDREC",
-    "name": "Medical Research Data",
-    "cid": "QmXxxx...",
-    "marketplace": "0x...",
-    "creator": "0x..."
-  }
-}
-```
-
-### Get Token Price
-```bash
-GET /api/price/:marketplaceAddress/:tokenAddress
-```
-
-**Response:**
-```json
-{
-  "price": "0.00000133",
-  "tokenReserve": "822054.123456789",
-  "usdcReserve": "1.095000"
-}
-```
-
-### Buy Quote
-```bash
-GET /api/quote/buy/:marketplaceAddress/:tokenAddress/:usdcAmount
-```
-
-### Sell Quote
-```bash
-GET /api/quote/sell/:marketplaceAddress/:tokenAddress/:tokenAmount
-```
-
-### Upload File
-```bash
-POST /api/upload
-
-Content-Type: multipart/form-data
-- file: <binary data>
-```
-
-### Create Dataset
-```bash
-POST /api/create-dataset
-
-{
-  "cid": "QmXxxx...",
-  "name": "Dataset Name",
-  "symbol": "SYMBOL",
-  "description": "Dataset description"
-}
-```
-
-### Check Download Access
-```bash
-GET /api/access/:userAddress/:symbol
-```
-
-## Security Considerations
-
 ### For Development
 - Use testnet USDC and Base Sepolia
 - Test keys only (never production keys)
@@ -294,38 +170,6 @@ GET /api/access/:userAddress/:symbol
 - OpenZeppelin-audited contracts
 - No known vulnerabilities in dependencies
 
-## Deployment
-
-### Vercel (Recommended)
-```bash
-# Push to GitHub
-git push origin main
-
-# Create Vercel project
-vercel link
-
-# Configure environment variables in Vercel dashboard
-vercel env add BASE_SEPOLIA_RPC_URL
-vercel env add PRIVATE_KEY
-# ... add all required vars
-
-# Deploy
-vercel
-```
-
-### Netlify
-```bash
-# Connect GitHub repository
-netlify link
-
-# Configure build settings:
-# Build command: npm run build
-# Publish directory: dist
-
-# Add environment variables in Netlify dashboard
-# Deploy
-netlify deploy
-```
 
 ### Environment Variables Required
 - `BASE_SEPOLIA_RPC_URL` - RPC endpoint for Base Sepolia
@@ -362,16 +206,16 @@ pnpm typecheck
 Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
+2. Create a feature branch:
+3. Commit changes:
+4. Push to branch: 
 5. Open a pull request
 
 Please follow existing code patterns and include tests for new features.
 
 ## Roadmap
 
-- [ ] Mainnet support (Base Ethereum)
+- [ ] Mainnet support (Base)
 - [ ] Advanced filter and search on marketplace
 - [ ] User authentication and profiles
 - [ ] Dataset versioning
@@ -388,7 +232,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - **Documentation:** [https://myradhq.xyz/docs](https://myradhq.xyz/docs)
 - **GitHub Issues:** [Report bugs or request features](https://github.com/ArgyPorgy/MYrAD/issues)
-- **Email:** hello@myrad.com
 
 ## Disclaimer
 
