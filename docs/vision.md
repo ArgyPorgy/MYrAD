@@ -1,6 +1,6 @@
 # Vision & Roadmap
 
-MYrAD aims to redefine **data as a digital asset class** — empowering creators, buyers, and researchers to interact freely without intermediaries.
+MYRAD aims to redefine **data as a digital asset class** — empowering creators, buyers, and researchers to interact freely without intermediaries.
 
 ### 🌍 Vision
 - Democratize access to data monetization  
@@ -8,13 +8,14 @@ MYrAD aims to redefine **data as a digital asset class** — empowering creators
 - Integrate data markets into the DeFi ecosystem  
 
 ### 🗺 Roadmap
-**Phase 1: MVP (Live Now)**
+**Phase 1: Alpha (Live Now)**
 - Dataset upload, tokenization, and AMM trading  
 - Burn-to-download functionality  
 - Base Sepolia testnet deployment  
 
 **Phase 2: Expansion**
 - Mainnet support  
+- Creator onboarding
 - User authentication and profiles  
 - Dataset versioning  
 - Advanced filters and analytics  
