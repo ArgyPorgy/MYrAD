@@ -1,16 +1,20 @@
-// Frontend-only build script for Vercel
+// Frontend-only build script for Render/Vercel
 // This skips TypeScript compilation to avoid Hardhat dependencies
 
 const { execSync } = require('child_process');
 const path = require('path');
 
-console.log('🚀 Building frontend for Vercel...');
+console.log('🚀 Building frontend...');
 
 try {
-  // Only run Vite build, skip TypeScript compilation
-  execSync('vite build', { 
+  // Use npx vite to ensure we're using the local vite installation
+  execSync('npx vite build', { 
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      NODE_ENV: 'production'
+    }
   });
   
   console.log('✅ Frontend build completed successfully!');
