@@ -9,4 +9,4 @@ Creators struggle to monetize their data fairly, while buyers face high costs, l
 - **Limited monetization:** Creators receive minimal compensation for their data.  
 - **Intermediary dependency:** Trust is placed in centralized brokers.  
 
-**MYrAD** addresses this by creating a **permissionless, decentralized marketplace** where datasets are treated as **digital assets** — tokenized, tradeable, and verifiable on-chain.
+**MYRAD** addresses this by creating a **permissionless, decentralized marketplace** where datasets are treated as **digital assets** — tokenized, tradeable, and verifiable on-chain.
