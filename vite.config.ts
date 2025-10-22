@@ -13,13 +13,13 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/datasets': 'http://localhost:4000',
-      '/upload': 'http://localhost:4000',
-      '/create-dataset': 'http://localhost:4000',
-      '/access': 'http://localhost:4000',
-      '/price': 'http://localhost:4000',
-      '/quote': 'http://localhost:4000',
-      '/health': 'http://localhost:4000',
+      '/datasets': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/upload': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/create-dataset': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/access': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/price': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/quote': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/health': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
     },
   },
   build: {
