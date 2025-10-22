@@ -1,6 +1,7 @@
 # MYRAD — Decentralized Data Marketplace
 
-**MYRAD** is a blockchain-powered decentralized marketplace for **tokenizing, trading, and monetizing datasets**.  
+**MYRAD** is a decentralized data marketplace for **tokenizing, trading, and monetizing datasets**.  
+
 It empowers data creators to mint ERC20 tokens representing their datasets, trade them using **automated market makers (AMM)**, and enable access through a **burn-to-download** mechanism.
 
 🔗 **Live Demo:** [https://myradhq.xyz](https://myradhq.xyz)
