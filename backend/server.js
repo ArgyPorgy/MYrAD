@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const { PORT, DATASETS_FILE, DB_FILE } = require("./config");
@@ -9,19 +10,13 @@ const { createDatasetToken } = require("./createDatasetAPI");
 
 const app = express();
 
-// Enable CORS for all origins
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
+// Enable CORS for all origins with proper configuration
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
+}));
 
 const upload = multer({
   storage: multer.memoryStorage(),
