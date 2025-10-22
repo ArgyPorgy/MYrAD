@@ -6,7 +6,7 @@ A blockchain-powered marketplace for tokenizing, trading, and monetizing dataset
 
 ## Overview
 
-MYrAD revolutionizes how datasets are valued and traded by:
+MYRAD revolutionizes how datasets are valued and traded by:
 
 - **Tokenizing datasets** as ERC20 tokens on the Base blockchain
 - **Creating liquidity pools** pairing dataset tokens with USDC
