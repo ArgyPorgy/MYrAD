@@ -10,5 +10,6 @@ module.exports = {
   PORT: process.env.PORT || 4000,
   DOWNLOAD_SECRET: process.env.DOWNLOAD_SECRET || "secret",
   DB_FILE: path.join(__dirname, "db.json"),
-  DATASETS_FILE: path.join(__dirname, "../datasets.json")
+  DATASETS_FILE: path.join(__dirname, "../datasets.json"),
+  MAX_BLOCK_RANGE: parseInt(process.env.MAX_BLOCK_RANGE) || 10 // Free tier RPC limit
 };

@@ -5,7 +5,7 @@
 const { ethers } = require("ethers");
 const fs = require("fs");
 const path = require("path");
-const { RPC_URLS, DATASETS_FILE } = require("./config");
+const { RPC_URLS, DATASETS_FILE, MAX_BLOCK_RANGE } = require("./config");
 const { signDownloadUrl, saveAccess } = require("./utils");
 const { addUserDataset, updateTokenBalance } = require("./userDatasets");
 
@@ -16,30 +16,80 @@ const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
 function createProvider() {
   const rpcUrl = RPC_URLS[0];
   console.log(`Using JsonRpcProvider (HTTP) for RPC: ${rpcUrl}`);
+  console.log(`📊 Block range limit: ${MAX_BLOCK_RANGE} blocks per query (free tier optimized)`);
   return new ethers.JsonRpcProvider(rpcUrl);
 }
 
-// Helper to try multiple RPCs for getLogs
+// Helper to try multiple RPCs for getLogs with automatic chunking for free tier limits
 async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
-  for (let i = 0; i < RPC_URLS.length; i++) {
-    try {
-      const provider = new ethers.JsonRpcProvider(RPC_URLS[i]);
-      const logs = await provider.getLogs({
-        address,
-        fromBlock,
-        toBlock,
-        topics
-      });
-      return logs;
-    } catch (err) {
-      if (i < RPC_URLS.length - 1) {
-        console.warn(`⚠️  RPC ${RPC_URLS[i]} failed, trying next...`);
-      } else {
-        throw err; // All RPCs failed
+  const blockRange = toBlock - fromBlock + 1;
+  
+  // If range is within free tier limit, query directly
+  if (blockRange <= MAX_BLOCK_RANGE) {
+    for (let i = 0; i < RPC_URLS.length; i++) {
+      try {
+        const provider = new ethers.JsonRpcProvider(RPC_URLS[i]);
+        const logs = await provider.getLogs({
+          address,
+          fromBlock,
+          toBlock,
+          topics
+        });
+        return logs;
+      } catch (err) {
+        if (i < RPC_URLS.length - 1) {
+          console.warn(`⚠️  RPC ${RPC_URLS[i]} failed, trying next...`);
+        } else {
+          throw err; // All RPCs failed
+        }
       }
     }
+    return [];
   }
-  return [];
+  
+  // Range too large - chunk it into smaller pieces
+  const totalChunks = Math.ceil(blockRange / MAX_BLOCK_RANGE);
+  console.log(`📊 Chunking getLogs query: blocks ${fromBlock}-${toBlock} (${blockRange} blocks) into ${totalChunks} chunks of ${MAX_BLOCK_RANGE} blocks`);
+  const allLogs = [];
+  let chunkNum = 0;
+  
+  for (let start = fromBlock; start <= toBlock; start += MAX_BLOCK_RANGE) {
+    const end = Math.min(start + MAX_BLOCK_RANGE - 1, toBlock);
+    chunkNum++;
+    
+    for (let i = 0; i < RPC_URLS.length; i++) {
+      try {
+        const provider = new ethers.JsonRpcProvider(RPC_URLS[i]);
+        const logs = await provider.getLogs({
+          address,
+          fromBlock: start,
+          toBlock: end,
+          topics
+        });
+        
+        if (logs.length > 0) {
+          console.log(`   ✓ Chunk ${chunkNum}/${totalChunks} (blocks ${start}-${end}): found ${logs.length} log(s)`);
+        }
+        allLogs.push(...logs);
+        break; // Success, move to next chunk
+      } catch (err) {
+        if (i < RPC_URLS.length - 1) {
+          console.warn(`⚠️  RPC ${RPC_URLS[i]} failed for chunk ${start}-${end}, trying next...`);
+        } else {
+          console.error(`❌ All RPCs failed for chunk ${chunkNum}/${totalChunks} (${start}-${end}), skipping...`);
+          // Continue with next chunk instead of failing completely
+        }
+      }
+    }
+    
+    // Small delay between chunks to avoid rate limiting
+    if (start + MAX_BLOCK_RANGE <= toBlock) {
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between chunks
+    }
+  }
+  
+  console.log(`   📦 Total logs collected: ${allLogs.length} from ${totalChunks} chunks`);
+  return allLogs;
 }
 
 function loadDatasets() {
@@ -277,28 +327,14 @@ if (provider instanceof ethers.WebSocketProvider) {
 
         for (const addr of tokenAddrs) {
           const token = addr.toLowerCase();
-          // build filter: address + topics (either Transfer or Redeemed)
-          const filter = {
-            address: token,
-            fromBlock: from,
-            toBlock: to,
-            topics: [ [transferTopic, redeemedTopic] ] // either Transfer OR Redeemed
-          };
-
+          
+          // Query logs with automatic chunking for free tier RPC limits
           let logs = [];
           try {
             logs = await getLogsWithFallback(token, from, to, [[transferTopic, redeemedTopic]]);
           } catch (err) {
-            // All RPCs may reject large range queries; fall back to smaller window
-            console.warn("getLogs error on all RPCs, falling back to per-block");
-            for (let b = from; b <= to; b++) {
-              try {
-                const small = await getLogsWithFallback(token, b, b, [[transferTopic, redeemedTopic]]);
-                if (small && small.length) logs.push(...small);
-              } catch (e) {
-                // ignore single-block failures
-              }
-            }
+            console.error(`❌ Failed to get logs for token ${token}:`, err.message);
+            continue; // Skip this token and move to next
           }
 
           if (logs.length === 0) continue;
