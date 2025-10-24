@@ -41,10 +41,11 @@ function addUserDataset(userDataset) {
   try {
     const datasets = loadUserDatasets();
     
-    // Check if dataset already exists for this user/token combination
+    // Check if dataset already exists for this user/token/type combination
     const existingIndex = datasets.findIndex(d => 
       d.userAddress.toLowerCase() === userDataset.userAddress.toLowerCase() &&
-      d.tokenAddress.toLowerCase() === userDataset.tokenAddress.toLowerCase()
+      d.tokenAddress.toLowerCase() === userDataset.tokenAddress.toLowerCase() &&
+      d.type === userDataset.type
     );
     
     if (existingIndex !== -1) {
@@ -87,6 +88,33 @@ function getUserDatasets(userAddress) {
   }
 }
 
+// Update token balance for a specific user/token/type combination
+function updateTokenBalance(userAddress, tokenAddress, type, additionalAmount) {
+  try {
+    const datasets = loadUserDatasets();
+    const existingIndex = datasets.findIndex(d => 
+      d.userAddress.toLowerCase() === userAddress.toLowerCase() &&
+      d.tokenAddress.toLowerCase() === tokenAddress.toLowerCase() &&
+      d.type === type
+    );
+    
+    if (existingIndex !== -1) {
+      // Add to existing balance
+      const currentAmount = BigInt(datasets[existingIndex].amount);
+      const newAmount = currentAmount + BigInt(additionalAmount);
+      datasets[existingIndex].amount = newAmount.toString();
+      datasets[existingIndex].updatedAt = new Date().toISOString();
+      saveUserDatasets(datasets);
+      console.log(`Updated ${type} balance for ${tokenAddress}: ${newAmount} (added ${additionalAmount})`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error updating token balance:', error);
+    return false;
+  }
+}
+
 // Initialize the file on module load
 initializeUserDatasetsFile();
 
@@ -95,5 +123,6 @@ module.exports = {
   getUserDatasets,
   loadUserDatasets,
   saveUserDatasets,
+  updateTokenBalance,
   USER_DATASETS_FILE
 };

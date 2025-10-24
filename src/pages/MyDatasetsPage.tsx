@@ -20,6 +20,7 @@ interface UserDataset {
   marketplaceAddress: string;
   type: 'created' | 'bought';
   amount: string;
+  realTimeBalance?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -180,7 +181,7 @@ const MyDatasetsPage = () => {
                           <div className="dataset-details">
                             <div className="detail-item">
                               <span className="label">Amount Owned:</span>
-                              <span className="value">{ethers.formatUnits(dataset.amount, 18)}</span>
+                              <span className="value">{ethers.formatUnits(dataset.realTimeBalance || dataset.amount, 18)}</span>
                             </div>
                             <div className="detail-item">
                               <span className="label">Creator:</span>

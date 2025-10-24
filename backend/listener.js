@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { RPC_URLS, DATASETS_FILE } = require("./config");
 const { signDownloadUrl, saveAccess } = require("./utils");
-const { addUserDataset } = require("./userDatasets");
+const { addUserDataset, updateTokenBalance } = require("./userDatasets");
 
 const POLL_INTERVAL = 30000; // 30s polling when using HTTP (reduced to avoid rate limits)
 const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
@@ -88,25 +88,38 @@ async function saveBoughtDataset(tokenAddr, buyerAddress, tokensOut) {
       return;
     }
 
-    const userDataset = {
-      userAddress: buyerAddress.toLowerCase(),
-      tokenAddress: tokenAddr.toLowerCase(),
-      name: meta.name,
-      symbol: meta.symbol,
-      description: meta.description || "",
-      cid: meta.cid,
-      totalSupply: meta.total_supply || 1000000,
-      creatorAddress: meta.creator?.toLowerCase() || "",
-      marketplaceAddress: meta.marketplace?.toLowerCase() || meta.marketplace_address?.toLowerCase(),
-      type: 'bought',
-      amount: tokensOut.toString()
-    };
+    // Check if user already has a "bought" entry for this token
+    const existingBought = updateTokenBalance(
+      buyerAddress.toLowerCase(), 
+      tokenAddr.toLowerCase(), 
+      'bought', 
+      tokensOut
+    );
 
-    const success = addUserDataset(userDataset);
-    if (success) {
-      console.log(`✅ Saved bought dataset: ${meta.symbol} for ${buyerAddress}`);
+    if (!existingBought) {
+      // Create new "bought" entry
+      const userDataset = {
+        userAddress: buyerAddress.toLowerCase(),
+        tokenAddress: tokenAddr.toLowerCase(),
+        name: meta.name,
+        symbol: meta.symbol,
+        description: meta.description || "",
+        cid: meta.cid,
+        totalSupply: meta.total_supply || 1000000,
+        creatorAddress: meta.creator?.toLowerCase() || "",
+        marketplaceAddress: meta.marketplace?.toLowerCase() || meta.marketplace_address?.toLowerCase(),
+        type: 'bought',
+        amount: tokensOut.toString()
+      };
+
+      const success = addUserDataset(userDataset);
+      if (success) {
+        console.log(`✅ Created new bought dataset: ${meta.symbol} for ${buyerAddress}`);
+      } else {
+        console.log(`Failed to create bought dataset for ${buyerAddress}: ${meta.symbol}`);
+      }
     } else {
-      console.log(`Dataset already tracked for ${buyerAddress}: ${meta.symbol}`);
+      console.log(`✅ Updated bought balance for ${meta.symbol}: ${buyerAddress}`);
     }
   } catch (err) {
     console.error("Error saving bought dataset:", err);

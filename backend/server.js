@@ -1,13 +1,20 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs"); 
+const fs = require("fs");
 const path = require("path");
 const { PORT, DATASETS_FILE, DB_FILE } = require("./config");
 const { ethers } = require("ethers");
 const multer = require("multer");
 const { uploadBase64ToLighthouse } = require("./uploadService");
 const { createDatasetToken } = require("./createDatasetAPI");
-const { addUserDataset, getUserDatasets } = require("./userDatasets");
+const { addUserDataset, getUserDatasets, updateTokenBalance } = require("./userDatasets");
+
+// ERC20 ABI for balance checking
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function approve(address spender, uint256 amount) returns (bool)"
+];
 
 const app = express();
 
@@ -343,8 +350,8 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
-// Get user's datasets (created and bought)
-app.get("/api/my-datasets/:userAddress", (req, res) => {
+// Get user's datasets (created and bought) with real-time balances
+app.get("/api/my-datasets/:userAddress", async (req, res) => {
   try {
     const { userAddress } = req.params;
     
@@ -353,6 +360,19 @@ app.get("/api/my-datasets/:userAddress", (req, res) => {
     }
 
     const datasets = getUserDatasets(userAddress);
+    
+    // Update balances with real-time data from blockchain
+    for (let dataset of datasets) {
+      try {
+        const token = new ethers.Contract(dataset.tokenAddress, ERC20_ABI, provider);
+        const balance = await token.balanceOf(userAddress);
+        dataset.realTimeBalance = balance.toString();
+      } catch (err) {
+        console.error(`Error fetching balance for ${dataset.tokenAddress}:`, err);
+        dataset.realTimeBalance = dataset.amount; // Fallback to stored amount
+      }
+    }
+    
     res.json(datasets);
   } catch (err) {
     console.error("My datasets error:", err);
