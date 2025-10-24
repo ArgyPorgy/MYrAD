@@ -10,8 +10,8 @@
     "created_at": 1760965063623
   },
   "0xb9b60b7907c583ab4cca76ca7164573ed85a9d42": {
-    "name": "yea",
-    "symbol": "YEA",
+    "name": "biomedical doc",
+    "symbol": "BIO",
     "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
     "description": "",
     "token_address": "0xB9b60B7907c583aB4ccA76ca7164573Ed85A9d42",
@@ -20,8 +20,8 @@
     "created_at": 1761022773826
   },
   "0x4a9031a1f2b968885e386777012e0c78d263549d": {
-    "name": "beee",
-    "symbol": "SIGMA",
+    "name": "sign language dataset",
+    "symbol": "SIGN",
     "cid": "bafkreiclyf6udrjj2r4naehnkvqmxk2cv7mghkhydahs77j7xtk6yl75m4",
     "description": "",
     "token_address": "0x4A9031a1f2B968885e386777012e0C78d263549d",
@@ -30,8 +30,8 @@
     "created_at": 1761031390415
   },
   "0xdee41a5b7d59f514abc6a67d68e5a1062c4566e2": {
-    "name": "png",
-    "symbol": "PNG",
+    "name": "dog image dataset",
+    "symbol": "DOG",
     "cid": "bafkreie4gyyknu56dvaswdjtdjdaxjnsy4nxro47svwouakbammc2yol4e",
     "description": "",
     "token_address": "0xdeE41A5b7d59F514abC6a67D68e5A1062C4566E2",
@@ -43,7 +43,7 @@
     "created_at": 1761256906206
   },
   "0xa4dcf563bbb60d31f1b59d3c5d0926425bd10726": {
-    "name": "SS",
+    "name": "Sports dataset",
     "symbol": "SSS",
     "cid": "bafkreie4gyyknu56dvaswdjtdjdaxjnsy4nxro47svwouakbammc2yol4e",
     "description": "",
@@ -56,8 +56,8 @@
     "created_at": 1761257265782
   },
   "0x719feeeb1bdd4463329e1d365c278884d4172e1f": {
-    "name": "mddd",
-    "symbol": "MMMM",
+    "name": "Meme dataset",
+    "symbol": "MM",
     "cid": "bafkreie4gyyknu56dvaswdjtdjdaxjnsy4nxro47svwouakbammc2yol4e",
     "description": "",
     "token_address": "0x719feeeb1bDD4463329E1D365C278884D4172e1F",
@@ -69,8 +69,8 @@
     "created_at": 1761258419400
   },
   "0xa42b755ee91d324e8931a96b8c85bbaef051a14d": {
-    "name": "Meme",
-    "symbol": "MM",
+    "name": "Football dataset",
+    "symbol": "FBL",
     "cid": "bafkreie4gyyknu56dvaswdjtdjdaxjnsy4nxro47svwouakbammc2yol4e",
     "description": "",
     "token_address": "0xa42B755EE91D324e8931A96b8c85bBAef051A14d",
@@ -95,7 +95,7 @@
     "created_at": 1761297323969
   },
   "0xca529b8de1b9c667d24f290f8a7b77f3e3232274": {
-    "name": "cat images",
+    "name": "cat images dataset",
     "symbol": "CAT",
     "cid": "bafkreidudocmjh7egmthitvjzfl6lzmojy6z3u2g2tt24mjszoxrlnm7pu",
     "description": "",
