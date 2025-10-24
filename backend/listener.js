@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const { RPC_URLS, DATASETS_FILE } = require("./config");
 const { signDownloadUrl, saveAccess } = require("./utils");
+const { addUserDataset } = require("./userDatasets");
 
 const POLL_INTERVAL = 30000; // 30s polling when using HTTP (reduced to avoid rate limits)
 const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
@@ -78,6 +79,40 @@ async function handleRedeemOrBurn(tokenAddr, userAddress, amount, symbol) {
   saveAccess(entry);
 }
 
+async function saveBoughtDataset(tokenAddr, buyerAddress, tokensOut) {
+  try {
+    const datasets = loadDatasets();
+    const meta = datasets[tokenAddr.toLowerCase()];
+    if (!meta) {
+      console.log("Unknown token for bought dataset:", tokenAddr);
+      return;
+    }
+
+    const userDataset = {
+      userAddress: buyerAddress.toLowerCase(),
+      tokenAddress: tokenAddr.toLowerCase(),
+      name: meta.name,
+      symbol: meta.symbol,
+      description: meta.description || "",
+      cid: meta.cid,
+      totalSupply: meta.total_supply || 1000000,
+      creatorAddress: meta.creator?.toLowerCase() || "",
+      marketplaceAddress: meta.marketplace?.toLowerCase() || meta.marketplace_address?.toLowerCase(),
+      type: 'bought',
+      amount: tokensOut.toString()
+    };
+
+    const success = addUserDataset(userDataset);
+    if (success) {
+      console.log(`✅ Saved bought dataset: ${meta.symbol} for ${buyerAddress}`);
+    } else {
+      console.log(`Dataset already tracked for ${buyerAddress}: ${meta.symbol}`);
+    }
+  } catch (err) {
+    console.error("Error saving bought dataset:", err);
+  }
+}
+
 // ---- Create provider ----
 let provider = createProvider();
 
@@ -87,6 +122,10 @@ const ERC20_ABI = [
 ];
 const REDEEMED_ABI = [
   "event Redeemed(address indexed user,uint256 amount,string indexed ticker)"
+];
+const MARKETPLACE_ABI = [
+  "event AccessGranted(address indexed token, address indexed buyer)",
+  "event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)"
 ];
 
 // If WebSocket provider: subscribe per-contract (best)
@@ -115,6 +154,44 @@ if (provider instanceof ethers.WebSocketProvider) {
           handleRedeemOrBurn(addr, user, amount, ticker);
         } catch (err) {
           console.error("Redeemed handler error:", err);
+        }
+      });
+    }
+
+    // Also listen to marketplace AccessGranted events
+    const uniqueMarketplaces = new Set();
+    for (const [tokenAddr, meta] of Object.entries(datasets)) {
+      if (meta.marketplace) {
+        uniqueMarketplaces.add(meta.marketplace.toLowerCase());
+      }
+    }
+
+    for (const marketplaceAddr of uniqueMarketplaces) {
+      const marketplaceContract = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
+      console.log("👀 Subscribing to marketplace AccessGranted events:", marketplaceAddr);
+
+      marketplaceContract.on("AccessGranted", (tokenAddr, buyer, event) => {
+        try {
+          console.log(`AccessGranted event (WS): ${buyer} granted access for token ${tokenAddr}`);
+          // Find the token symbol from datasets
+          const datasets = loadDatasets();
+          const tokenMeta = datasets[tokenAddr.toLowerCase()];
+          if (tokenMeta) {
+            handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
+          } else {
+            console.log("Unknown token in AccessGranted event:", tokenAddr);
+          }
+        } catch (err) {
+          console.error("AccessGranted handler error:", err);
+        }
+      });
+
+      marketplaceContract.on("Bought", (tokenAddr, buyer, usdcIn, fee, tokensOut, event) => {
+        try {
+          console.log(`Bought event (WS): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
+          saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+        } catch (err) {
+          console.error("Bought handler error:", err);
         }
       });
     }
@@ -181,6 +258,9 @@ if (provider instanceof ethers.WebSocketProvider) {
         const iface = new ethers.Interface(ERC20_ABI.concat(REDEEMED_ABI));
         const transferTopic = ethers.id("Transfer(address,address,uint256)");
         const redeemedTopic = ethers.id("Redeemed(address,uint256,string)");
+        const marketplaceIface = new ethers.Interface(MARKETPLACE_ABI);
+        const accessGrantedTopic = ethers.id("AccessGranted(address,address)");
+        const boughtTopic = ethers.id("Bought(address,address,uint256,uint256,uint256)");
 
         for (const addr of tokenAddrs) {
           const token = addr.toLowerCase();
@@ -235,6 +315,46 @@ if (provider instanceof ethers.WebSocketProvider) {
             }
           }
         } // end tokens loop
+
+        // Poll marketplace AccessGranted events
+        const uniqueMarketplaces = new Set();
+        for (const [tokenAddr, meta] of Object.entries(datasets)) {
+          if (meta.marketplace) {
+            uniqueMarketplaces.add(meta.marketplace.toLowerCase());
+          }
+        }
+
+        for (const marketplaceAddr of uniqueMarketplaces) {
+          try {
+            const marketplaceLogs = await getLogsWithFallback(marketplaceAddr, from, to, [[accessGrantedTopic, boughtTopic]]);
+            
+            for (const log of marketplaceLogs) {
+              try {
+                const parsed = marketplaceIface.parseLog(log);
+                if (parsed && parsed.name === "AccessGranted") {
+                  const [tokenAddr, buyer] = parsed.args;
+                  console.log(`AccessGranted event (HTTP): ${buyer} granted access for token ${tokenAddr}`);
+                  
+                  // Find the token symbol from datasets
+                  const tokenMeta = datasets[tokenAddr.toLowerCase()];
+                  if (tokenMeta) {
+                    handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
+                  } else {
+                    console.log("Unknown token in AccessGranted event:", tokenAddr);
+                  }
+                } else if (parsed && parsed.name === "Bought") {
+                  const [tokenAddr, buyer, usdcIn, fee, tokensOut] = parsed.args;
+                  console.log(`Bought event (HTTP): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
+                  saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+                }
+              } catch (err) {
+                console.error("Marketplace log parsing error:", err);
+              }
+            }
+          } catch (err) {
+            console.error("Marketplace polling error:", err);
+          }
+        }
 
         lastBlock = to;
         saveLastBlock(lastBlock);

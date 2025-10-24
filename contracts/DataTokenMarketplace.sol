@@ -28,6 +28,7 @@ contract DataTokenMarketplace {
     event PoolCreated(address indexed token, address indexed creator, uint256 tokenSeed, uint256 usdcSeed);
     event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut);
     event Sold(address indexed token, address indexed seller, uint256 tokensIn, uint256 usdcOut);
+    event TokensBurned(address indexed token, address indexed burner, uint256 amountBurned, uint256 newPrice);
     event AccessGranted(address indexed token, address indexed buyer);
 
     constructor(address _usdc, address _treasury) {
@@ -110,6 +111,33 @@ contract DataTokenMarketplace {
         require(usdc.transfer(msg.sender, usdcOut), "send usdc");
 
         emit Sold(token, msg.sender, tokenIn, usdcOut);
+    }
+
+    /**
+     * @notice Burn tokens to reduce supply and increase price
+     * @dev Removes tokens from pool reserves, keeping USDC constant
+     * This increases the price since price = rUSDC / rToken
+     * @param token The token address to burn from
+     * @param amount The amount of tokens to burn (must be owned by caller)
+     */
+    function burnForAccess(address token, uint256 amount) external {
+        Pool storage p = pools[token];
+        require(p.exists, "no pool");
+        require(amount > 0, "zero amount");
+        require(p.rToken > amount, "burn exceeds pool");
+
+        // Pull tokens from user
+        require(IERC20(token).transferFrom(msg.sender, address(this), amount), "pull token");
+
+        // Reduce pool token reserves (burns from circulation)
+        // USDC stays the same, so price increases
+        p.rToken -= amount;
+
+        // Calculate new price after burn
+        uint256 newPrice = (p.rUSDC * 1e18) / p.rToken;
+
+        emit TokensBurned(token, msg.sender, amount, newPrice);
+        emit AccessGranted(token, msg.sender);
     }
 
     function getPriceUSDCperToken(address token) external view returns (uint256) {

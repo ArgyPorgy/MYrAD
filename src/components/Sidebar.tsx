@@ -53,6 +53,12 @@ const Sidebar = () => {
           <span>My Datasets</span>
         </Link>
 
+        <div className="nav-item community-data-item">
+          <i className="icon">👥</i>
+          <span>Community Data</span>
+          <span className="coming-soon-badge">Coming Soon</span>
+        </div>
+
         <div className="nav-divider"></div>
 
         <Link 

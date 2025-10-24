@@ -4,9 +4,15 @@ export interface Dataset {
   symbol: string;
   name: string;
   cid: string;
+  marketplace?: string;
   marketplace_address?: string;
   bonding_curve?: string;
   tokenAddress?: string;
+  token_address?: string;
+  creator?: string;
+  total_supply?: number;
+  description?: string;
+  created_at?: number;
 }
 
 export interface DatasetsMap {

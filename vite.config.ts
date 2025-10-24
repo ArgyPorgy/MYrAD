@@ -10,9 +10,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    // Prevent process is not defined errors
+    'process.env': {}
+  },
   server: {
     port: 5173,
     proxy: {
+      '/api': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
       '/datasets': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
       '/upload': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
       '/create-dataset': process.env.VITE_API_BASE_URL || 'http://localhost:4000',

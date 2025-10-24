@@ -35,6 +35,7 @@ typechain-types
 .idea/
 
 .env
+.env.bak
 .env.local 
 backend/db.json
 backend/lastBlock.json

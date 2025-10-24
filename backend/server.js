@@ -1,12 +1,13 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
+const fs = require("fs"); 
 const path = require("path");
 const { PORT, DATASETS_FILE, DB_FILE } = require("./config");
 const { ethers } = require("ethers");
 const multer = require("multer");
 const { uploadBase64ToLighthouse } = require("./uploadService");
 const { createDatasetToken } = require("./createDatasetAPI");
+const { addUserDataset, getUserDatasets } = require("./userDatasets");
 
 const app = express();
 
@@ -68,7 +69,7 @@ app.get("/price/:marketplaceAddress/:tokenAddress", async (req, res) => {
     const [rToken, rUSDC] = await marketplace.getReserves(tokenAddress);
 
     res.json({
-      price: ethers.formatUnits(price, 18),
+      price: ethers.formatUnits(price, 6), // Price is returned in USDC format (6 decimals)
       tokenReserve: ethers.formatUnits(rToken, 18),
       usdcReserve: ethers.formatUnits(rUSDC, 6),
     });
@@ -202,12 +203,19 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
 app.post("/create-dataset", async (req, res) => {
   try {
-    const { cid, name, symbol, description } = req.body;
+    const { cid, name, symbol, description, totalSupply, creatorAddress } = req.body;
 
     if (!cid || !name || !symbol) {
       console.warn("Missing required fields");
       return res.status(400).json({
         error: "Missing required fields: cid, name, symbol",
+      });
+    }
+
+    if (!creatorAddress || !ethers.isAddress(creatorAddress)) {
+      console.warn("Missing or invalid creator address");
+      return res.status(400).json({
+        error: "Valid creator wallet address is required",
       });
     }
 
@@ -218,9 +226,18 @@ app.post("/create-dataset", async (req, res) => {
       });
     }
 
+    const supply = totalSupply || 1000000;
+    if (supply <= 0 || !Number.isInteger(supply)) {
+      return res.status(400).json({
+        error: "Total supply must be a positive integer",
+      });
+    }
+
     console.log(`\n📝 Creating dataset: ${name} (${symbol})`);
     console.log(`   CID: ${cid}`);
     console.log(`   Description: ${description || "N/A"}`);
+    console.log(`   Total Supply: ${supply.toLocaleString()}`);
+    console.log(`   Creator: ${creatorAddress}`);
 
     if (!process.env.FACTORY_ADDRESS) {
       console.warn("FACTORY_ADDRESS not configured");
@@ -238,13 +255,45 @@ app.post("/create-dataset", async (req, res) => {
       });
     }
 
+    if (!process.env.MYRAD_TREASURY || !ethers.isAddress(process.env.MYRAD_TREASURY)) {
+      console.warn("MYRAD_TREASURY not configured");
+      return res.status(400).json({
+        error: "MYRAD_TREASURY not configured",
+        message: "Please set MYRAD_TREASURY in .env",
+      });
+    }
+
     console.log(`   Factory: ${process.env.FACTORY_ADDRESS}`);
     console.log(`   Marketplace: ${process.env.MARKETPLACE_ADDRESS}`);
+    console.log(`   Treasury: ${process.env.MYRAD_TREASURY}`);
 
-    const result = await createDatasetToken(cid, name, symbol, description || "");
+    const result = await createDatasetToken(cid, name, symbol, description || "", supply, creatorAddress);
 
     console.log(`   ✅ Token created: ${result.tokenAddress}`);
     console.log(`   ✅ Marketplace: ${result.marketplaceAddress}`);
+
+    // Save to JSON file
+    try {
+      const userDataset = {
+        userAddress: creatorAddress.toLowerCase(),
+        tokenAddress: result.tokenAddress.toLowerCase(),
+        name: result.name,
+        symbol: result.symbol,
+        description: description || "",
+        cid: result.cid,
+        totalSupply: supply,
+        creatorAddress: creatorAddress.toLowerCase(),
+        marketplaceAddress: result.marketplaceAddress?.toLowerCase(),
+        type: 'created',
+        amount: supply.toString()
+      };
+      
+      addUserDataset(userDataset);
+      console.log(`   ✅ Saved to JSON file: ${result.symbol}`);
+    } catch (dbErr) {
+      console.error("   ⚠️ JSON file save error:", dbErr.message);
+      // Don't fail the request if JSON save fails
+    }
 
     const responseData = {
       success: true,
@@ -292,6 +341,23 @@ app.post("/create-dataset", async (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
+});
+
+// Get user's datasets (created and bought)
+app.get("/api/my-datasets/:userAddress", (req, res) => {
+  try {
+    const { userAddress } = req.params;
+    
+    if (!ethers.isAddress(userAddress)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+
+    const datasets = getUserDatasets(userAddress);
+    res.json(datasets);
+  } catch (err) {
+    console.error("My datasets error:", err);
+    res.status(500).json({ error: "Failed to fetch datasets" });
+  }
 });
 
 // Serve frontend for all other routes (SPA fallback)

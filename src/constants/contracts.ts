@@ -15,6 +15,7 @@ export const ERC20_ABI = [
 export const MARKETPLACE_ABI = [
   "function buy(address token, uint256 usdcIn, uint256 minTokensOut) external",
   "function sell(address token, uint256 tokenIn, uint256 minUsdcOut) external",
+  "function burnForAccess(address token, uint256 amount) external",
   "function getPriceUSDCperToken(address token) external view returns (uint256)",
   "function getReserves(address token) external view returns (uint256 rToken, uint256 rUSDC)",
   "function poolExists(address token) external view returns (bool)",

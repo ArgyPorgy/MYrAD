@@ -17,6 +17,7 @@ const CreateDatasetPage = () => {
   const [datasetName, setDatasetName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [description, setDescription] = useState('');
+  const [totalSupply, setTotalSupply] = useState('1000000'); // Default 1M tokens
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | 'info'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,7 +65,7 @@ const CreateDatasetPage = () => {
             if (response.cid) {
               setUploadedCid(response.cid);
               setUploadProgress(100);
-              showStatus(`File uploaded successfully! CID: ${response.cid}`, 'success');
+              showStatus(`✅ File uploaded successfully to IPFS!`, 'success');
             } else {
               console.error('No CID in response:', response);
               showStatus('Upload failed: No CID returned', 'error');
@@ -132,6 +133,17 @@ const CreateDatasetPage = () => {
       return;
     }
 
+    const supplyNum = parseInt(totalSupply);
+    if (isNaN(supplyNum) || supplyNum <= 0) {
+      showStatus('Please enter a valid total supply', 'error');
+      return;
+    }
+
+    if (!connected || !userAddress) {
+      showStatus('Please connect your wallet', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
     showStatus('Creating dataset token on blockchain...', 'info');
 
@@ -141,6 +153,8 @@ const CreateDatasetPage = () => {
         name: datasetName,
         symbol: tokenSymbol,
         description: description,
+        totalSupply: supplyNum,
+        creatorAddress: userAddress,
       };
 
       const response = await fetch(getApiUrl('/create-dataset'), {
@@ -155,11 +169,11 @@ const CreateDatasetPage = () => {
 
       if (response.ok && data.tokenAddress) {
         showStatus(
-          `✅ Dataset created successfully! Token: ${data.tokenAddress}`,
+          `✅ Dataset created successfully! Redirecting to marketplace...`,
           'success'
         );
         setTimeout(() => {
-          navigate('/');
+          navigate('/marketplace');
         }, 2000);
       } else {
         const errorMsg = data.error || data.message || `Server error (${response.status})`;
@@ -239,7 +253,9 @@ const CreateDatasetPage = () => {
               </div>
             )}
             {uploadedCid && (
-              <div className="cid-display active">IPFS CID: {uploadedCid}</div>
+              <div className="upload-success-badge">
+                <span className="checkmark">✓</span> File secured on IPFS
+              </div>
             )}
           </div>
 
@@ -271,6 +287,23 @@ const CreateDatasetPage = () => {
             />
             <small style={{ color: '#999', display: 'block', marginTop: '5px' }}>
               Uppercase letters and numbers only, max 10 characters
+            </small>
+          </div>
+
+          {/* Total Supply */}
+          <div className="form-group">
+            <label htmlFor="totalSupply">💰 Total Supply *</label>
+            <input
+              type="number"
+              id="totalSupply"
+              placeholder="1000000"
+              value={totalSupply}
+              onChange={(e) => setTotalSupply(e.target.value)}
+              min="1"
+              required
+            />
+            <small style={{ color: '#999', display: 'block', marginTop: '5px' }}>
+              Total number of tokens to create (default: 1,000,000)
             </small>
           </div>
 

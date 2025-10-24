@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '@/hooks/useWeb3';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import DatasetCard from '@/components/DatasetCard';
 import { DatasetsMap } from '@/types/web3';
 import { getApiUrl } from '@/config/api';
 import './MarketplacePage.css';
 
 const MarketplacePage = () => {
-  const { provider, signer, userAddress, connected, status, setStatus, connectWallet, disconnectWallet } = useWeb3();
+  const navigate = useNavigate();
+  const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
   const [datasets, setDatasets] = useState<DatasetsMap>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +37,10 @@ const MarketplacePage = () => {
     meta.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleTokenClick = (tokenAddress: string) => {
+    navigate(`/token/${tokenAddress}`);
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -48,77 +53,84 @@ const MarketplacePage = () => {
           onDisconnect={disconnectWallet}
         />
 
-        <div className="page-container">
-          <div className="page-header">
-            <div>
-              <h2 className="page-subtitle">Explore Data</h2>
-              <p className="page-description">
-                Discover and trade tokenized datasets on the blockchain
-              </p>
+        <div className="marketplace-page">
+          <div className="marketplace-container">
+            {/* Header */}
+            <div className="marketplace-header">
+              <h1 className="marketplace-title">Explore Market</h1>
             </div>
 
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Search datasets..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+            {/* Search and Filters */}
+            <div className="marketplace-controls">
+              <div className="search-container">
+                <span className="search-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by name, symbol, or locking"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              <select className="filter-dropdown">
+                <option>Select Chain</option>
+                <option>Base Sepolia</option>
+              </select>
             </div>
-          </div>
 
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Total Datasets</div>
-              <div className="stat-value">{datasetEntries.length}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Total Volume</div>
-              <div className="stat-value">$12.5K</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Active Traders</div>
-              <div className="stat-value">234</div>
-            </div>
-          </div>
-
-          <div className="datasets-section">
-            <h3 className="section-title">All Datasets</h3>
-
+            {/* Loading State */}
             {loading ? (
-              <div className="loading-state">
+              <div className="loading-container">
                 <div className="loading-spinner"></div>
-                <p>Loading datasets...</p>
+                <p className="loading-text">Loading datasets...</p>
               </div>
             ) : datasetEntries.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">📂</div>
-                <h3>No datasets found</h3>
-                <p>Be the first to create a dataset on MYRAD</p>
+                <h3 className="empty-title">No datasets found</h3>
+                <p className="empty-description">Be the first to create a dataset on MYRAD</p>
               </div>
             ) : (
-              <div className="datasets-grid">
-                {datasetEntries.map(([tokenAddr, meta]) => (
-                  <DatasetCard
-                    key={tokenAddr}
-                    tokenAddress={tokenAddr}
-                    dataset={meta}
-                    provider={provider}
-                    signer={signer}
-                    userAddress={userAddress}
-                    connected={connected}
-                    onStatusChange={setStatus}
-                    onRefresh={loadDatasets}
-                  />
-                ))}
-              </div>
+              /* Table View */
+              <table className="tokens-table">
+                <thead>
+                  <tr>
+                    <th>Logo</th>
+                    <th>Coin</th>
+                    <th>Symbol</th>
+                    <th>Locking Asset</th>
+                    <th>Chain</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {datasetEntries.map(([tokenAddr, meta]) => (
+                    <tr key={tokenAddr} onClick={() => handleTokenClick(tokenAddr)}>
+                      <td>
+                        <div className="token-logo">
+                          {meta.symbol.charAt(0)}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="token-name">{meta.name || meta.symbol}</div>
+                      </td>
+                      <td className="token-symbol">{meta.symbol}</td>
+                      <td className="supply-cell">USDC</td>
+                      <td>
+                        <div className="chain-badge">
+                          <img 
+                            src="https://pbs.twimg.com/profile_images/1945608199500910592/rnk6ixxH_400x400.jpg" 
+                            alt="Base" 
+                            className="chain-logo"
+                          />
+                          Base
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
-
-          {status && (
-            <div className="status-toast">{status}</div>
-          )}
         </div>
       </main>
     </div>

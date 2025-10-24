@@ -92,6 +92,37 @@
   text-align: center;
 }
 
+.community-data-item {
+  background: linear-gradient(135deg, #00d4ff20, #ff6b6b20) !important;
+  border: 1px solid #00d4ff40;
+  color: #00d4ff !important;
+  position: relative;
+  cursor: pointer;
+}
+
+.community-data-item:hover {
+  background: linear-gradient(135deg, #00d4ff30, #ff6b6b30) !important;
+  border-color: #00d4ff60;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+.coming-soon-badge {
+  background: #ff6b6b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .nav-divider {
   height: 1px;
   background: #1a1a1a;
