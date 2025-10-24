@@ -9,6 +9,10 @@ interface IERC20 {
     function approve(address spender, uint256 amt) external returns (bool);
 }
 
+interface IDataCoin {
+    function burn(uint256 amount) external;
+}
+
 contract DataTokenMarketplace {
     struct Pool {
         address token;        // DataToken address
@@ -114,10 +118,11 @@ contract DataTokenMarketplace {
     }
 
     /**
-     * @notice Burn tokens to reduce supply and increase price
-     * @dev Removes tokens from pool reserves, keeping USDC constant
-     * This increases the price since price = rUSDC / rToken
-     * @param token The token address to burn from
+     * @notice Burn tokens to completely remove them from circulation and grant dataset access
+     * @dev Tokens are transferred from user and burned to address(0)
+     * Pool reserves are reduced, keeping USDC constant, which increases price
+     * Only by burning tokens can users download the dataset
+     * @param token The token address to burn
      * @param amount The amount of tokens to burn (must be owned by caller)
      */
     function burnForAccess(address token, uint256 amount) external {
@@ -126,11 +131,14 @@ contract DataTokenMarketplace {
         require(amount > 0, "zero amount");
         require(p.rToken > amount, "burn exceeds pool");
 
-        // Pull tokens from user
+        // Pull tokens from user to this contract
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "pull token");
 
-        // Reduce pool token reserves (burns from circulation)
-        // USDC stays the same, so price increases
+        // Actually burn the tokens to address(0) - removes them from total supply
+        IDataCoin(token).burn(amount);
+
+        // Reduce pool token reserves (affects price calculation)
+        // USDC stays the same, so price increases: price = rUSDC / rToken
         p.rToken -= amount;
 
         // Calculate new price after burn
