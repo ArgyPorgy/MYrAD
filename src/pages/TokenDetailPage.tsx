@@ -232,7 +232,16 @@ const TokenDetailPage = () => {
         updatePrice();
       }, 2000);
     } catch (err: any) {
-      setStatus('❌ Buy failed: ' + (err?.message || err));
+      console.error('Buy error:', err);
+      
+      // Provide more specific error messages
+      if (err.message?.includes('RPC endpoint returned HTTP client error')) {
+        setStatus('❌ Network error: RPC endpoint timeout. Please try again.');
+      } else if (err.message?.includes('execution reverted')) {
+        setStatus('❌ Transaction failed: ' + err.message);
+      } else {
+        setStatus('❌ Buy failed: ' + (err?.message || err));
+      }
     }
   };
 
@@ -261,7 +270,16 @@ const TokenDetailPage = () => {
         updatePrice();
       }, 2000);
     } catch (err: any) {
-      setStatus('❌ Sell failed: ' + (err?.message || err));
+      console.error('Sell error:', err);
+      
+      // Provide more specific error messages
+      if (err.message?.includes('RPC endpoint returned HTTP client error')) {
+        setStatus('❌ Network error: RPC endpoint timeout. Please try again.');
+      } else if (err.message?.includes('execution reverted')) {
+        setStatus('❌ Transaction failed: ' + err.message);
+      } else {
+        setStatus('❌ Sell failed: ' + (err?.message || err));
+      }
     }
   };
 
@@ -283,16 +301,34 @@ const TokenDetailPage = () => {
         return;
       }
 
+      // Get pool reserves to see how much can be burned
+      const marketplace = new ethers.Contract(dataset.marketplace, MARKETPLACE_ABI, signer);
+      const [poolTokenReserve, poolUsdcReserve] = await retryContractCall(() => 
+        marketplace.getReserves(tokenAddress)
+      );
+      
+      console.log(`Pool reserves: ${ethers.formatUnits(poolTokenReserve, 18)} tokens, ${ethers.formatUnits(poolUsdcReserve, 6)} USDC`);
+      
+      // Calculate burn amount - burn 10% of pool or user's balance, whichever is smaller
+      const poolBurnAmount = poolTokenReserve / 10n; // Burn 10% of pool
+      const burnAmount = userBalance < poolBurnAmount ? userBalance : poolBurnAmount;
+      
+      if (burnAmount === 0n) {
+        setStatus('❌ No tokens available to burn from pool');
+        return;
+      }
+
+      console.log(`Burning ${ethers.formatUnits(burnAmount, 18)} tokens (${ethers.formatUnits(userBalance, 18)} available)`);
+
       // Approve marketplace to spend tokens
       setStatus('🔄 Approving tokens...');
-      const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, userBalance));
+      const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, burnAmount));
       await approveTx.wait(); // Wait for approval confirmation
       console.log('✅ Approval confirmed');
       
       // Call marketplace burnForAccess (burns tokens and affects price)
       setStatus('🔥 Burning tokens from pool...');
-      const marketplace = new ethers.Contract(dataset.marketplace, MARKETPLACE_ABI, signer);
-      const burnTx = await retryContractCall(() => marketplace.burnForAccess(tokenAddress, userBalance));
+      const burnTx = await retryContractCall(() => marketplace.burnForAccess(tokenAddress, burnAmount));
       await burnTx.wait();
       console.log('✅ Burn confirmed');
       
@@ -322,7 +358,17 @@ const TokenDetailPage = () => {
       updatePrice();
     } catch (err: any) {
       console.error('Burn error:', err);
-      setStatus('❌ Burn failed: ' + (err?.message || err));
+      
+      // Provide more specific error messages
+      if (err.message?.includes('burn exceeds pool')) {
+        setStatus('❌ Burn failed: Trying to burn more tokens than available in pool. Try burning fewer tokens.');
+      } else if (err.message?.includes('RPC endpoint returned HTTP client error')) {
+        setStatus('❌ Network error: RPC endpoint timeout. Please try again.');
+      } else if (err.message?.includes('execution reverted')) {
+        setStatus('❌ Transaction failed: ' + err.message);
+      } else {
+        setStatus('❌ Burn failed: ' + (err?.message || err));
+      }
     }
   };
 
