@@ -1,18 +1,12 @@
 require("dotenv").config();
 const path = require("path");
 
-// Multiple RPC URLs for automatic fallback
-// Will try each one in order until one works
-const RPC_URLS = [
-  "https://sepolia.base.org",
-  "https://base-sepolia-rpc.publicnode.com",
-  "https://base-sepolia.gateway.tenderly.co",
-  "https://base-sepolia.blockpi.network/v1/rpc/public"
-];
+// Single reliable RPC URL - Alchemy Base Sepolia
+const RPC_URL = "https://base-sepolia.g.alchemy.com/v2/orn0yqO7JI_s9IaveLzEN";
 
 module.exports = {
-  RPC: RPC_URLS[0], // Primary RPC
-  RPC_URLS: RPC_URLS, // All RPCs for fallback
+  RPC: RPC_URL,
+  RPC_URLS: [RPC_URL], // Keep array format for compatibility
   PORT: process.env.PORT || 4000,
   DOWNLOAD_SECRET: process.env.DOWNLOAD_SECRET || "secret",
   DB_FILE: path.join(__dirname, "db.json"),

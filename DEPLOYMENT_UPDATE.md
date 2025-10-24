@@ -23,7 +23,7 @@ MARKETPLACE_ADDRESS=0xe3A8998b82d6b6f0763318A37d960e7d3FC4779b
 MYRAD_TREASURY=0x342F483f1dDfcdE701e7dB281C6e56aC4C7b05c9
 BASE_SEPOLIA_USDC=0x036cbd53842c5426634e7929541ec2318f3dcf7e
 PRIVATE_KEY=<your_company_wallet_private_key>
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+# RPC URL is now hardcoded to Alchemy endpoint
 ```
 
 ---
@@ -135,7 +135,7 @@ Solution: Add FACTORY_ADDRESS and MYRAD_TREASURY to Render env vars
 
 **Error: "All RPC providers failed"**
 ```
-Solution: Check BASE_SEPOLIA_RPC_URL is set to https://sepolia.base.org
+Solution: RPC URL is now hardcoded to Alchemy endpoint - check internet connection
 ```
 
 **Error: "Insufficient balance for gas"**

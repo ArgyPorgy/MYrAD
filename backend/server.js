@@ -43,9 +43,9 @@ const MARKETPLACE_ABI = [
   "function poolExists(address token) external view returns (bool)"
 ];
 
-// Use config RPC with fallback support
+// Use config RPC
 const { RPC_URLS } = require("./config");
-const provider = new ethers.JsonRpcProvider(RPC_URLS[0] || "https://sepolia.base.org");
+const provider = new ethers.JsonRpcProvider(RPC_URLS[0]);
 
 app.get("/", (req, res) => {
   res.send("🚀 MYRAD Backend API running ✅");

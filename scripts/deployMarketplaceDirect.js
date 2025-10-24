@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-  const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org");
+  const provider = new ethers.JsonRpcProvider("https://base-sepolia.g.alchemy.com/v2/orn0yqO7JI_s9IaveLzEN");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
   const usdcAddress = process.env.BASE_SEPOLIA_USDC || "0x036CbD53842c5426634e7929541eC2318f3dCF7e";

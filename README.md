@@ -138,12 +138,12 @@ pnpm install
 cp .env.example .env.local
 
 # Configure required variables:
-# - BASE_SEPOLIA_RPC_URL
 # - PRIVATE_KEY (for server operations)
 # - LIGHTHOUSE_API_KEY
 # - FACTORY_ADDRESS
 # - MARKETPLACE_ADDRESS
 # - USDC_ADDRESS
+# RPC URL is now hardcoded to Alchemy endpoint
 
 # Start development server
 pnpm dev
@@ -172,7 +172,6 @@ The app runs on `http://localhost:5173` with the backend API on `http://localhos
 
 
 ### Environment Variables Required
-- `BASE_SEPOLIA_RPC_URL` - RPC endpoint for Base Sepolia
 - `PRIVATE_KEY` - Server wallet private key
 - `MYRAD_TREASURY` - Treasury wallet address
 - `DOWNLOAD_SECRET` - JWT signing secret
@@ -181,6 +180,7 @@ The app runs on `http://localhost:5173` with the backend API on `http://localhos
 - `MARKETPLACE_ADDRESS` - Marketplace contract address
 - `USDC_ADDRESS` - USDC token contract address
 - `PORT` - Server port (default: 4000)
+- RPC URL is now hardcoded to Alchemy endpoint
 
 ## Development Commands
 

@@ -38,7 +38,7 @@ async function main() {
     return;
   }
 
-  const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC_URL);
+  const provider = new ethers.JsonRpcProvider("https://base-sepolia.g.alchemy.com/v2/orn0yqO7JI_s9IaveLzEN");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const platformWallet = process.env.MYRAD_TREASURY || wallet.address;
 

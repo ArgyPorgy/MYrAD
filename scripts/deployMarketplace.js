@@ -2,7 +2,7 @@ const { ethers } = require("ethers");
 require("dotenv").config();
 
 async function main() {
-  const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC_URL);
+  const provider = new ethers.JsonRpcProvider("https://base-sepolia.g.alchemy.com/v2/orn0yqO7JI_s9IaveLzEN");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
   console.log("🚀 Deploying DataTokenMarketplace...");

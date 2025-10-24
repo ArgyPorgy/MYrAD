@@ -139,7 +139,7 @@ npm run backend
 
 3. **"All RPC providers failed"**
    - Solution: Check internet connection
-   - Or update BASE_SEPOLIA_RPC_URL in .env
+   - RPC URL is now hardcoded to Alchemy endpoint
 
 4. **"Pool not initialized"**
    - Solution: Check MARKETPLACE_ADDRESS is correct

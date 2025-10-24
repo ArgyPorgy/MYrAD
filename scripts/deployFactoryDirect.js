@@ -8,7 +8,7 @@ async function main() {
   const factoryArtifact = require("../artifacts/contracts/DataCoinFactory.sol/DataCoinFactory.json");
   
   // Setup provider and wallet
-  const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org");
+  const provider = new ethers.JsonRpcProvider("https://base-sepolia.g.alchemy.com/v2/orn0yqO7JI_s9IaveLzEN");
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const platformAddress = process.env.MYRAD_TREASURY || wallet.address;
 
