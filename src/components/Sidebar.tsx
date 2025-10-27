@@ -6,6 +6,30 @@ const Sidebar = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  async function addBaseSepoliaNetwork() {
+  try {
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [{
+        chainId: '0x14a34', // 84532 in decimal
+        chainName: 'Base Sepolia',
+        nativeCurrency: {
+          name: 'ETH',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: ['https://sepolia.base.org'],
+        blockExplorerUrls: ['https://sepolia-explorer.base.org']
+      }]
+    });
+    console.log('✅ Base Sepolia network added successfully');
+    alert('Base Sepolia network added successfully!');
+  } catch (error) {
+    console.error('❌ Error adding network:', error);
+    alert('Error adding network. Check console for details.');
+  }
+}
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -70,12 +94,20 @@ const Sidebar = () => {
         </Link>
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="wallet-info">
-          <div className="wallet-label">Network</div>
-          <div className="wallet-network">Base Sepolia</div>
-        </div>
-      </div>
+<div className="sidebar-footer">
+  <div className="wallet-info">
+    <div className="wallet-label">Network</div>
+    <div className="wallet-network">Base Sepolia</div>
+  </div>
+
+  <button 
+    className="add-network-btn" 
+    onClick={addBaseSepoliaNetwork}
+  >
+    Add Base Sepolia
+  </button>
+</div>
+
     </aside>
   );
 };
