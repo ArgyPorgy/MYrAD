@@ -155,3 +155,17 @@
   font-weight: 600;
 }
 
+.add-network-btn {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.add-network-btn:hover {
+  background-color: #2563eb;
+}
