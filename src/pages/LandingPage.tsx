@@ -2,10 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Snowflake, ArrowLeftRight, Gem, BarChart3, Globe2, Lock, UserCheck, UploadCloud, Coins, Repeat, Flame, TrendingUp } from 'lucide-react';
 
-
 const LandingPage = () => {
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleLaunch = () => {
     navigate('/marketplace'); // 👈 navigates to Marketplace
@@ -17,7 +16,7 @@ const navigate = useNavigate();
     // Create animated background dots
     const bgDots = bgDotsRef.current;
     if (!bgDots) return;
-    
+
     const numDots = 50;
 
     for (let i = 0; i < numDots; i++) {
@@ -75,44 +74,45 @@ const navigate = useNavigate();
       icon: <UserCheck strokeWidth={2} />,
       number: '01',
       title: 'User Verification',
-      description: 'Authenticate via Gmail, Reclaim Protocol, or Privy Auth with enterprise-grade security'
+      description: 'Authenticate users securely through our decentralized verification system.'
     },
     {
       icon: <UploadCloud strokeWidth={2} />,
       number: '02',
       title: 'Dataset Upload',
-      description: 'Store securely on Lighthouse storage, anchored on Filecoin\'s decentralized network'
+      description: 'Store your datasets safely using decentralized storage solutions for maximum reliability and privacy.'
     },
     {
       icon: <Coins strokeWidth={2} />,
       number: '03',
       title: 'DataCoin Launch',
-      description: 'Generate fungible DataCoins representing exclusive dataset access rights on the blockchain'
+      description: 'Generate fungible DataCoins representing exclusive dataset access rights on the blockchain.'
     },
     {
       icon: <Repeat strokeWidth={2} />,
       number: '04',
       title: 'Token Swap',
-      description: 'Buyers acquire DataCoins through secure on-chain swaps with instant settlement'
+      description: 'Buyers acquire DataCoins through secure on-chain swaps with instant settlement.'
     },
     {
       icon: <Flame strokeWidth={2} />,
       number: '05',
       title: 'Burn to Download',
-      description: 'DataCoins are permanently burned in exchange for dataset downloads, creating scarcity'
+      description: 'DataCoins are permanently burned in exchange for dataset downloads, creating scarcity.'
     },
     {
       icon: <TrendingUp strokeWidth={2} />,
       number: '06',
       title: 'Revenue Payout',
-      description: 'Creators sell their tokens and earn sustainable profits as demand increases value'
+      description: 'Creators sell their tokens and earn sustainable profits as demand increases value.'
     }
   ];
+
 
   return (
     <>
       <style>{`
-        * {
+  * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
@@ -841,154 +841,181 @@ const navigate = useNavigate();
           .cta-box p { font-size: 16px; }
           .cta-btn { padding: 16px 36px; font-size: 15px; }
         }
-      `}</style>
+
+        section-header {
+  display: flex;
+  flex-direction: column; /* stack title + subtitle */
+  align-items: center; /* horizontal centering */
+  justify-content: center; /* vertical centering if needed */
+  text-align: center;
+  margin-bottom: 80px;
+  padding: 0;
+}
+
+.section-title {
+  font-size: 52px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px; /* space between text and logo */
+  text-align: center;
+}
+
+.section-subtitle {
+  font-size: 18px;
+  color: #888;
+  font-weight: 400;
+  margin-top: 16px;
+  max-width: 600px; /* keeps it neat */
+  text-align: center;
+}`}
+      </style>
       <div className="myrad-app">
-      <div className="bg-dots" ref={bgDotsRef}></div>
-
-      <nav>
-        <div className="logo">
-          <a href="#">
+        <div className="bg-dots" ref={bgDotsRef}></div>
+        <nav>
+          <div className="logo">
             <img src="/con.svg" alt="MYRAD Logo" />
-          </a>
-        </div>
-        <div className="nav-links">
-          <a href="#features">Features</a>
-          <a href="#how">How It Works</a>
-          <a href="#about">About</a>
-          <a
-            href="https://calendly.com/carghya10/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <button className="nav-cta">Let's talk</button>
-          </a>
-        </div>
-        <div className="mobile-menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </nav>
+          </div>
+          <div className="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how">How It Works</a>
+            <a
+              href="https://calendly.com/carghya10/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button className="nav-cta">Let's talk</button>
+            </a>
+          </div>
+          <div className="mobile-menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </nav>
 
-      <section className="hero">
-        <div className="hero-badge">Decentralized Data Marketplace</div>
-        <h1>
-          <span className="italic">Monetize</span> your datasets today<br />
-        </h1>
-        <p></p>
-        <div className="hero-buttons">
+        <section className="hero">
+          <div className="hero-badge">Decentralized Data Marketplace</div>
+          <h1>
+            <span className="italic">Monetize</span> your datasets today<br />
+          </h1>
+          <p></p>
+          <div className="hero-buttons">
             <button className="primary-btn" onClick={handleLaunch}>Launch App</button>
-          
-          <button className="secondary-btn">Learn More</button>
-        </div>
-      </section>
+            <a href="https://docs.myradhq.xyz/" target='_blank'>
+              <button className="secondary-btn">Learn More</button>
+            </a>
+          </div>
+        </section>
 
-      <section className="features" id="features">
-        <div className="section-header">
-          <h2 className="section-title">
-            Why Choose
-            <img src="con.svg" alt="MYRAD Logo" className="inline-logo" />?
-          </h2>
-        </div>
+        <section className="features" id="features">
+          <div className="section-header">
+            <h2 className="section-title">
+              Why Choose
+              <img src="con.svg" alt="MYRAD Logo" className="inline-logo" />?
+            </h2>
+          </div>
 
-        <div className="carousel-wrapper">
-          <div className="carousel-track">
-            {[...features, ...features].map((feature, index) => (
-              <div className="feature-card-modern" key={index}>
-                <div className="feature-icon-modern">
-                  {feature.icon}
+          <div className="carousel-wrapper">
+            <div className="carousel-track">
+              {[...features, ...features].map((feature, index) => (
+                <div className="feature-card-modern" key={index}>
+                  <div className="feature-icon-modern">
+                    {feature.icon}
+                  </div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
                 </div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="how-it-works" id="how">
+          <div className="section-header">
+            <h2 className="section-title">How It Works</h2>
+            <p className="section-subtitle">
+            </p>
+          </div>
+
+          <div className="timeline-container">
+            {steps.map((step, index) => (
+              <div className="timeline-step" key={index}>
+                <div className="step-icon-wrapper">
+                  <div className="step-icon">
+                    {step.icon}
+                  </div>
+                  <div className="step-number-badge">{step.number}</div>
+                </div>
+                <div className="step-info">
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="how-it-works" id="how">
-        <div className="section-header">
-          <h2 className="section-title">How It Works</h2>
-          <p className="section-subtitle">
-            Your journey from data to profit in 6 seamless steps
-          </p>
-        </div>
-
-        <div className="timeline-container">
-          {steps.map((step, index) => (
-            <div className="timeline-step" key={index}>
-              <div className="step-icon-wrapper">
-                <div className="step-icon">
-                  {step.icon}
-                </div>
-                <div className="step-number-badge">{step.number}</div>
-              </div>
-              <div className="step-info">
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="cta-section">
-        <div className="cta-box">
-          <div className="cta-glow"></div>
-          <h2>Ready to Tokenize Your Data?</h2>
-          <p>
-            Join thousands of data owners who are monetizing their datasets on MYRAD
-          </p>
-          <a
-            href="https://calendly.com/carghya10/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <button className="primary-btn cta-btn" onClick={handleLaunch}>Start Today</button>
-          </a>
-        </div>
-      </section>
-
-      <footer id="about">
-        <div className="footer-content">
-          <div className="footer-brand">
-            <h3>
-              <img src="/con.svg" alt="MYRAD Logo" className="inline-logo" />
-            </h3>
+        <section className="cta-section">
+          <div className="cta-box">
+            <div className="cta-glow"></div>
+            <h2>Ready to Tokenize Your Data?</h2>
             <p>
-              Empowering decentralized data exchange with transparency and trust.
+              Join thousands of data owners who are monetizing their datasets on MYRAD
             </p>
-          </div>
-          <div className="footer-column">
-            <h4>Explore</h4>
-            <a href="#">About</a>
-            <a href="#">Features</a>
-            <a href="#">Docs</a>
-          </div>
-          <div className="footer-column">
-            <h4>Community</h4>
-            <a href="https://x.com/MYrAD_HQ" target='_blank'>Twitter</a>
-            <a href="#">Discord</a>
-            <a href="#">Blog</a>
-          </div>
-          <div className="footer-column">
-            <h4>Contact</h4>
             <a
-            href="https://calendly.com/carghya10/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-          >Email</a>
-            <a
-            href="https://calendly.com/carghya10/30min"
-            target="_blank"
-            rel="noopener noreferrer"
-          >Support</a>
+              href="https://calendly.com/carghya10/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <button className="primary-btn cta-btn" onClick={handleLaunch}>Start Today</button>
+            </a>
           </div>
-        </div>
-        <div className="footer-bottom">
-          <p>&copy; 2025 MYRAD. All rights reserved.</p>
-        </div>
-      </footer>
+        </section>
+
+        <footer id="about">
+          <div className="footer-content">
+            <div className="footer-brand">
+              <h3>
+                <img src="/con.svg" alt="MYRAD Logo" className="inline-logo" />
+              </h3>
+              <p>
+                Empowering decentralized data exchange with transparency and trust.
+              </p>
+            </div>
+            <div className="footer-column">
+              <h4>Explore</h4>
+              <a href="#how">How its work</a>
+              <a href="#features">Features</a>
+              <a href="https://docs.myradhq.xyz/" target='_blank'>Docs</a>
+            </div>
+            <div className="footer-column">
+              <h4>Community</h4>
+              <a href="https://x.com/MYrAD_HQ" target='_blank'>Twitter</a>
+              <a href="https://t.me/+KOAn6WDf7AdmNTI1">Telegram</a>
+              <a href="https://docs.myradhq.xyz/" target='_blank'>Blog</a>
+            </div>
+            <div className="footer-column">
+              <h4>Contact</h4>
+              <a
+                href="https://calendly.com/carghya10/30min"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Email</a>
+              <a
+                href="https://calendly.com/carghya10/30min"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Support</a>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <p>&copy; 2025 MYRAD. All rights reserved.</p>
+          </div>
+        </footer>
       </div>
     </>
   );
