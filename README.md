@@ -38,6 +38,11 @@ MYRAD revolutionizes how datasets are valued and traded by:
 - Buy/sell quotes before executing trades
 - Access control verification for downloads
 
+## Workflow:
+
+![Workflow](workflow.png)
+
+
 ## How It Works
 
 ### 1. Dataset Upload and Create a Dataset Token
