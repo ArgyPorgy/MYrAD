@@ -17,7 +17,7 @@ MYRAD revolutionizes how datasets are valued and traded by:
 ## Key Features
 
 ### 📤 Dataset Upload & Tokenization
-- Upload datasets to IPFS via Lighthouse gateway (up to 10MB)
+- Upload datasets to IPFS via Lighthouse gateway
 - Create DataCoin ERC20 tokens representing your dataset
 - Configure token metadata: name, symbol, IPFS CID
 
