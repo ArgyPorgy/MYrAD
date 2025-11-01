@@ -29,6 +29,44 @@ const TokenDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+  const [toasts, setToasts] = useState<{ id: number; type: 'success' | 'error'; message: string }[]>([]);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  };
+
+  // Robust downloader to avoid popup blockers
+  const triggerFileDownload = async (url: string, filename?: string) => {
+    try {
+      // 1) Try opening a new tab (works if not blocked)
+      const win = window.open(url, '_blank');
+      if (win && !win.closed) return;
+    } catch {}
+
+    try {
+      // 2) Try navigating the current tab (almost always allowed)
+      window.location.href = url;
+      return;
+    } catch {}
+
+    try {
+      // 3) Fetch and force a download via Blob
+      const res = await fetch(url, { credentials: 'include' });
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename || 'dataset';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      console.error('Download failed:', e);
+    }
+  };
 
   useEffect(() => {
     if (tokenAddress) {
@@ -217,14 +255,23 @@ const TokenDetailPage = () => {
       setStatus('🔄 Processing buy...');
       const marketplace = new ethers.Contract(dataset.marketplace, MARKETPLACE_ABI, signer);
       const usdc = new ethers.Contract(BASE_SEPOLIA_USDC, USDC_ABI, signer);
-      
+
       const usdcAmount = ethers.parseUnits(buyAmount, 6);
-      await retryContractCall(() => usdc.approve(dataset.marketplace!, usdcAmount));
-      
+
+      // Check allowance first; approve only if insufficient
+      const currentAllowance: bigint = await retryContractCall(() => usdc.allowance(userAddress, dataset.marketplace!));
+      if (currentAllowance < usdcAmount) {
+        setStatus('🔄 Approving USDC spending cap...');
+        // Approve a high cap to avoid future prompts
+        const approveTx = await retryContractCall(() => usdc.approve(dataset.marketplace!, ethers.MaxUint256));
+        await approveTx.wait();
+      }
+
       const tx = await retryContractCall(() => marketplace.buy(tokenAddress, usdcAmount, 0));
       await tx.wait();
       
       setStatus('✅ Buy confirmed!');
+      showToast('Buy completed successfully', 'success');
       setBuyAmount('');
       // Refresh balance and price after trade
       setTimeout(() => {
@@ -255,14 +302,22 @@ const TokenDetailPage = () => {
       setStatus('🔄 Processing sell...');
       const marketplace = new ethers.Contract(dataset.marketplace, MARKETPLACE_ABI, signer);
       const token = new ethers.Contract(tokenAddress!, ERC20_ABI, signer);
-      
+
       const tokenAmount = ethers.parseUnits(sellAmount, 18);
-      await retryContractCall(() => token.approve(dataset.marketplace!, tokenAmount));
-      
+
+      // Check allowance; approve only if needed
+      const currentAllowance: bigint = await retryContractCall(() => token.allowance(userAddress, dataset.marketplace!));
+      if (currentAllowance < tokenAmount) {
+        setStatus('🔄 Approving token spending cap...');
+        const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, ethers.MaxUint256));
+        await approveTx.wait();
+      }
+
       const tx = await retryContractCall(() => marketplace.sell(tokenAddress, tokenAmount, 0));
       await tx.wait();
       
       setStatus('✅ Sell confirmed!');
+      showToast('Sell completed successfully', 'success');
       setSellAmount('');
       // Refresh balance and price after trade
       setTimeout(() => {
@@ -294,37 +349,33 @@ const TokenDetailPage = () => {
       
       // Get user's token balance
       const token = new ethers.Contract(tokenAddress!, ERC20_ABI, signer);
-      const userBalance = await token.balanceOf(userAddress);
+      const userBalance: bigint = await token.balanceOf(userAddress);
       
       if (userBalance === 0n) {
         setStatus('❌ You have no tokens to burn');
         return;
       }
 
-      // Get pool reserves to see how much can be burned
+      // Decide burn amount: burn full user balance (single action)
       const marketplace = new ethers.Contract(dataset.marketplace, MARKETPLACE_ABI, signer);
-      const [poolTokenReserve, poolUsdcReserve] = await retryContractCall(() => 
-        marketplace.getReserves(tokenAddress)
-      );
-      
-      console.log(`Pool reserves: ${ethers.formatUnits(poolTokenReserve, 18)} tokens, ${ethers.formatUnits(poolUsdcReserve, 6)} USDC`);
-      
-      // Calculate burn amount - burn 10% of pool or user's balance, whichever is smaller
-      const poolBurnAmount = poolTokenReserve / 10n; // Burn 10% of pool
-      const burnAmount = userBalance < poolBurnAmount ? userBalance : poolBurnAmount;
+      const [poolTokenReserve] = await retryContractCall(() => marketplace.getReserves(tokenAddress));
+      // Ensure we don't exceed pool constraint in contract
+      const burnAmount = userBalance <= poolTokenReserve ? userBalance : poolTokenReserve;
       
       if (burnAmount === 0n) {
         setStatus('❌ No tokens available to burn from pool');
         return;
       }
 
-      console.log(`Burning ${ethers.formatUnits(burnAmount, 18)} tokens (${ethers.formatUnits(userBalance, 18)} available)`);
+      console.log(`Burning ${ethers.formatUnits(burnAmount, 18)} tokens (of ${ethers.formatUnits(userBalance, 18)})`);
 
-      // Approve marketplace to spend tokens
-      setStatus('🔄 Approving tokens...');
-      const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, burnAmount));
-      await approveTx.wait(); // Wait for approval confirmation
-      console.log('✅ Approval confirmed');
+      // Check allowance and approve only if needed (set high cap once)
+      const currentAllowance: bigint = await retryContractCall(() => token.allowance(userAddress, dataset.marketplace!));
+      if (currentAllowance < burnAmount) {
+        setStatus('🔄 Approving token burn spending cap...');
+        const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, ethers.MaxUint256));
+        await approveTx.wait();
+      }
       
       // Call marketplace burnForAccess (burns tokens and affects price)
       setStatus('🔥 Burning tokens from pool...');
@@ -333,6 +384,7 @@ const TokenDetailPage = () => {
       console.log('✅ Burn confirmed');
       
       setStatus('✅ Burned! Price increased. Waiting for download access...');
+      showToast('Burn completed successfully', 'success');
       
       // Poll for download access
       for (let i = 0; i < 20; i++) {
@@ -341,9 +393,9 @@ const TokenDetailPage = () => {
           const r = await fetch(getApiUrl(`/access/${userAddress}/${dataset?.symbol}`));
           if (r.status === 200) {
             const j = await r.json();
-            if (j.download || j.downloadUrl) {
+              if (j.download || j.downloadUrl) {
               const downloadUrl = j.download || j.downloadUrl;
-              window.open(downloadUrl, '_blank');
+              await triggerFileDownload(downloadUrl, `${dataset?.symbol || 'dataset'}.zip`);
               setStatus('✅ Download ready!');
               readBalance();
               updatePrice(); // Update price to show the increase
@@ -425,6 +477,14 @@ const TokenDetailPage = () => {
 
         <div className="token-detail-page">
           <div className="token-detail-container">
+          {/* Toasts */}
+          <div className="toast-container">
+            {toasts.map(t => (
+              <div key={t.id} className={`toast ${t.type}`}>
+                {t.message}
+              </div>
+            ))}
+          </div>
             {/* Back Button */}
             <button className="back-button" onClick={() => navigate('/marketplace')}>
               ← Back to Market

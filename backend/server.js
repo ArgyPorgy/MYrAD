@@ -8,6 +8,8 @@ const multer = require("multer");
 const { uploadBase64ToLighthouse } = require("./uploadService");
 const { createDatasetToken } = require("./createDatasetAPI");
 const { addUserDataset, getUserDatasets, updateTokenBalance } = require("./userDatasets");
+const { initSchema } = require('./db');
+const { getAllCoins } = require('./storage');
 
 // ERC20 ABI for balance checking
 const ERC20_ABI = [
@@ -51,7 +53,33 @@ app.get("/", (req, res) => {
   res.send("🚀 MYRAD Backend API running ✅");
 });
 
-app.get("/datasets", (req, res) => {
+app.get("/datasets", async (req, res) => {
+  try {
+    if (process.env.DATABASE_URL) {
+      const coins = await getAllCoins();
+      // Keep response compatible with old frontend (map keyed by token address)
+      const map = {};
+      for (const c of coins) {
+        map[c.token_address] = {
+          name: c.name,
+          symbol: c.symbol,
+          cid: c.cid,
+          description: c.description,
+          token_address: c.token_address,
+          marketplace: c.marketplace_address,
+          marketplace_address: c.marketplace_address,
+          bonding_curve: c.marketplace_address,
+          creator: c.creator_address,
+          total_supply: Number(c.total_supply),
+          created_at: new Date(c.created_at).getTime(),
+        };
+      }
+      return res.json(map);
+    }
+  } catch (e) {
+    console.error('DB /datasets error:', e);
+  }
+  // Fallback to JSON file if DB not configured or error
   if (!fs.existsSync(DATASETS_FILE)) return res.json({});
   const data = JSON.parse(fs.readFileSync(DATASETS_FILE));
   res.json(data);
@@ -390,7 +418,12 @@ app.get("*", (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    await initSchema();
+  } catch (e) {
+    console.warn('[db] init error:', e.message);
+  }
   console.log(`🚀 Backend API running on port ${PORT}`);
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   console.log(`📊 Available at: ${url}`);

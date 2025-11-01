@@ -78,5 +78,53 @@
     "id": "1761300340306",
     "createdAt": "2025-10-24T10:05:40.306Z",
     "updatedAt": "2025-10-24T10:05:40.308Z"
+  },
+  {
+    "userAddress": "0x06a7cfefc9358181544166832889a970bde557ea",
+    "tokenAddress": "0x93955eb4701bd85597f0c28ba5b869f5e456adf3",
+    "name": "NOICE drop allocated wallets",
+    "symbol": "NOI",
+    "description": "",
+    "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
+    "totalSupply": 10000,
+    "creatorAddress": "0x06a7cfefc9358181544166832889a970bde557ea",
+    "marketplaceAddress": "0xecca28264ca51a30215d7e2cbd4e5097b67d3690",
+    "type": "created",
+    "amount": "10000",
+    "id": "1761845165080",
+    "createdAt": "2025-10-30T17:26:05.080Z",
+    "updatedAt": "2025-10-30T17:26:05.080Z"
+  },
+  {
+    "userAddress": "0x06a7cfefc9358181544166832889a970bde557ea",
+    "tokenAddress": "0x157e61017a819ac491cf87008366332a38dbdfb6",
+    "name": "png records ",
+    "symbol": "PNG",
+    "description": "",
+    "cid": "bafkreidpilgevf6hn4czqfx5h67zrm6dbkzo7k4mbsa3ximutigh5zj56i",
+    "totalSupply": 1000,
+    "creatorAddress": "0xdf1672746762219ea45769263e35c07e6d82c679",
+    "marketplaceAddress": "0x91a7b0b53747f03d36f2c8de04ee48f882bafa9d",
+    "type": "bought",
+    "amount": "129827136333985649055",
+    "id": "1761872363013",
+    "createdAt": "2025-10-31T00:59:23.013Z",
+    "updatedAt": "2025-10-31T00:59:23.034Z"
+  },
+  {
+    "userAddress": "0xd1cf2ee8048255b74a0e7544dac41e0faa4b34e5",
+    "tokenAddress": "0x157e61017a819ac491cf87008366332a38dbdfb6",
+    "name": "png records ",
+    "symbol": "PNG",
+    "description": "",
+    "cid": "bafkreidpilgevf6hn4czqfx5h67zrm6dbkzo7k4mbsa3ximutigh5zj56i",
+    "totalSupply": 1000,
+    "creatorAddress": "0xdf1672746762219ea45769263e35c07e6d82c679",
+    "marketplaceAddress": "0x91a7b0b53747f03d36f2c8de04ee48f882bafa9d",
+    "type": "bought",
+    "amount": "262069364937115545232",
+    "id": "1761872363037",
+    "createdAt": "2025-10-31T00:59:23.037Z",
+    "updatedAt": "2025-10-31T00:59:23.037Z"
   }
 ]

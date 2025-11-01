@@ -338,6 +338,42 @@
   font-weight: 600;
 }
 
+/* Toasts */
+.toast-container {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.toast {
+  min-width: 260px;
+  max-width: 360px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  border: 1px solid transparent;
+}
+
+.toast.success {
+  background: rgba(0, 255, 136, 0.12);
+  border-color: rgba(0, 255, 136, 0.35);
+  color: #00ff88;
+}
+
+.toast.error {
+  background: rgba(255, 0, 110, 0.12);
+  border-color: rgba(255, 0, 110, 0.35);
+  color: #ff5c8a;
+}
+
 /* Loading/Error States */
 .loading-container,
 .error-container {

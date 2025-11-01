@@ -11,5 +11,18 @@
     "creator": "0xDF1672746762219EA45769263E35C07E6d82c679",
     "total_supply": 1000,
     "created_at": 1761299636687
+  },
+  "0x93955eb4701bd85597f0c28ba5b869f5e456adf3": {
+    "name": "NOICE drop allocated wallets",
+    "symbol": "NOI",
+    "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
+    "description": "",
+    "token_address": "0x93955Eb4701BD85597f0C28bA5B869F5e456aDf3",
+    "marketplace": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "marketplace_address": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "bonding_curve": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "creator": "0x06a7CfeFC9358181544166832889a970BdE557EA",
+    "total_supply": 10000,
+    "created_at": 1761845165077
   }
 }

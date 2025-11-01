@@ -10,6 +10,7 @@ const MARKETPLACE_ABI = require("../artifacts/contracts/DataTokenMarketplace.sol
 const ERC20_ABI = require("../artifacts/contracts/DataCoin.sol/DataCoin.json").abi;
 
 const DATASETS_FILE = path.join(__dirname, "../datasets.json");
+const { insertCoin } = require('./storage');
 
 async function createDatasetToken(cid, name, symbol, description, totalSupply = 1000000, creatorAddress) {
   try {
@@ -194,28 +195,51 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     await initPoolTx.wait();
     console.log(`   ✅ Pool initialized with ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)} tokens and 1 USDC`);
 
-    // Step 4: Register in datasets.json
-    console.log(`📝 Registering...`);
-    let datasets = {};
-    if (fs.existsSync(DATASETS_FILE)) {
-      datasets = JSON.parse(fs.readFileSync(DATASETS_FILE));
+    // Step 4: Persist in PostgreSQL (preferred)
+    if (process.env.DATABASE_URL) {
+      try {
+        await insertCoin({
+          tokenAddress: tokenAddr,
+          name,
+          symbol,
+          cid,
+          description,
+          creatorAddress,
+          marketplaceAddress: marketplaceAddr,
+          totalSupply: totalSupply
+        });
+        console.log('   ✅ Saved to Postgres (coins)');
+      } catch (dbErr) {
+        console.error('   ⚠️ Postgres save error:', dbErr.message);
+      }
     }
 
-    datasets[tokenAddr.toLowerCase()] = {
-      name,
-      symbol,
-      cid,
-      description,
-      token_address: tokenAddr,
-      marketplace: marketplaceAddr,
-      marketplace_address: marketplaceAddr,
-      bonding_curve: marketplaceAddr,
-      creator: creatorAddress,
-      total_supply: totalSupply,
-      created_at: Date.now(),
-    };
+    // Also update JSON for backward compatibility (optional)
+    try {
+      let datasets = {};
+      if (fs.existsSync(DATASETS_FILE)) {
+        datasets = JSON.parse(fs.readFileSync(DATASETS_FILE));
+      }
 
-    fs.writeFileSync(DATASETS_FILE, JSON.stringify(datasets, null, 2));
+      datasets[tokenAddr.toLowerCase()] = {
+        name,
+        symbol,
+        cid,
+        description,
+        token_address: tokenAddr,
+        marketplace: marketplaceAddr,
+        marketplace_address: marketplaceAddr,
+        bonding_curve: marketplaceAddr,
+        creator: creatorAddress,
+        total_supply: totalSupply,
+        created_at: Date.now(),
+      };
+
+      fs.writeFileSync(DATASETS_FILE, JSON.stringify(datasets, null, 2));
+      console.log('   ✅ JSON mirror updated');
+    } catch (jsonErr) {
+      console.error('   ⚠️ JSON mirror update error:', jsonErr.message);
+    }
 
     console.log(`✅ COMPLETE - Token ready for trading!\n`);
 
