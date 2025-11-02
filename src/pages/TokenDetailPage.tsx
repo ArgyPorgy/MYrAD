@@ -19,7 +19,7 @@ const TokenDetailPage = () => {
   const { tokenAddress } = useParams<{ tokenAddress: string }>();
   const navigate = useNavigate();
   const { provider, signer, userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
-  
+
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [price, setPrice] = useState<string>('N/A');
   const [balance, setBalance] = useState<string>('0.00');
@@ -43,13 +43,13 @@ const TokenDetailPage = () => {
       // 1) Try opening a new tab (works if not blocked)
       const win = window.open(url, '_blank');
       if (win && !win.closed) return;
-    } catch {}
+    } catch { }
 
     try {
       // 2) Try navigating the current tab (almost always allowed)
       window.location.href = url;
       return;
-    } catch {}
+    } catch { }
 
     try {
       // 3) Fetch and force a download via Blob
@@ -97,7 +97,7 @@ const TokenDetailPage = () => {
     try {
       const resp = await fetch(getApiUrl("/datasets"));
       const data = await resp.json();
-      
+
       if (data[tokenAddress!]) {
         setDataset(data[tokenAddress!]);
       } else {
@@ -136,7 +136,7 @@ const TokenDetailPage = () => {
 
       // Try to get marketplace address from multiple fields
       const marketplaceAddr = dataset.marketplace || dataset.marketplace_address || dataset.bonding_curve;
-      
+
       if (!marketplaceAddr) {
         console.error('No marketplace address found in dataset:', dataset);
         setPrice('Marketplace not configured');
@@ -144,9 +144,9 @@ const TokenDetailPage = () => {
       }
 
       console.log(`Fetching price for token ${tokenAddress} from marketplace ${marketplaceAddr}`);
-      
+
       const resp = await fetch(getApiUrl(`/price/${marketplaceAddr}/${tokenAddress}`));
-      
+
       if (!resp.ok) {
         if (resp.status === 404) {
           // Pool not initialized yet, try to calculate from contract directly
@@ -155,14 +155,14 @@ const TokenDetailPage = () => {
         }
         throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
       }
-      
+
       const data = await resp.json();
       const priceNum = parseFloat(data.price);
-      
+
       if (isNaN(priceNum)) {
         throw new Error('Invalid price data received');
       }
-      
+
       // Format price based on magnitude
       let formattedPrice;
       if (priceNum === 0) {
@@ -176,12 +176,12 @@ const TokenDetailPage = () => {
       } else {
         formattedPrice = priceNum.toFixed(4);
       }
-      
+
       setPrice(`${formattedPrice} USDC`);
       console.log(`Price updated: ${formattedPrice} USDC`);
     } catch (err: any) {
       console.error('Price fetch error:', err);
-      
+
       // Retry logic (max 3 attempts)
       if (retryCount < 3) {
         console.log(`Retrying price fetch (attempt ${retryCount + 1}/3)...`);
@@ -201,10 +201,10 @@ const TokenDetailPage = () => {
   const fetchPriceFromContract = async (marketplaceAddr: string) => {
     try {
       if (!provider || !tokenAddress) return;
-      
+
       console.log('Fetching price directly from contract...');
       const marketplace = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
-      
+
       // Check if pool exists
       const exists = await retryContractCall(() => marketplace.poolExists(tokenAddress));
       if (!exists) {
@@ -215,7 +215,7 @@ const TokenDetailPage = () => {
       // Get price from contract
       const priceWei = await retryContractCall(() => marketplace.getPriceUSDCperToken(tokenAddress));
       const priceNum = parseFloat(ethers.formatUnits(priceWei, 6)); // Price is in USDC format (6 decimals)
-      
+
       if (priceNum === 0) {
         setPrice('0.000000 USDC');
       } else if (priceNum < 0.000001) {
@@ -227,7 +227,7 @@ const TokenDetailPage = () => {
       } else {
         setPrice(`${priceNum.toFixed(4)} USDC`);
       }
-      
+
       console.log(`Price from contract: ${priceNum}`);
     } catch (err) {
       console.error('Contract price fetch error:', err);
@@ -269,7 +269,7 @@ const TokenDetailPage = () => {
 
       const tx = await retryContractCall(() => marketplace.buy(tokenAddress, usdcAmount, 0));
       await tx.wait();
-      
+
       setStatus('✅ Buy confirmed!');
       showToast('Buy completed successfully', 'success');
       setBuyAmount('');
@@ -280,7 +280,7 @@ const TokenDetailPage = () => {
       }, 2000);
     } catch (err: any) {
       console.error('Buy error:', err);
-      
+
       // Provide more specific error messages
       if (err.message?.includes('RPC endpoint returned HTTP client error')) {
         setStatus('❌ Network error: RPC endpoint timeout. Please try again.');
@@ -315,7 +315,7 @@ const TokenDetailPage = () => {
 
       const tx = await retryContractCall(() => marketplace.sell(tokenAddress, tokenAmount, 0));
       await tx.wait();
-      
+
       setStatus('✅ Sell confirmed!');
       showToast('Sell completed successfully', 'success');
       setSellAmount('');
@@ -326,7 +326,7 @@ const TokenDetailPage = () => {
       }, 2000);
     } catch (err: any) {
       console.error('Sell error:', err);
-      
+
       // Provide more specific error messages
       if (err.message?.includes('RPC endpoint returned HTTP client error')) {
         setStatus('❌ Network error: RPC endpoint timeout. Please try again.');
@@ -346,11 +346,11 @@ const TokenDetailPage = () => {
 
     try {
       setStatus('🔥 Burning tokens for access...');
-      
+
       // Get user's token balance
       const token = new ethers.Contract(tokenAddress!, ERC20_ABI, signer);
       const userBalance: bigint = await token.balanceOf(userAddress);
-      
+
       if (userBalance === 0n) {
         setStatus('❌ You have no tokens to burn');
         return;
@@ -361,7 +361,7 @@ const TokenDetailPage = () => {
       const [poolTokenReserve] = await retryContractCall(() => marketplace.getReserves(tokenAddress));
       // Ensure we don't exceed pool constraint in contract
       const burnAmount = userBalance <= poolTokenReserve ? userBalance : poolTokenReserve;
-      
+
       if (burnAmount === 0n) {
         setStatus('❌ No tokens available to burn from pool');
         return;
@@ -376,16 +376,16 @@ const TokenDetailPage = () => {
         const approveTx = await retryContractCall(() => token.approve(dataset.marketplace!, ethers.MaxUint256));
         await approveTx.wait();
       }
-      
+
       // Call marketplace burnForAccess (burns tokens and affects price)
       setStatus('🔥 Burning tokens from pool...');
       const burnTx = await retryContractCall(() => marketplace.burnForAccess(tokenAddress, burnAmount));
       await burnTx.wait();
       console.log('✅ Burn confirmed');
-      
+
       setStatus('✅ Burned! Price increased. Waiting for download access...');
       showToast('Burn completed successfully', 'success');
-      
+
       // Poll for download access
       for (let i = 0; i < 20; i++) {
         await new Promise(r => setTimeout(r, 1000));
@@ -393,7 +393,7 @@ const TokenDetailPage = () => {
           const r = await fetch(getApiUrl(`/access/${userAddress}/${dataset?.symbol}`));
           if (r.status === 200) {
             const j = await r.json();
-              if (j.download || j.downloadUrl) {
+            if (j.download || j.downloadUrl) {
               const downloadUrl = j.download || j.downloadUrl;
               await triggerFileDownload(downloadUrl, `${dataset?.symbol || 'dataset'}.zip`);
               setStatus('✅ Download ready!');
@@ -402,15 +402,15 @@ const TokenDetailPage = () => {
               return;
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
-      
+
       setStatus('⚠️ Burn confirmed but download not ready. Try again in a moment.');
       readBalance();
       updatePrice();
     } catch (err: any) {
       console.error('Burn error:', err);
-      
+
       // Provide more specific error messages
       if (err.message?.includes('burn exceeds pool')) {
         setStatus('❌ Burn failed: Trying to burn more tokens than available in pool. Try burning fewer tokens.');
@@ -429,7 +429,7 @@ const TokenDetailPage = () => {
       <div className="app-layout">
         <Sidebar />
         <main className="main-content">
-          <Header 
+          <Header
             userAddress={userAddress}
             connected={connected}
             onConnect={(provider) => connectWallet(provider)}
@@ -449,7 +449,7 @@ const TokenDetailPage = () => {
       <div className="app-layout">
         <Sidebar />
         <main className="main-content">
-          <Header 
+          <Header
             userAddress={userAddress}
             connected={connected}
             onConnect={(provider) => connectWallet(provider)}
@@ -468,7 +468,7 @@ const TokenDetailPage = () => {
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
-        <Header 
+        <Header
           userAddress={userAddress}
           connected={connected}
           onConnect={(provider) => connectWallet(provider)}
@@ -477,14 +477,14 @@ const TokenDetailPage = () => {
 
         <div className="token-detail-page">
           <div className="token-detail-container">
-          {/* Toasts */}
-          <div className="toast-container">
-            {toasts.map(t => (
-              <div key={t.id} className={`toast ${t.type}`}>
-                {t.message}
-              </div>
-            ))}
-          </div>
+            {/* Toasts */}
+            <div className="toast-container">
+              {toasts.map(t => (
+                <div key={t.id} className={`toast ${t.type}`}>
+                  {t.message}
+                </div>
+              ))}
+            </div>
             {/* Back Button */}
             <button className="back-button" onClick={() => navigate('/marketplace')}>
               ← Back to Market
@@ -522,31 +522,47 @@ const TokenDetailPage = () => {
                 <div className="stat-label">PRICE</div>
                 <div className="stat-value price">{price}</div>
               </div>
+
               <div className="stat-box">
                 <div className="stat-label">YOUR BALANCE</div>
                 <div className="stat-value">{parseFloat(balance).toFixed(2)}</div>
               </div>
+
               <div className="stat-box">
                 <div className="stat-label">TOTAL SUPPLY</div>
-                <div className="stat-value">{dataset.total_supply ? dataset.total_supply.toLocaleString() : 'N/A'}</div>
+                <div className="stat-value">
+                  {dataset.total_supply ? dataset.total_supply.toLocaleString() : 'N/A'}
+                </div>
               </div>
+
+              <div className="stat-box">
+                <div className="stat-label">DESCRIPTION</div>
+                <div className="stat-value description">
+                  {dataset.description
+                    ? dataset.description.slice(0, 80) +
+                    (dataset.description.length > 80 ? '...' : '')
+                    : 'No description available'}
+                </div>
+              </div>
+
               <div className="stat-box">
                 <div className="stat-label">CHAIN</div>
                 <div className="stat-value">Base</div>
               </div>
             </div>
 
+
             {/* Trading Section */}
             {connected ? (
               <div className="trading-container">
                 <div className="trade-tabs">
-                  <button 
+                  <button
                     className={`tab-btn ${activeTab === 'buy' ? 'active' : ''}`}
                     onClick={() => setActiveTab('buy')}
                   >
                     BUY
                   </button>
-                  <button 
+                  <button
                     className={`tab-btn ${activeTab === 'sell' ? 'active' : ''}`}
                     onClick={() => setActiveTab('sell')}
                   >
@@ -593,8 +609,8 @@ const TokenDetailPage = () => {
             ) : (
               <div className="connect-prompt">
                 <h3>Trading disabled</h3>
-                <button 
-                  className="connect-btn" 
+                <button
+                  className="connect-btn"
                   onClick={async () => {
                     // Directly connect - wallet UI will handle it
                     if (window.ethereum) {
