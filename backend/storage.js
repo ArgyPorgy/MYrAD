@@ -19,7 +19,10 @@ async function insertCoin({ tokenAddress, name, symbol, cid, description, creato
     name,
     symbol,
     cid || null,
-    description || null,
+    // Save description if provided - trim whitespace, only use null if undefined/null/empty after trim
+    (description !== undefined && description !== null && typeof description === 'string' && description.trim()) 
+      ? description.trim() 
+      : null,
     creatorAddress.toLowerCase(),
     marketplaceAddress.toLowerCase(),
     // Store as string to be safe with pg driver and BIGINT
@@ -30,13 +33,29 @@ async function insertCoin({ tokenAddress, name, symbol, cid, description, creato
 }
 
 async function getAllCoins() {
-  const res = await query('SELECT * FROM coins ORDER BY created_at DESC', []);
-  return res.rows;
+  try {
+    if (!process.env.DATABASE_URL) {
+      return [];
+    }
+    const res = await query('SELECT * FROM coins ORDER BY created_at DESC', []);
+    return res.rows;
+  } catch (err) {
+    console.error('Error getting all coins:', err);
+    return [];
+  }
 }
 
 async function getCoinByTokenAddress(tokenAddress) {
-  const res = await query('SELECT * FROM coins WHERE token_address = $1', [tokenAddress.toLowerCase()]);
-  return res.rows[0];
+  try {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    const res = await query('SELECT * FROM coins WHERE token_address = $1', [tokenAddress.toLowerCase()]);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error getting coin by token address:', err);
+    return null;
+  }
 }
 
 async function getCoinsByCreator(creatorAddress) {

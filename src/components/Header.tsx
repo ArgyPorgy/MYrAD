@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { shortenAddress } from '@/utils/web3';
-import WalletModal from './WalletModal';
 import { Avatar, Name } from '@coinbase/onchainkit/identity';
 import './Header.css';
 import { base } from 'viem/chains';
@@ -13,20 +11,28 @@ interface HeaderProps {
 }
 
 const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps) => {
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
  // ✅ Simple unified way
 const displayAddress = (userAddress ) as `0x${string}`;
 
 //const displayAddress = ('0x06a7CfeFC9358181544166832889a970BdE557EA') as `0x${string}`;
 
-
-  const handleConnectClick = () => {
-    setIsWalletModalOpen(true);
-  };
-
-  const handleWalletConnect = async (provider: string) => {
-    await onConnect(provider);
+  const handleConnectClick = async () => {
+    // Trigger wallet connection - this will open the wallet's own selection UI
+    // If multiple wallets are installed, the provider will show options
+    // Clear any cached connection state first to ensure options appear
+    try {
+      if (window.ethereum) {
+        // Request connection - if multiple wallets, the provider will show selector
+        await onConnect('metamask');
+      } else if (window.coinbaseWalletExtension) {
+        await onConnect('coinbase');
+      } else {
+        alert('No wallet found. Please install a wallet extension.');
+      }
+    } catch (err) {
+      console.error('Connection error:', err);
+    }
   };
 
   return (
@@ -72,11 +78,6 @@ const displayAddress = (userAddress ) as `0x${string}`;
         </div>
       </header>
 
-      <WalletModal
-        isOpen={isWalletModalOpen}
-        onClose={() => setIsWalletModalOpen(false)}
-        onConnect={handleWalletConnect}
-      />
     </>
   );
 };

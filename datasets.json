@@ -24,5 +24,31 @@
     "creator": "0x06a7CfeFC9358181544166832889a970BdE557EA",
     "total_supply": 10000,
     "created_at": 1761845165077
+  },
+  "0x6a2f0c6298a759a8f264341307f5119148934da3": {
+    "name": "EigenCloud papers",
+    "symbol": "ECP",
+    "cid": "bafybeiec6t3mzu6yx3aoltnll3oyq54sezbtviifejhsj4smnwrw2al2ve",
+    "description": "",
+    "token_address": "0x6a2f0c6298a759A8f264341307f5119148934da3",
+    "marketplace": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "marketplace_address": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "bonding_curve": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "creator": "0x338323a83e9C9051a12bA93894a1DF7489a43c76",
+    "total_supply": 9990,
+    "created_at": 1762081814552
+  },
+  "0x3cc0461b877fa0c1f14ea085703486a180a82087": {
+    "name": "hot wallets dataset",
+    "symbol": "HOT",
+    "cid": "bafybeifvxizropsmot2ou255po5vr7z47rgo2hisvpybjfviysyf7qsm5e",
+    "description": "a dataset of multiple hot wallets",
+    "token_address": "0x3cC0461b877fA0c1F14EA085703486a180a82087",
+    "marketplace": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "marketplace_address": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "bonding_curve": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "creator": "0x338323a83e9C9051a12bA93894a1DF7489a43c76",
+    "total_supply": 9996,
+    "created_at": 1762094882345
   }
 }

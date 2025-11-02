@@ -2,12 +2,16 @@
 // Robust listener: uses WebSocketProvider when RPC is ws(s)://, otherwise falls back to polling getLogs.
 // Saves last processed block to backend/lastBlock.json to avoid duplicates across restarts.
 
+require("dotenv").config(); // CRITICAL: Load environment variables
 const { ethers } = require("ethers");
 const fs = require("fs");
 const path = require("path");
 const { RPC_URLS, DATASETS_FILE, MAX_BLOCK_RANGE } = require("./config");
 const { signDownloadUrl, saveAccess } = require("./utils");
-const { addUserDataset, updateTokenBalance } = require("./userDatasets");
+// NOTE: No longer using userDatasets.json - we query PostgreSQL and blockchain directly for balances
+// NOTE: No longer using addTrade - transactions are tracked on-chain automatically
+const { getCoinByTokenAddress, getAllCoins } = require("./storage");
+const { query } = require("./db");
 
 const POLL_INTERVAL = 30000; // 30s polling when using HTTP (reduced to avoid rate limits)
 const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
@@ -92,9 +96,74 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
   return allLogs;
 }
 
-function loadDatasets() {
+// Load datasets from PostgreSQL or fallback to JSON
+async function loadDatasets() {
+  // Try PostgreSQL first if configured
+  if (process.env.DATABASE_URL) {
+    try {
+      const coins = await getAllCoins();
+      const map = {};
+      for (const c of coins) {
+        map[c.token_address.toLowerCase()] = {
+          name: c.name,
+          symbol: c.symbol,
+          cid: c.cid,
+          description: c.description,
+          token_address: c.token_address,
+          marketplace: c.marketplace_address,
+          marketplace_address: c.marketplace_address,
+          bonding_curve: c.marketplace_address,
+          creator: c.creator_address,
+          total_supply: Number(c.total_supply),
+          created_at: new Date(c.created_at).getTime(),
+        };
+      }
+      return map;
+    } catch (err) {
+      console.error('Error loading datasets from DB, falling back to JSON:', err.message);
+    }
+  }
+  
+  // Fallback to JSON file
   if (!fs.existsSync(DATASETS_FILE)) return {};
   return JSON.parse(fs.readFileSync(DATASETS_FILE));
+}
+
+// Get single dataset from PostgreSQL or fallback to JSON
+async function getDatasetByTokenAddress(tokenAddr) {
+  const tokenKey = tokenAddr.toLowerCase();
+  
+  // Try PostgreSQL first if configured
+  if (process.env.DATABASE_URL) {
+    try {
+      const coin = await getCoinByTokenAddress(tokenKey);
+      if (coin) {
+        return {
+          name: coin.name,
+          symbol: coin.symbol,
+          cid: coin.cid,
+          description: coin.description,
+          token_address: coin.token_address,
+          marketplace: coin.marketplace_address,
+          marketplace_address: coin.marketplace_address,
+          bonding_curve: coin.marketplace_address,
+          creator: coin.creator_address,
+          total_supply: Number(coin.total_supply),
+          created_at: new Date(coin.created_at).getTime(),
+        };
+      }
+    } catch (err) {
+      console.error(`Error loading dataset ${tokenKey} from DB:`, err.message);
+    }
+  }
+  
+  // Fallback to JSON file
+  if (fs.existsSync(DATASETS_FILE)) {
+    const datasets = JSON.parse(fs.readFileSync(DATASETS_FILE));
+    return datasets[tokenKey];
+  }
+  
+  return null;
 }
 
 function saveLastBlock(n) {
@@ -109,10 +178,9 @@ function loadLastBlock() {
 }
 
 async function handleRedeemOrBurn(tokenAddr, userAddress, amount, symbol) {
-  const datasets = loadDatasets();
-  const meta = datasets[tokenAddr.toLowerCase()];
+  const meta = await getDatasetByTokenAddress(tokenAddr);
   if (!meta) {
-    console.log("Unknown token (not in datasets.json):", tokenAddr);
+    console.log("Unknown token (not in database or datasets.json):", tokenAddr);
     return;
   }
   const cid = (meta.cid || "").replace("ipfs://", "");
@@ -131,48 +199,53 @@ async function handleRedeemOrBurn(tokenAddr, userAddress, amount, symbol) {
 
 async function saveBoughtDataset(tokenAddr, buyerAddress, tokensOut) {
   try {
-    const datasets = loadDatasets();
-    const meta = datasets[tokenAddr.toLowerCase()];
+    const tokenKey = tokenAddr.toLowerCase();
+    const meta = await getDatasetByTokenAddress(tokenKey);
+    
+    // If token not found, log warning but still track the trade
     if (!meta) {
-      console.log("Unknown token for bought dataset:", tokenAddr);
+      console.warn(`⚠️ Token ${tokenAddr} not found in database. Trade will be tracked but dataset entry may be incomplete.`);
+      // Still create entry with minimal info - the balance will be tracked
+      const minimalMeta = {
+        name: 'Unknown Token',
+        symbol: tokenKey.substring(0, 10).toUpperCase(),
+        cid: '',
+        description: '',
+        total_supply: 0,
+        creator: '',
+        marketplace: process.env.MARKETPLACE_ADDRESS || '',
+        marketplace_address: process.env.MARKETPLACE_ADDRESS || ''
+      };
+      // No need to track balance in JSON - blockchain is source of truth
+      // Just log the trade (already tracked via addTrade below)
+      console.log(`✅ Trade recorded for ${minimalMeta.symbol}: ${buyerAddress} bought ${ethers.formatUnits(tokensOut, 18)} tokens`);
       return;
     }
 
-    // Check if user already has a "bought" entry for this token
-    const existingBought = updateTokenBalance(
-      buyerAddress.toLowerCase(), 
-      tokenAddr.toLowerCase(), 
-      'bought', 
-      tokensOut
-    );
-
-    if (!existingBought) {
-      // Create new "bought" entry
-      const userDataset = {
-        userAddress: buyerAddress.toLowerCase(),
-        tokenAddress: tokenAddr.toLowerCase(),
-        name: meta.name,
-        symbol: meta.symbol,
-        description: meta.description || "",
-        cid: meta.cid,
-        totalSupply: meta.total_supply || 1000000,
-        creatorAddress: meta.creator?.toLowerCase() || "",
-        marketplaceAddress: meta.marketplace?.toLowerCase() || meta.marketplace_address?.toLowerCase(),
-        type: 'bought',
-        amount: tokensOut.toString()
-      };
-
-      const success = addUserDataset(userDataset);
-      if (success) {
-        console.log(`✅ Created new bought dataset: ${meta.symbol} for ${buyerAddress}`);
-      } else {
-        console.log(`Failed to create bought dataset for ${buyerAddress}: ${meta.symbol}`);
-      }
-    } else {
-      console.log(`✅ Updated bought balance for ${meta.symbol}: ${buyerAddress}`);
-    }
+    // No need to track balance in userDatasets.json - blockchain is source of truth
+    // Balance will be fetched directly from blockchain when needed
+    console.log(`✅ Trade recorded for ${meta.symbol}: ${buyerAddress} bought ${ethers.formatUnits(tokensOut, 18)} tokens`);
   } catch (err) {
     console.error("Error saving bought dataset:", err);
+  }
+}
+
+// REMOVED: createBoughtDatasetEntry - no longer needed
+// Balances are queried directly from blockchain, not stored in userDatasets.json
+
+async function handleSoldDataset(tokenAddr, sellerAddress, tokensIn) {
+  try {
+    const meta = await getDatasetByTokenAddress(tokenAddr);
+    if (!meta) {
+      console.log("Unknown token for sold dataset:", tokenAddr);
+      return;
+    }
+
+    // No need to track balance in userDatasets.json - blockchain is source of truth
+    // Balance will be fetched directly from blockchain when needed
+    console.log(`✅ Trade recorded for ${meta.symbol}: ${sellerAddress} sold ${ethers.formatUnits(tokensIn, 18)} tokens`);
+  } catch (err) {
+    console.error("Error handling sold dataset:", err);
   }
 }
 
@@ -188,13 +261,14 @@ const REDEEMED_ABI = [
 ];
 const MARKETPLACE_ABI = [
   "event AccessGranted(address indexed token, address indexed buyer)",
-  "event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)"
+  "event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)",
+  "event Sold(address indexed token, address indexed seller, uint256 tokenIn, uint256 usdcOut)"
 ];
 
 // If WebSocket provider: subscribe per-contract (best)
 if (provider instanceof ethers.WebSocketProvider) {
   (async () => {
-    const datasets = loadDatasets();
+    const datasets = await loadDatasets();
     for (const [tokenAddr, meta] of Object.entries(datasets)) {
       const addr = tokenAddr.toLowerCase();
       const contract = new ethers.Contract(addr, ERC20_ABI.concat(REDEEMED_ABI), provider);
@@ -224,23 +298,28 @@ if (provider instanceof ethers.WebSocketProvider) {
     // Also listen to marketplace AccessGranted events
     const uniqueMarketplaces = new Set();
     for (const [tokenAddr, meta] of Object.entries(datasets)) {
-      if (meta.marketplace) {
-        uniqueMarketplaces.add(meta.marketplace.toLowerCase());
+      const marketplace = meta.marketplace || meta.marketplace_address;
+      if (marketplace) {
+        uniqueMarketplaces.add(marketplace.toLowerCase());
       }
+    }
+    
+    // Also add the marketplace from env if available (for catching events from newly created tokens)
+    if (process.env.MARKETPLACE_ADDRESS) {
+      uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
     }
 
     for (const marketplaceAddr of uniqueMarketplaces) {
       const marketplaceContract = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
       console.log("👀 Subscribing to marketplace AccessGranted events:", marketplaceAddr);
 
-      marketplaceContract.on("AccessGranted", (tokenAddr, buyer, event) => {
+      marketplaceContract.on("AccessGranted", async (tokenAddr, buyer, event) => {
         try {
           console.log(`AccessGranted event (WS): ${buyer} granted access for token ${tokenAddr}`);
-          // Find the token symbol from datasets
-          const datasets = loadDatasets();
-          const tokenMeta = datasets[tokenAddr.toLowerCase()];
+          // Find the token symbol from database
+          const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
           if (tokenMeta) {
-            handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
+            await handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
           } else {
             console.log("Unknown token in AccessGranted event:", tokenAddr);
           }
@@ -249,20 +328,35 @@ if (provider instanceof ethers.WebSocketProvider) {
         }
       });
 
-      marketplaceContract.on("Bought", (tokenAddr, buyer, usdcIn, fee, tokensOut, event) => {
+      marketplaceContract.on("Bought", async (tokenAddr, buyer, usdcIn, fee, tokensOut, event) => {
         try {
           console.log(`Bought event (WS): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
-          saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+          
+          // Save dataset entry
+          await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+          
+          // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
+          console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${meta.symbol}`);
         } catch (err) {
           console.error("Bought handler error:", err);
         }
       });
+
+      marketplaceContract.on("Sold", async (tokenAddr, seller, tokenIn, usdcOut, event) => {
+        try {
+          console.log(`Sold event (WS): ${seller} sold ${ethers.formatUnits(tokenIn, 18)} tokens of ${tokenAddr}`);
+          // Subtract tokens from user's balance when they sell
+          await handleSoldDataset(tokenAddr.toLowerCase(), seller, tokenIn);
+        } catch (err) {
+          console.error("Sold handler error:", err);
+        }
+      });
     }
 
-    // also poll datasets.json to pick up new tokens (so we can subscribe to new ones)
+    // also poll database to pick up new tokens (so we can subscribe to new ones)
     setInterval(async () => {
       try {
-        const ds = loadDatasets();
+        const ds = await loadDatasets();
         for (const [tokenAddr, meta] of Object.entries(ds)) {
           const addr = tokenAddr.toLowerCase();
           // if not already subscribed, create contract.on handlers
@@ -301,14 +395,17 @@ if (provider instanceof ethers.WebSocketProvider) {
 
     async function pollOnce() {
       try {
-        const datasets = loadDatasets();
+        const datasets = await loadDatasets();
         const tokenAddrs = Object.keys(datasets);
+        
+        // CRITICAL FIX: Even if no datasets loaded, we still need to poll marketplace events
+        // Otherwise we'll miss all buy/sell events for tokens not yet in the system
+        // We still update lastBlock and continue to marketplace polling below
         if (tokenAddrs.length === 0) {
-          // still update lastBlock to keep moving
           const latest = await provider.getBlockNumber();
           lastBlock = Math.max(lastBlock, latest);
           saveLastBlock(lastBlock);
-          return;
+          // DON'T return - continue to marketplace polling below!
         }
 
         const latest = await provider.getBlockNumber();
@@ -324,6 +421,7 @@ if (provider instanceof ethers.WebSocketProvider) {
         const marketplaceIface = new ethers.Interface(MARKETPLACE_ABI);
         const accessGrantedTopic = ethers.id("AccessGranted(address,address)");
         const boughtTopic = ethers.id("Bought(address,address,uint256,uint256,uint256)");
+        const soldTopic = ethers.id("Sold(address,address,uint256,uint256)");
 
         for (const addr of tokenAddrs) {
           const token = addr.toLowerCase();
@@ -349,15 +447,17 @@ if (provider instanceof ethers.WebSocketProvider) {
                 const to = parsed.args.to;
                 const value = parsed.args.value;
                 if (to === ethers.ZeroAddress) {
+                  const tokenMeta = datasets[token];
+                  const symbol = tokenMeta ? tokenMeta.symbol : 'UNK';
                   console.log(`Poll-detected burn: ${from} burned ${ethers.formatUnits(value, 18)} on ${token}`);
-                  handleRedeemOrBurn(token, from, value, datasets[token].symbol);
+                  await handleRedeemOrBurn(token, from, value, symbol);
                 }
               } else if (parsed.name === "Redeemed") {
                 const user = parsed.args.user;
                 const amt = parsed.args.amount;
                 const ticker = parsed.args.ticker;
                 console.log(`Poll-detected Redeemed: ${user} ${amt.toString()} ${ticker}`);
-                handleRedeemOrBurn(token, user, amt, ticker);
+                await handleRedeemOrBurn(token, user, amt, ticker);
               }
             } catch (err) {
               // parseLog throws when topics don't match signature; ignore
@@ -366,16 +466,29 @@ if (provider instanceof ethers.WebSocketProvider) {
         } // end tokens loop
 
         // Poll marketplace AccessGranted events
+        // Get unique marketplaces from the datasets we already loaded
         const uniqueMarketplaces = new Set();
         for (const [tokenAddr, meta] of Object.entries(datasets)) {
-          if (meta.marketplace) {
-            uniqueMarketplaces.add(meta.marketplace.toLowerCase());
+          const marketplace = meta.marketplace || meta.marketplace_address;
+          if (marketplace) {
+            uniqueMarketplaces.add(marketplace.toLowerCase());
           }
+        }
+        
+        // CRITICAL: Always include marketplace from env to catch ALL events
+        // Even if a token isn't in datasets.json, we can still catch its events
+        if (process.env.MARKETPLACE_ADDRESS) {
+          uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
+        }
+        
+        // If no datasets loaded, still poll marketplace if address is known
+        if (uniqueMarketplaces.size === 0 && process.env.MARKETPLACE_ADDRESS) {
+          uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
         }
 
         for (const marketplaceAddr of uniqueMarketplaces) {
           try {
-            const marketplaceLogs = await getLogsWithFallback(marketplaceAddr, from, to, [[accessGrantedTopic, boughtTopic]]);
+            const marketplaceLogs = await getLogsWithFallback(marketplaceAddr, from, to, [[accessGrantedTopic, boughtTopic, soldTopic]]);
             
             for (const log of marketplaceLogs) {
               try {
@@ -384,17 +497,26 @@ if (provider instanceof ethers.WebSocketProvider) {
                   const [tokenAddr, buyer] = parsed.args;
                   console.log(`AccessGranted event (HTTP): ${buyer} granted access for token ${tokenAddr}`);
                   
-                  // Find the token symbol from datasets
-                  const tokenMeta = datasets[tokenAddr.toLowerCase()];
+                  // Find the token symbol from database
+                  const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
                   if (tokenMeta) {
-                    handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
+                    await handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
                   } else {
                     console.log("Unknown token in AccessGranted event:", tokenAddr);
                   }
                 } else if (parsed && parsed.name === "Bought") {
                   const [tokenAddr, buyer, usdcIn, fee, tokensOut] = parsed.args;
                   console.log(`Bought event (HTTP): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
-                  saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+                  
+                  // Save dataset entry
+                  await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+                  
+                  // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
+                  console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${meta.symbol}`);
+                } else if (parsed && parsed.name === "Sold") {
+                  const [tokenAddr, seller, tokenIn, usdcOut] = parsed.args;
+                  console.log(`Sold event (HTTP): ${seller} sold ${ethers.formatUnits(tokenIn, 18)} tokens of ${tokenAddr}`);
+                  await handleSoldDataset(tokenAddr.toLowerCase(), seller, tokenIn);
                 }
               } catch (err) {
                 console.error("Marketplace log parsing error:", err);

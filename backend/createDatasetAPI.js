@@ -198,12 +198,13 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     // Step 4: Persist in PostgreSQL (preferred)
     if (process.env.DATABASE_URL) {
       try {
+        console.log(`   📝 Saving to DB - description: "${description}" (type: ${typeof description})`);
         await insertCoin({
           tokenAddress: tokenAddr,
           name,
           symbol,
           cid,
-          description,
+          description: description !== undefined ? description : null, // Pass description as-is, null if undefined
           creatorAddress,
           marketplaceAddress: marketplaceAddr,
           totalSupply: totalSupply

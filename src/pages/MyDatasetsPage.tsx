@@ -53,7 +53,9 @@ const MyDatasetsPage = () => {
       if (response.ok) {
         const data = await response.json();
         console.log('Datasets loaded:', data);
-        setDatasets(data);
+        // Handle both old format (array) and new format (object with datasets)
+        const datasets = Array.isArray(data) ? data : (data.datasets || []);
+        setDatasets(datasets);
       } else {
         const errorText = await response.text();
         console.error('Failed to load datasets:', response.status, errorText);
@@ -104,7 +106,19 @@ const MyDatasetsPage = () => {
                 <div className="empty-icon-large">🔗</div>
                 <h3>Connect your wallet</h3>
                 <p>Connect your wallet to view your datasets</p>
-                <button onClick={() => connectWallet()} className="btn-create-large">
+                <button 
+                  onClick={async () => {
+                    // Directly connect - wallet UI will handle it
+                    if (window.ethereum) {
+                      await connectWallet('metamask');
+                    } else if (window.coinbaseWalletExtension) {
+                      await connectWallet('coinbase');
+                    } else {
+                      alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
+                    }
+                  }} 
+                  className="btn-create-large"
+                >
                   Connect Wallet
                 </button>
               </div>

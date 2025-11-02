@@ -35,7 +35,9 @@ async function initSchema() {
 }
 
 async function query(text, params) {
-  if (!pool) throw new Error('DATABASE_URL not configured');
+  if (!pool) {
+    throw new Error('DATABASE_URL not configured');
+  }
   return pool.query(text, params);
 }
 

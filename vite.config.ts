@@ -25,6 +25,7 @@ export default defineConfig({
       '/price': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
       '/quote': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
       '/health': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+      '/faucet': process.env.VITE_API_BASE_URL || 'http://localhost:4000',
     },
   },
   build: {

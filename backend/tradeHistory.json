@@ -1,0 +1,10 @@
+[
+  {
+    "id": "1762087057806fx3af3n7o",
+    "userAddress": "0x123",
+    "tokenAddress": "0x456",
+    "type": "buy",
+    "amount": "1000000",
+    "timestamp": "2025-11-02T12:37:37.806Z"
+  }
+]

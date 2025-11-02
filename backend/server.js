@@ -7,9 +7,10 @@ const { ethers } = require("ethers");
 const multer = require("multer");
 const { uploadBase64ToLighthouse } = require("./uploadService");
 const { createDatasetToken } = require("./createDatasetAPI");
-const { addUserDataset, getUserDatasets, updateTokenBalance } = require("./userDatasets");
+const { getTradeCount, loadTradeHistory } = require("./tradeHistory");
 const { initSchema } = require('./db');
-const { getAllCoins } = require('./storage');
+const { getAllCoins, getCoinsByCreator } = require('./storage');
+const { canClaim, recordClaim, sendETH, sendUSDC } = require('./faucet');
 
 // ERC20 ABI for balance checking
 const ERC20_ABI = [
@@ -302,33 +303,17 @@ app.post("/create-dataset", async (req, res) => {
     console.log(`   Marketplace: ${process.env.MARKETPLACE_ADDRESS}`);
     console.log(`   Treasury: ${process.env.MYRAD_TREASURY}`);
 
-    const result = await createDatasetToken(cid, name, symbol, description || "", supply, creatorAddress);
+    // Preserve description as-is (don't convert undefined to empty string)
+    // If description is provided (even if empty string), pass it through
+    // If description is undefined/null, pass undefined so it can be saved as null in DB
+    const descriptionToPass = description !== undefined ? description : undefined;
+    const result = await createDatasetToken(cid, name, symbol, descriptionToPass, supply, creatorAddress);
 
     console.log(`   ✅ Token created: ${result.tokenAddress}`);
     console.log(`   ✅ Marketplace: ${result.marketplaceAddress}`);
 
-    // Save to JSON file
-    try {
-      const userDataset = {
-        userAddress: creatorAddress.toLowerCase(),
-        tokenAddress: result.tokenAddress.toLowerCase(),
-        name: result.name,
-        symbol: result.symbol,
-        description: description || "",
-        cid: result.cid,
-        totalSupply: supply,
-        creatorAddress: creatorAddress.toLowerCase(),
-        marketplaceAddress: result.marketplaceAddress?.toLowerCase(),
-        type: 'created',
-        amount: supply.toString()
-      };
-      
-      addUserDataset(userDataset);
-      console.log(`   ✅ Saved to JSON file: ${result.symbol}`);
-    } catch (dbErr) {
-      console.error("   ⚠️ JSON file save error:", dbErr.message);
-      // Don't fail the request if JSON save fails
-    }
+    // No need to save to userDatasets.json - PostgreSQL and blockchain are the source of truth
+    console.log(`   ✅ Dataset created: ${result.symbol} (stored in PostgreSQL)`);
 
     const responseData = {
       success: true,
@@ -378,7 +363,119 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
+// Faucet endpoints
+app.post("/faucet/eth", async (req, res) => {
+  try {
+    const { userAddress } = req.body;
+
+    if (!userAddress || !ethers.isAddress(userAddress)) {
+      return res.status(400).json({ error: "Valid user address is required" });
+    }
+
+    // Check cooldown
+    const cooldownCheck = canClaim(userAddress, 'eth');
+    if (!cooldownCheck.canClaim) {
+      return res.status(429).json({
+        error: "Cooldown active",
+        message: `Please wait ${cooldownCheck.hoursRemaining}h ${cooldownCheck.minutesRemaining}m before claiming again`,
+        hoursRemaining: cooldownCheck.hoursRemaining,
+        minutesRemaining: cooldownCheck.minutesRemaining
+      });
+    }
+
+    // Send 0.001 ETH
+    const result = await sendETH(userAddress, "0.001");
+    
+    // Record claim
+    recordClaim(userAddress, 'eth');
+
+    res.json({
+      success: true,
+      message: "0.001 ETH sent successfully",
+      txHash: result.txHash,
+      amount: "0.001"
+    });
+  } catch (err) {
+    console.error("ETH faucet error:", err);
+    res.status(500).json({
+      error: "Failed to send ETH",
+      message: err.message
+    });
+  }
+});
+
+app.post("/faucet/usdc", async (req, res) => {
+  try {
+    const { userAddress } = req.body;
+
+    if (!userAddress || !ethers.isAddress(userAddress)) {
+      return res.status(400).json({ error: "Valid user address is required" });
+    }
+
+    // Check cooldown
+    const cooldownCheck = canClaim(userAddress, 'usdc');
+    if (!cooldownCheck.canClaim) {
+      return res.status(429).json({
+        error: "Cooldown active",
+        message: `Please wait ${cooldownCheck.hoursRemaining}h ${cooldownCheck.minutesRemaining}m before claiming again`,
+        hoursRemaining: cooldownCheck.hoursRemaining,
+        minutesRemaining: cooldownCheck.minutesRemaining
+      });
+    }
+
+    // Send 5 USDC
+    const result = await sendUSDC(userAddress, "5");
+    
+    // Record claim
+    recordClaim(userAddress, 'usdc');
+
+    res.json({
+      success: true,
+      message: "5 USDC sent successfully",
+      txHash: result.txHash,
+      amount: "5"
+    });
+  } catch (err) {
+    console.error("USDC faucet error:", err);
+    res.status(500).json({
+      error: "Failed to send USDC",
+      message: err.message
+    });
+  }
+});
+
+// Check faucet cooldown status
+app.get("/faucet/status/:userAddress", (req, res) => {
+  try {
+    const { userAddress } = req.params;
+
+    if (!ethers.isAddress(userAddress)) {
+      return res.status(400).json({ error: "Invalid address" });
+    }
+
+    const ethStatus = canClaim(userAddress, 'eth');
+    const usdcStatus = canClaim(userAddress, 'usdc');
+
+    res.json({
+      eth: {
+        canClaim: ethStatus.canClaim,
+        hoursRemaining: ethStatus.hoursRemaining || 0,
+        minutesRemaining: ethStatus.minutesRemaining || 0
+      },
+      usdc: {
+        canClaim: usdcStatus.canClaim,
+        hoursRemaining: usdcStatus.hoursRemaining || 0,
+        minutesRemaining: usdcStatus.minutesRemaining || 0
+      }
+    });
+  } catch (err) {
+    console.error("Faucet status error:", err);
+    res.status(500).json({ error: "Failed to check status" });
+  }
+});
+
 // Get user's datasets (created and bought) with real-time balances
+// NOTE: No longer uses userDatasets.json - queries PostgreSQL and blockchain directly
 app.get("/api/my-datasets/:userAddress", async (req, res) => {
   try {
     const { userAddress } = req.params;
@@ -387,21 +484,109 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
       return res.status(400).json({ error: "Invalid address" });
     }
 
-    const datasets = getUserDatasets(userAddress);
-    
-    // Update balances with real-time data from blockchain
-    for (let dataset of datasets) {
+    const userAddressLower = userAddress.toLowerCase();
+    const datasetsWithBalance = [];
+
+    // 1. Get 'created' datasets: Query PostgreSQL for tokens where user is creator
+    if (process.env.DATABASE_URL) {
       try {
-        const token = new ethers.Contract(dataset.tokenAddress, ERC20_ABI, provider);
-        const balance = await token.balanceOf(userAddress);
-        dataset.realTimeBalance = balance.toString();
+        const createdCoins = await getCoinsByCreator(userAddress);
+        for (const coin of createdCoins) {
+          try {
+            // Fetch real-time balance for created tokens
+            const token = new ethers.Contract(coin.token_address, ERC20_ABI, provider);
+            const balance = await token.balanceOf(userAddress);
+            
+            datasetsWithBalance.push({
+              userAddress: userAddressLower,
+              tokenAddress: coin.token_address.toLowerCase(),
+              name: coin.name,
+              symbol: coin.symbol,
+              description: coin.description || "",
+              cid: coin.cid || "",
+              totalSupply: Number(coin.total_supply),
+              creatorAddress: coin.creator_address.toLowerCase(),
+              marketplaceAddress: coin.marketplace_address.toLowerCase(),
+              type: 'created',
+              amount: balance.toString(),
+              realTimeBalance: balance.toString()
+            });
+          } catch (err) {
+            console.error(`Error fetching balance for created token ${coin.token_address}:`, err);
+          }
+        }
       } catch (err) {
-        console.error(`Error fetching balance for ${dataset.tokenAddress}:`, err);
-        dataset.realTimeBalance = dataset.amount; // Fallback to stored amount
+        console.error("Error fetching created coins from DB:", err);
+      }
+    }
+
+    // 2. Get 'bought' datasets: Query all tokens from PostgreSQL, check on-chain balance
+    // Only include tokens where user has balance > 0 (they bought/sold)
+    if (process.env.DATABASE_URL) {
+      try {
+        const allCoins = await getAllCoins();
+        
+        // Filter out tokens user already has in 'created' list to avoid duplicates
+        const createdTokenAddrs = new Set(
+          datasetsWithBalance.map(d => d.tokenAddress.toLowerCase())
+        );
+        
+        for (const coin of allCoins) {
+          const tokenAddrLower = coin.token_address.toLowerCase();
+          
+          // Skip if user created this token (already in created list)
+          if (createdTokenAddrs.has(tokenAddrLower)) {
+            continue;
+          }
+          
+          try {
+            // Check if user has any balance of this token
+            const token = new ethers.Contract(coin.token_address, ERC20_ABI, provider);
+            const balance = await token.balanceOf(userAddress);
+            
+            // Only include if user has balance > 0 (they bought this token)
+            if (balance > 0n) {
+              datasetsWithBalance.push({
+                userAddress: userAddressLower,
+                tokenAddress: tokenAddrLower,
+                name: coin.name,
+                symbol: coin.symbol,
+                description: coin.description || "",
+                cid: coin.cid || "",
+                totalSupply: Number(coin.total_supply),
+                creatorAddress: coin.creator_address.toLowerCase(),
+                marketplaceAddress: coin.marketplace_address.toLowerCase(),
+                type: 'bought',
+                amount: balance.toString(),
+                realTimeBalance: balance.toString()
+              });
+            }
+          } catch (err) {
+            console.error(`Error checking balance for token ${coin.token_address}:`, err);
+            // Skip tokens we can't query
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching all coins from DB:", err);
       }
     }
     
-    res.json(datasets);
+    // Sort by creation time (if available) or by symbol
+    datasetsWithBalance.sort((a, b) => {
+      // Created datasets first, then by symbol
+      if (a.type === 'created' && b.type !== 'created') return -1;
+      if (a.type !== 'created' && b.type === 'created') return 1;
+      return a.symbol.localeCompare(b.symbol);
+    });
+    
+    // Get trade count from blockchain (queries BaseScan API or RPC events)
+    // Counts all transactions: buy, sell, approve, burn, create, etc.
+    const tradeCount = await getTradeCount(userAddress);
+    
+    res.json({
+      datasets: datasetsWithBalance,
+      tradeCount: tradeCount
+    });
   } catch (err) {
     console.error("My datasets error:", err);
     res.status(500).json({ error: "Failed to fetch datasets" });
@@ -412,7 +597,29 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
 // Only if the request accepts HTML (not for API calls)
 app.get("*", (req, res) => {
   if (req.accepts('html')) {
-    res.sendFile(path.join(__dirname, "../dist/index.html"));
+    const indexPath = path.join(__dirname, "../dist/index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      // If dist folder doesn't exist (development mode), return a simple message
+      res.status(200).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>MYRAD Backend</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+            h1 { color: #00d4ff; }
+          </style>
+        </head>
+        <body>
+          <h1>🚀 MYRAD Backend API Running</h1>
+          <p>Frontend not built yet. Run <code>npm run build</code> to build the frontend.</p>
+          <p>API is available at: <a href="/health">/health</a></p>
+        </body>
+        </html>
+      `);
+    }
   } else {
     res.status(404).json({ error: "Not found" });
   }

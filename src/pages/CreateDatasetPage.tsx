@@ -47,7 +47,6 @@ const CreateDatasetPage = () => {
       formData.append('file', file);
 
       const xhr = new XMLHttpRequest();
-
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percent = (e.loaded / e.total) * 100;

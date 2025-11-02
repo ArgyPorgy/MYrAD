@@ -593,7 +593,19 @@ const TokenDetailPage = () => {
             ) : (
               <div className="connect-prompt">
                 <h3>Trading disabled</h3>
-                <button className="connect-btn" onClick={() => connectWallet('metamask')}>
+                <button 
+                  className="connect-btn" 
+                  onClick={async () => {
+                    // Directly connect - wallet UI will handle it
+                    if (window.ethereum) {
+                      await connectWallet('metamask');
+                    } else if (window.coinbaseWalletExtension) {
+                      await connectWallet('coinbase');
+                    } else {
+                      alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
+                    }
+                  }}
+                >
                   Connect wallet
                 </button>
               </div>

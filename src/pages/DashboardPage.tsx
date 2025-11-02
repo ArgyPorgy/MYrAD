@@ -1,10 +1,59 @@
+import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/hooks/useWeb3';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import { getApiUrl } from '@/config/api';
 import './DashboardPage.css';
+
+interface UserDataset {
+  tokenAddress: string;
+  type: 'created' | 'bought';
+}
 
 const DashboardPage = () => {
   const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
+  const [datasetsOwned, setDatasetsOwned] = useState(0);
+  const [totalTrades, setTotalTrades] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (connected && userAddress) {
+      loadDashboardData();
+    } else {
+      setDatasetsOwned(0);
+      setTotalTrades(0);
+      setLoading(false);
+    }
+  }, [connected, userAddress]);
+
+  const loadDashboardData = async () => {
+    if (!userAddress) return;
+    
+    try {
+      setLoading(true);
+      const response = await fetch(getApiUrl(`/api/my-datasets/${userAddress}`));
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Handle both old format (array) and new format (object with datasets and tradeCount)
+        const datasets: UserDataset[] = Array.isArray(data) ? data : (data.datasets || []);
+        
+        // Count unique datasets owned (both created and bought)
+        const uniqueTokens = new Set(
+          datasets.map(d => d.tokenAddress.toLowerCase())
+        );
+        setDatasetsOwned(uniqueTokens.size);
+        
+        // Use tradeCount from API if available, otherwise fallback to counting bought entries
+        const tradeCount = data.tradeCount !== undefined ? data.tradeCount : datasets.filter(d => d.type === 'bought').length;
+        setTotalTrades(tradeCount);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="app-layout">
@@ -28,28 +77,31 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          <div className="dashboard-grid">
-            <div className="dashboard-card large">
-              <h3 className="card-title">Portfolio Value</h3>
-              <div className="card-value">$0.00</div>
-              <div className="card-change positive">+0.00%</div>
+          {!connected ? (
+            <div className="dashboard-connect-prompt">
+              <div className="connect-icon">🔌</div>
+              <h3>Connect Your Wallet</h3>
+              <p>Please connect your wallet to view your dashboard</p>
             </div>
+          ) : (
+            <div className="dashboard-grid">
+              <div className="dashboard-card">
+                <h3 className="card-title">Datasets Owned</h3>
+                <div className="card-value">
+                  {loading ? '...' : datasetsOwned}
+                </div>
+                <p className="card-description">Unique datasets you own</p>
+              </div>
 
-            <div className="dashboard-card">
-              <h3 className="card-title">Datasets Owned</h3>
-              <div className="card-value">0</div>
+              <div className="dashboard-card">
+                <h3 className="card-title">Total Trades</h3>
+                <div className="card-value">
+                  {loading ? '...' : totalTrades}
+                </div>
+                <p className="card-description">Number of buy transactions</p>
+              </div>
             </div>
-
-            <div className="dashboard-card">
-              <h3 className="card-title">Total Trades</h3>
-              <div className="card-value">0</div>
-            </div>
-
-            <div className="dashboard-card">
-              <h3 className="card-title">Total Volume</h3>
-              <div className="card-value">$0.00</div>
-            </div>
-          </div>
+          )}
 
           <div className="activity-section">
             <h3 className="section-title">Recent Activity</h3>

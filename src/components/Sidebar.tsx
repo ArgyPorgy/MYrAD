@@ -77,21 +77,19 @@ const Sidebar = () => {
           <span>My Datasets</span>
         </Link>
 
+        <Link 
+          to="/faucet" 
+          className={`nav-item ${isActive('/faucet') ? 'active' : ''}`}
+        >
+          <i className="icon">💧</i>
+          <span>Faucet</span>
+        </Link>
+
         <div className="nav-item community-data-item">
           <i className="icon">👥</i>
           <span>Community Data</span>
           <span className="coming-soon-badge">Coming Soon</span>
         </div>
-
-        <div className="nav-divider"></div>
-
-        <Link 
-          to="/settings" 
-          className={`nav-item ${isActive('/settings') ? 'active' : ''}`}
-        >
-          <i className="icon">⚙️</i>
-          <span>Settings</span>
-        </Link>
       </nav>
 
 <div className="sidebar-footer">
