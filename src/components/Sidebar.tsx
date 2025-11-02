@@ -54,6 +54,14 @@ const Sidebar = () => {
         </Link>
 
         <Link 
+          to="/feed" 
+          className={`nav-item ${isActive('/feed') ? 'active' : ''}`}
+        >
+          <i className="icon">📰</i>
+          <span>Feed</span>
+        </Link>
+
+        <Link 
           to="/marketplace" 
           className={`nav-item ${isActive('/marketplace') ? 'active' : ''}`}
         >
