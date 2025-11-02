@@ -7,7 +7,7 @@ const { ethers } = require("ethers");
 const multer = require("multer");
 const { uploadBase64ToLighthouse } = require("./uploadService");
 const { createDatasetToken } = require("./createDatasetAPI");
-const { getTradeCount, loadTradeHistory } = require("./tradeHistory");
+// NOTE: No longer using getTradeCount - we count purchased datasets directly
 const { initSchema } = require('./db');
 const { getAllCoins, getCoinsByCreator } = require('./storage');
 const { canClaim, recordClaim, sendETH, sendUSDC } = require('./faucet');
@@ -579,13 +579,13 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
       return a.symbol.localeCompare(b.symbol);
     });
     
-    // Get trade count from blockchain (queries BaseScan API or RPC events)
-    // Counts all transactions: buy, sell, approve, burn, create, etc.
-    const tradeCount = await getTradeCount(userAddress);
+    // Count purchased datasets (same logic as "Purchased Datasets" on My Datasets page)
+    // This matches what the user sees - number of bought datasets they currently own
+    const purchasedDatasetsCount = datasetsWithBalance.filter(d => d.type === 'bought').length;
     
     res.json({
       datasets: datasetsWithBalance,
-      tradeCount: tradeCount
+      tradeCount: purchasedDatasetsCount  // Match the "Purchased Datasets" count
     });
   } catch (err) {
     console.error("My datasets error:", err);

@@ -44,9 +44,9 @@ const DashboardPage = () => {
         );
         setDatasetsOwned(uniqueTokens.size);
         
-        // Use tradeCount from API if available, otherwise fallback to counting bought entries
-        const tradeCount = data.tradeCount !== undefined ? data.tradeCount : datasets.filter(d => d.type === 'bought').length;
-        setTotalTrades(tradeCount);
+        // Total Trades = Count of purchased datasets (matches "Purchased Datasets" on My Datasets page)
+        const purchasedCount = datasets.filter(d => d.type === 'bought').length;
+        setTotalTrades(data.tradeCount !== undefined ? data.tradeCount : purchasedCount);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -98,7 +98,7 @@ const DashboardPage = () => {
                 <div className="card-value">
                   {loading ? '...' : totalTrades}
                 </div>
-                <p className="card-description">Number of buy transactions</p>
+                <p className="card-description">Purchased datasets you own</p>
               </div>
             </div>
           )}
