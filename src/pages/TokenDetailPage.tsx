@@ -485,154 +485,179 @@ const TokenDetailPage = () => {
                 </div>
               ))}
             </div>
+
             {/* Back Button */}
             <button className="back-button" onClick={() => navigate('/marketplace')}>
               ← Back to Market
             </button>
 
-            {/* Token Header */}
+            {/* Token Header - Centered */}
             <div className="token-header">
-              <div className="token-avatar-large">
-                {dataset.symbol.charAt(0)}
-              </div>
-              <div>
-                <h1 className="token-title">{dataset.name || dataset.symbol} ({dataset.symbol})</h1>
-                <div className="chain-badge">
-                  <span>⛓</span> Base Sepolia
-                </div>
-              </div>
+              <h1 className="token-title">{dataset.name || dataset.symbol} ({dataset.symbol})</h1>
             </div>
+              
 
-            {/* Contract Address */}
-            <div className="contract-section">
-              <div className="contract-label">CONTRACT ADDRESS</div>
-              <div className="contract-display">
-                <div className="contract-text">
-                  {tokenAddress?.slice(0, 6)}...{tokenAddress?.slice(-4)}
-                </div>
-                <button className="copy-btn" onClick={copyToClipboard}>
-                  {copied ? '✓ Copied!' : '📋 Copy'}
-                </button>
-              </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="stats-grid">
-              <div className="stat-box">
-                <div className="stat-label">PRICE</div>
-                <div className="stat-value price">{price}</div>
-              </div>
-
-              <div className="stat-box">
-                <div className="stat-label">YOUR BALANCE</div>
-                <div className="stat-value">{parseFloat(balance).toFixed(2)}</div>
-              </div>
-
-              <div className="stat-box">
-                <div className="stat-label">TOTAL SUPPLY</div>
-                <div className="stat-value">
-                  {dataset.total_supply ? dataset.total_supply.toLocaleString() : 'N/A'}
+            {/* Main Two-Column Layout */}
+            <div className="trading-main-wrapper">
+              {/* Chart Area - Left Column */}
+              <div className="chart-area">
+                <div className="chart-placeholder">
+                  <h3>Chart Available On Mainnet</h3>
                 </div>
               </div>
 
-              <div className="stat-box">
-                <div className="stat-label">DESCRIPTION</div>
-                <div className="stat-value description">
-                  {dataset.description
-                    ? dataset.description.slice(0, 80) +
-                    (dataset.description.length > 80 ? '...' : '')
-                    : 'No description available'}
-                </div>
-              </div>
+              {/* Trading Panel - Right Column */}
+              {connected ? (
+                <div className="trading-container">
+                  {/* Wallet Section */}
+                  
+                  {/* Trade Tabs */}
+                  <div className="trade-tabs">
+                    <button
+                      className={`tab-btn ${activeTab === 'buy' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('buy')}
+                    >
+                      BUY
+                    </button>
+                    <button
+                      className={`tab-btn ${activeTab === 'sell' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('sell')}
+                    >
+                      SELL
+                    </button>
+                  </div>
 
-              <div className="stat-box">
-                <div className="stat-label">CHAIN</div>
-                <div className="stat-value">Base</div>
-              </div>
-            </div>
-
-
-            {/* Trading Section */}
-            {connected ? (
-              <div className="trading-container">
-                <div className="trade-tabs">
-                  <button
-                    className={`tab-btn ${activeTab === 'buy' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('buy')}
-                  >
-                    BUY
-                  </button>
-                  <button
-                    className={`tab-btn ${activeTab === 'sell' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('sell')}
-                  >
-                    SELL
-                  </button>
-                </div>
-
-                <div className="trade-form">
-                  {activeTab === 'buy' ? (
-                    <div className="trade-group">
-                      <label>Buy with USDC</label>
-                      <input
-                        type="text"
-                        placeholder="Enter USDC amount"
-                        value={buyAmount}
-                        onChange={(e) => setBuyAmount(e.target.value)}
-                        className="trade-input"
-                      />
-                      <button className="trade-btn buy" onClick={handleBuy}>
-                        Buy ${dataset.symbol}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="trade-group">
-                      <label>Sell Tokens</label>
-                      <input
-                        type="text"
-                        placeholder="Enter token amount"
-                        value={sellAmount}
-                        onChange={(e) => setSellAmount(e.target.value)}
-                        className="trade-input"
-                      />
-                      <button className="trade-btn sell" onClick={handleSell}>
-                        Sell ${dataset.symbol}
-                      </button>
+                  {/* Trade Form */}
+                  <div className="trade-form">
+                    {activeTab === 'buy' ? (
+                      <div className="trade-group">
+                        <input
+                          type="text"
+                          placeholder="Enter USDC amount"
+                          value={buyAmount}
+                          onChange={(e) => setBuyAmount(e.target.value)}
+                          className="trade-input"
+                        />
+                        <button className="trade-btn buy" onClick={handleBuy}>
+                          Buy ${dataset.symbol}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="trade-group">
+                        <input
+                          type="text"
+                          placeholder="Enter token amount"
+                          value={sellAmount}
+                          onChange={(e) => setSellAmount(e.target.value)}
+                          className="trade-input"
+                        />
+                        <button className="trade-btn sell" onClick={handleSell}>
+                          Sell ${dataset.symbol}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                    <button className="burn-button" onClick={handleBurn}> 
+                      Burn ${dataset.symbol} for Access
+                    </button>
+                
+                  {/* Status */}
+                  {status && (
+                    <div className="status-message">
+                      {status}
                     </div>
                   )}
+                </div>
+              ) : 
+              (
+                <div className="trading-container">
+                  {/* Wallet Section */}
+                  <div className="wallet-section">
+                    <div className="wallet-label">Wallet</div>
+                    <div 
+                      className="wallet-connect-link"
+                      onClick={async () => {
+                        if (window.ethereum) {
+                          await connectWallet('metamask');
+                        } else if (window.coinbaseWalletExtension) {
+                          await connectWallet('coinbase');
+                        } else {
+                          alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
+                        }
+                      }}
+                    >
+                      Connect wallet
+                    </div>
+                  </div>
 
-                  <button className="burn-btn" onClick={handleBurn}>
-                    BURN FOR DOWNLOAD ACCESS
-                  </button>
+                  {/* Trade Tabs */}
+                  <div className="trade-tabs">
+                    <button className="tab-btn active">BUY</button>
+                    <button className="tab-btn">SELL</button>
+                  </div>
+
+                  {/* Connect Prompt */}
+                  <div className="connect-prompt">
+                    <h3>Trading disabled</h3>
+                    <button
+                      className="connect-btn"
+                      onClick={async () => {
+                        if (window.ethereum) {
+                          await connectWallet('metamask');
+                        } else if (window.coinbaseWalletExtension) {
+                          await connectWallet('coinbase');
+                        } else {
+                          alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
+                        }
+                      }}
+                    >
+                      Connect wallet
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Info Grid */}
+            <div className="token-info-grid">
+              <div className="info-card">
+                <div className="info-label">Chain</div>
+                <div className="info-value">Sepolia</div>
+              </div>
+
+              <div className="info-card">
+                <div className="info-label">Total Supply</div>
+                <div className="info-value">
+                  {dataset.total_supply ? dataset.total_supply.toLocaleString() : '100M'}
                 </div>
               </div>
-            ) : (
-              <div className="connect-prompt">
-                <h3>Trading disabled</h3>
-                <button
-                  className="connect-btn"
-                  onClick={async () => {
-                    // Directly connect - wallet UI will handle it
-                    if (window.ethereum) {
-                      await connectWallet('metamask');
-                    } else if (window.coinbaseWalletExtension) {
-                      await connectWallet('coinbase');
-                    } else {
-                      alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
-                    }
-                  }}
-                >
-                  Connect wallet
-                </button>
-              </div>
-            )}
 
-            {/* Status */}
-            {status && (
-              <div className="status-message">
-                {status}
+              <div className="info-card">
+                <div className="info-label">Contract Address</div>
+                <div className="info-value contract">
+                  {tokenAddress?.slice(0, 6)}...{tokenAddress?.slice(-4)}
+                  <span className="copy-icon" onClick={copyToClipboard}>
+                    {copied ? '✓' : '📋'}
+                  </span>
+                </div>
               </div>
-            )}
+
+              <div className="info-card">
+                <div className="info-label">Price</div>
+                <div className="info-value">{price}</div>
+              </div>
+
+              <div className="info-card">
+                <div className="info-label">Your Balance</div>
+                <div className="info-value">{parseFloat(balance).toFixed(2)}</div>
+              </div>
+                 <div className="info-card info-card-wide">
+                <div className="info-label">Description</div>
+                <div className="info-value info-description">
+                  {dataset.description || 'No description available'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
