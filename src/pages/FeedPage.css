@@ -341,7 +341,6 @@
 /* ===== DASHBOARD GRID (REUSED) ===== */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 48px;
 }
@@ -592,7 +591,7 @@
 
 /* ===== RESPONSIVE DESIGN ===== */
 
-/* Desktop: 1025px and above - NO MARGIN */
+/* Desktop: 1025px and above - 3 COLUMNS */
 @media (min-width: 1025px) {
   .feed-content {
     margin-left: 0;
@@ -603,9 +602,13 @@
   .search-box {
     max-width: 500px;
   }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-/* Tablet: 769px - 1024px - NO MARGIN */
+/* Tablet: 769px - 1024px - 2 COLUMNS */
 @media (min-width: 769px) and (max-width: 1024px) {
   .feed-content {
     margin-left: 0;
@@ -785,7 +788,7 @@
   }
 
   .dashboard-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: 1fr;
     gap: 12px;
     margin-bottom: 20px;
   }
