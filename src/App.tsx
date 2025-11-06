@@ -6,15 +6,13 @@ import CreateDatasetPage from '@/pages/CreateDatasetPage';
 import MyDatasetsPage from '@/pages/MyDatasetsPage';
 import FaucetPage from '@/pages/FaucetPage';
 import FeedPage from '@/pages/FeedPage';
-
-// import './App.css';
 import LandingPage from './pages/LandingPage';
 import { Providers } from './AppProvider';
 
 function App() {
   return (
-    <Providers>
-      <Router>
+    <Router>
+      <Providers>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -24,12 +22,10 @@ function App() {
           <Route path="/create" element={<CreateDatasetPage />} />
           <Route path="/my-datasets" element={<MyDatasetsPage />} />
           <Route path="/faucet" element={<FaucetPage />} />
-
         </Routes>
-      </Router>
-    </Providers>
+      </Providers>
+    </Router>
   );
 }
 
 export default App;
-
