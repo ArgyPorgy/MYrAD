@@ -61,7 +61,6 @@
 }
 
 /* ===== KEYFRAME ANIMATIONS ===== */
-
 @keyframes slideInDown {
   0% {
     opacity: 0;
@@ -176,6 +175,26 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ===== LOADING STATE ===== */
+.dashboard-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500px;
+  text-align: center;
+  gap: 28px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.loading-message {
+  font-size: 14px;
+  color: #888888;
+  margin: 0;
+  font-weight: 500;
+  animation: fadeIn 0.8s ease-out 0.2s both;
 }
 
 /* ===== DASHBOARD CARD ===== */
@@ -304,13 +323,6 @@
 .dashboard-card:hover .card-value {
   transform: scale(1.05);
   color: #ffffff;
-}
-
-.skeleton-loader {
-  display: inline-block;
-  font-size: 36px;
-  color: #555555;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .card-description {
@@ -609,6 +621,10 @@
   .empty-icon {
     animation: float 3.5s ease-in-out infinite;
   }
+
+  .dashboard-loading-container {
+    height: 400px;
+  }
 }
 
 /* Small Tablet: 481px - 768px - 70px MARGIN */
@@ -760,6 +776,15 @@
 
   .section-title {
     font-size: 16px;
+  }
+
+  .dashboard-loading-container {
+    height: 350px;
+    gap: 20px;
+  }
+
+  .loading-message {
+    font-size: 12px;
   }
 }
 
@@ -920,5 +945,14 @@
 
   .section-title {
     font-size: 14px;
+  }
+
+  .dashboard-loading-container {
+    height: 300px;
+    gap: 16px;
+  }
+
+  .loading-message {
+    font-size: 11px;
   }
 }

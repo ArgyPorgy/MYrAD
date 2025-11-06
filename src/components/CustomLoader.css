@@ -1,0 +1,62 @@
+.custom-loader {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== CENTER M PATTERN ===== */
+.center-m {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  z-index: 10;
+}
+
+.m-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== ROTATING DISCS ===== */
+.disc-wrapper {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  animation: rotateContainer 3s linear infinite;
+}
+
+.disc-wrapper::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 4px;
+  background: #ffffff;
+  border-radius: 2px;
+  left: 50%;
+  top: 3px;
+  margin-left: -6px;
+  opacity: 0.9;
+  clip-path: polygon(
+    0% 30%, 5% 20%, 10% 15%, 15% 12%, 20% 10%,
+    30% 8%, 50% 5%, 70% 8%, 80% 10%, 85% 12%,
+    90% 15%, 95% 20%, 100% 30%, 98% 50%, 100% 70%,
+    95% 80%, 90% 85%, 85% 88%, 80% 90%, 70% 92%,
+    50% 95%, 30% 92%, 20% 90%, 15% 88%, 10% 85%,
+    5% 80%, 2% 70%, 0% 50%
+  );
+}
+
+.disc-1 { animation-delay: 0s; }
+.disc-2 { animation-delay: -0.5s; }
+.disc-3 { animation-delay: -1s; }
+.disc-4 { animation-delay: -1.5s; }
+.disc-5 { animation-delay: -2s; }
+.disc-6 { animation-delay: -2.5s; }
+
+@keyframes rotateContainer {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

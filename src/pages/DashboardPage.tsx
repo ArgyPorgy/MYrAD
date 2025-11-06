@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
 import { Activity, TrendingUp, Wallet } from 'lucide-react';
+import CustomLoader from '@/components/CustomLoader';
 import './DashboardPage.css';
 
 interface UserDataset {
@@ -149,6 +150,11 @@ const DashboardPage = () => {
                   trading datasets
                 </p>
               </div>
+            ) : loading ? (
+              <div className="dashboard-loading-container">
+                <CustomLoader />
+                <p className="loading-message">Loading your dashboard...</p>
+              </div>
             ) : (
               <>
                 <div className="dashboard-grid">
@@ -163,13 +169,7 @@ const DashboardPage = () => {
                         <TrendingUp size={20} strokeWidth={1.5} />
                       </div>
                     </div>
-                    <div className="card-value">
-                      {loading ? (
-                        <span className="skeleton-loader">...</span>
-                      ) : (
-                        displayedDatasets
-                      )}
-                    </div>
+                    <div className="card-value">{displayedDatasets}</div>
                     <p className="card-description">
                       Unique datasets in your portfolio
                     </p>
@@ -189,13 +189,7 @@ const DashboardPage = () => {
                         <Activity size={20} strokeWidth={1.5} />
                       </div>
                     </div>
-                    <div className="card-value">
-                      {loading ? (
-                        <span className="skeleton-loader">...</span>
-                      ) : (
-                        displayedTrades
-                      )}
-                    </div>
+                    <div className="card-value">{displayedTrades}</div>
                     <p className="card-description">
                       Purchased datasets acquired
                     </p>
