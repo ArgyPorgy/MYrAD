@@ -1,6 +1,6 @@
 import { Name } from '@coinbase/onchainkit/identity';
-import { LogOut } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { LogOut, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import './Header.css';
 import { base } from 'viem/chains';
 
@@ -12,24 +12,41 @@ interface HeaderProps {
 }
 
 const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps) => {
-  const location = useLocation();
   const displayAddress = userAddress as `0x${string}`;
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Function to get page title based on route
-  const getPageTitle = (): string => {
-    const path = location.pathname;
-    
-    if (path === '/' || path === '') return 'Home';
-    if (path === '/dashboard') return 'Dashboard';
-    if (path === '/feed') return 'Feed';
-    if (path === '/marketplace') return 'Marketplace';
-    if (path.startsWith('/token/')) return 'Token Details';
-    if (path === '/create') return 'Create Dataset';
-    if (path === '/my-datasets') return 'My Datasets';
-    if (path === '/faucet') return 'Faucet';
-    
-    return 'MYRAD';
-  };
+  useEffect(() => {
+    const handleSidebarToggle = () => {
+      const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+      setSidebarCollapsed(collapsed);
+    };
+
+    const checkInitialState = () => {
+      const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+      const isMobile = window.innerWidth <= 768;
+      setSidebarCollapsed(isMobile || collapsed);
+    };
+
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        setSidebarCollapsed(true);
+      } else {
+        const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        setSidebarCollapsed(collapsed);
+      }
+    };
+
+    checkInitialState();
+    window.addEventListener('sidebarToggle', handleSidebarToggle);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('sidebarToggle', handleSidebarToggle);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const handleConnectClick = async (): Promise<void> => {
     try {
@@ -45,13 +62,13 @@ const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps
     }
   };
 
-  return (
-    <header className="header">
-      <div className="header-content">
-        <div className="header-left">
-          <h1 className="page-title">{getPageTitle()}</h1>
-        </div>
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
 
+  return (
+    <header className={`header ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className="header-content">
         <div className="header-right">
           {connected ? (
             <div className="wallet-actions">
@@ -62,6 +79,29 @@ const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps
                   chain={base}
                   className="wallet-name"
                 />
+              </div>
+
+              <div className="wallet-dropdown-container">
+                <button 
+                  className="wallet-dropdown-toggle" 
+                  onClick={toggleDropdown}
+                  type="button"
+                >
+                  <div className="avatar-circle-small"></div>
+                  <ChevronDown size={16} className={`chevron-icon ${isDropdownOpen ? 'open' : ''}`} />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="wallet-dropdown-menu">
+                    <div className="dropdown-address">
+                      <Name
+                        address={displayAddress}
+                        chain={base}
+                        className="dropdown-wallet-name"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button className="disconnect-button" onClick={onDisconnect} type="button">
