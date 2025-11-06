@@ -7,7 +7,7 @@ import MyDatasetsPage from '@/pages/MyDatasetsPage';
 import FaucetPage from '@/pages/FaucetPage';
 import FeedPage from '@/pages/FeedPage';
 
-import './App.css';
+// import './App.css';
 import LandingPage from './pages/LandingPage';
 import { Providers } from './AppProvider';
 

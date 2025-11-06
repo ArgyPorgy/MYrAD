@@ -1,5 +1,6 @@
-import { shortenAddress } from '@/utils/web3';
-import { Avatar, Name } from '@coinbase/onchainkit/identity';
+import { Name } from '@coinbase/onchainkit/identity';
+import { LogOut } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import './Header.css';
 import { base } from 'viem/chains';
 
@@ -11,19 +12,28 @@ interface HeaderProps {
 }
 
 const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps) => {
+  const location = useLocation();
+  const displayAddress = userAddress as `0x${string}`;
 
- // ✅ Simple unified way
-const displayAddress = (userAddress ) as `0x${string}`;
+  // Function to get page title based on route
+  const getPageTitle = (): string => {
+    const path = location.pathname;
+    
+    if (path === '/' || path === '') return 'Home';
+    if (path === '/dashboard') return 'Dashboard';
+    if (path === '/feed') return 'Feed';
+    if (path === '/marketplace') return 'Marketplace';
+    if (path.startsWith('/token/')) return 'Token Details';
+    if (path === '/create') return 'Create Dataset';
+    if (path === '/my-datasets') return 'My Datasets';
+    if (path === '/faucet') return 'Faucet';
+    
+    return 'MYRAD';
+  };
 
-//const displayAddress = ('0x06a7CfeFC9358181544166832889a970BdE557EA') as `0x${string}`;
-
-  const handleConnectClick = async () => {
-    // Trigger wallet connection - this will open the wallet's own selection UI
-    // If multiple wallets are installed, the provider will show options
-    // Clear any cached connection state first to ensure options appear
+  const handleConnectClick = async (): Promise<void> => {
     try {
       if (window.ethereum) {
-        // Request connection - if multiple wallets, the provider will show selector
         await onConnect('metamask');
       } else if (window.coinbaseWalletExtension) {
         await onConnect('coinbase');
@@ -36,49 +46,37 @@ const displayAddress = (userAddress ) as `0x${string}`;
   };
 
   return (
-    <>
-      <header className="header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="page-title">Marketplace</h1>
-          </div>
-
-          <div className="header-right">
-            {connected ? (
-              <div className="wallet-actions flex items-center gap-4">
-                {/* Avatar + Name Section */}
-                <div className="wallet-info">
-                  <Avatar
-                    address={displayAddress}
-                    chain={base}
-                    className="avatar"
-                  />
-                  <Name
-                    address={displayAddress}
-                    chain={base}
-                    className="wallet-name"
-                  />
-                </div>
-
-                {/* Shortened Address + Disconnect */}
-                <div className="wallet-badge">
-                  <div className="wallet-status"></div>
-                  <span>{shortenAddress(displayAddress)}</span>
-                </div>
-                <button className="disconnect-button" onClick={onDisconnect}>
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <button className="connect-button" onClick={handleConnectClick}>
-                Connect Wallet
-              </button>
-            )}
-          </div>
+    <header className="header">
+      <div className="header-content">
+        <div className="header-left">
+          <h1 className="page-title">{getPageTitle()}</h1>
         </div>
-      </header>
 
-    </>
+        <div className="header-right">
+          {connected ? (
+            <div className="wallet-actions">
+              <div className="wallet-info">
+                <div className="avatar-circle"></div>
+                <Name
+                  address={displayAddress}
+                  chain={base}
+                  className="wallet-name"
+                />
+              </div>
+
+              <button className="disconnect-button" onClick={onDisconnect} type="button">
+                <LogOut size={16} />
+                <span>Disconnect</span>
+              </button>
+            </div>
+          ) : (
+            <button className="connect-button" onClick={handleConnectClick} type="button">
+              Connect Wallet
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };
 

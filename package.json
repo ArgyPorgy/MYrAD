@@ -1,6 +1,7 @@
 {
   "name": "myrad-complete-backend",
   "version": "2.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -20,6 +21,7 @@
     "@lighthouse-web3/sdk": "^0.4.3",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@openzeppelin/contracts": "^4.9.0",
+    "@tailwindcss/vite": "^4.1.16",
     "@tanstack/react-query": "^5.90.5",
     "axios": "^1.7.0",
     "cors": "^2.8.5",
@@ -35,6 +37,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
+    "tailwindcss": "^4.1.16",
     "viem": "^2.38.3",
     "wagmi": "^2.18.1"
   },

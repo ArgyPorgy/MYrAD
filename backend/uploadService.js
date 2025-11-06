@@ -1,7 +1,7 @@
-const lighthouse = require("@lighthouse-web3/sdk");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
+import lighthouse from "@lighthouse-web3/sdk";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 const LIGHTHOUSE_API_KEY = process.env.LIGHTHOUSE_API_KEY;
 
@@ -59,7 +59,7 @@ async function uploadBase64ToLighthouse(base64Data, fileName) {
   }
 }
 
-module.exports = {
+export {
   uploadToLighthouse,
   uploadBase64ToLighthouse,
 };

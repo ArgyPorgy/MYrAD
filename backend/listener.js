@@ -1,17 +1,17 @@
-// backend/listener.js
-// Robust listener: uses WebSocketProvider when RPC is ws(s)://, otherwise falls back to polling getLogs.
-// Saves last processed block to backend/lastBlock.json to avoid duplicates across restarts.
+import "dotenv/config";
+import { ethers } from "ethers";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import config from "./config.js";
+import { signDownloadUrl, saveAccess } from "./utils.js";
+import { getCoinByTokenAddress, getAllCoins } from "./storage.js";
+import { query } from "./db.js";
 
-require("dotenv").config(); // CRITICAL: Load environment variables
-const { ethers } = require("ethers");
-const fs = require("fs");
-const path = require("path");
-const { RPC_URLS, DATASETS_FILE, MAX_BLOCK_RANGE } = require("./config");
-const { signDownloadUrl, saveAccess } = require("./utils");
-// NOTE: No longer using userDatasets.json - we query PostgreSQL and blockchain directly for balances
-// NOTE: No longer using addTrade - transactions are tracked on-chain automatically
-const { getCoinByTokenAddress, getAllCoins } = require("./storage");
-const { query } = require("./db");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { RPC_URLS, DATASETS_FILE, MAX_BLOCK_RANGE } = config;
 
 const POLL_INTERVAL = 30000; // 30s polling when using HTTP (reduced to avoid rate limits)
 const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
@@ -230,9 +230,6 @@ async function saveBoughtDataset(tokenAddr, buyerAddress, tokensOut) {
   }
 }
 
-// REMOVED: createBoughtDatasetEntry - no longer needed
-// Balances are queried directly from blockchain, not stored in userDatasets.json
-
 async function handleSoldDataset(tokenAddr, sellerAddress, tokensIn) {
   try {
     const meta = await getDatasetByTokenAddress(tokenAddr);
@@ -336,7 +333,8 @@ if (provider instanceof ethers.WebSocketProvider) {
           await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
           
           // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
-          console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${meta.symbol}`);
+          const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
+          console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${tokenMeta ? tokenMeta.symbol : 'UNKNOWN'}`);
         } catch (err) {
           console.error("Bought handler error:", err);
         }
@@ -512,7 +510,8 @@ if (provider instanceof ethers.WebSocketProvider) {
                   await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
                   
                   // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
-                  console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${meta.symbol}`);
+                  const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
+                  console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${tokenMeta ? tokenMeta.symbol : 'UNKNOWN'}`);
                 } else if (parsed && parsed.name === "Sold") {
                   const [tokenAddr, seller, tokenIn, usdcOut] = parsed.args;
                   console.log(`Sold event (HTTP): ${seller} sold ${ethers.formatUnits(tokenIn, 18)} tokens of ${tokenAddr}`);

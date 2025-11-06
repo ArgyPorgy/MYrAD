@@ -1,6 +1,6 @@
-const { ethers } = require('ethers');
-const { RPC_URLS } = require('./config');
-require('dotenv').config();
+import { ethers } from 'ethers';
+import config from './config.js';
+import "dotenv/config";
 
 // Create provider with fallback support
 function getProvider() {
@@ -18,6 +18,7 @@ function getProvider() {
   }
   
   // Fallback to HTTP RPC
+  const { RPC_URLS } = config;
   for (const rpcUrl of RPC_URLS || []) {
     try {
       return new ethers.JsonRpcProvider(rpcUrl);
@@ -150,7 +151,7 @@ async function getTradeCount(userAddress) {
       // Get all tokens from PostgreSQL to query
       if (process.env.DATABASE_URL) {
         try {
-          const { getAllCoins } = require('./storage');
+          const { getAllCoins } = await import('./storage.js');
           const allCoins = await getAllCoins();
           
           const ERC20_ABI = ["event Transfer(address indexed from, address indexed to, uint256 value)"];
@@ -216,10 +217,9 @@ function saveTradeHistory(trades) {
   // No-op
 }
 
-module.exports = {
-  getTradeCount,  // Main function - queries blockchain
-  addTrade,       // Deprecated but kept for compatibility
-  loadTradeHistory, // Deprecated but kept for compatibility
-  saveTradeHistory  // Deprecated but kept for compatibility
+export {
+  getTradeCount,
+  addTrade,
+  loadTradeHistory,
+  saveTradeHistory
 };
-

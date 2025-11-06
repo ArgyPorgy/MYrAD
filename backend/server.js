@@ -1,16 +1,21 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const { PORT, DATASETS_FILE, DB_FILE } = require("./config");
-const { ethers } = require("ethers");
-const multer = require("multer");
-const { uploadBase64ToLighthouse } = require("./uploadService");
-const { createDatasetToken } = require("./createDatasetAPI");
-// NOTE: No longer using getTradeCount - we count purchased datasets directly
-const { initSchema } = require('./db');
-const { getAllCoins, getCoinsByCreator } = require('./storage');
-const { canClaim, recordClaim, sendETH, sendUSDC } = require('./faucet');
+import express from "express";
+import cors from "cors";
+import fs from "fs";
+import path from "path";
+import config from "./config.js";
+import { ethers } from "ethers";
+import multer from "multer";
+import { uploadBase64ToLighthouse } from "./uploadService.js";
+import { createDatasetToken } from "./createDatasetAPI.js";
+import { initSchema } from './db.js';
+import { getAllCoins, getCoinsByCreator } from './storage.js';
+import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { PORT, DATASETS_FILE, DB_FILE } = config;
 
 // ERC20 ABI for balance checking
 const ERC20_ABI = [
@@ -47,8 +52,7 @@ const MARKETPLACE_ABI = [
 ];
 
 // Use config RPC
-const { RPC_URLS } = require("./config");
-const provider = new ethers.JsonRpcProvider(RPC_URLS[0]);
+const provider = new ethers.JsonRpcProvider(config.RPC_URLS[0]);
 
 app.get("/", (req, res) => {
   res.send("🚀 MYRAD Backend API running ✅");
@@ -635,5 +639,3 @@ app.listen(PORT, async () => {
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   console.log(`📊 Available at: ${url}`);
 });
-
-

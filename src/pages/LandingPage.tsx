@@ -877,7 +877,7 @@ const LandingPage = () => {
         <div className="bg-dots" ref={bgDotsRef}></div>
         <nav>
           <div className="logo">
-            <img src="/con.svg" alt="MYRAD Logo" />
+            <img src="/favicon.svg" alt="MYRAD Logo" />
           </div>
           <div className="nav-links">
             <a href="#features">Features</a>
@@ -915,7 +915,7 @@ const LandingPage = () => {
           <div className="section-header">
             <h2 className="section-title">
               Why Choose
-              <img src="con.svg" alt="MYRAD Logo" className="inline-logo" />?
+              <img src="favicon.svg" alt="MYRAD Logo" className="inline-logo" />?
             </h2>
           </div>
 
@@ -980,7 +980,7 @@ const LandingPage = () => {
           <div className="footer-content">
             <div className="footer-brand">
               <h3>
-                <img src="/con.svg" alt="MYRAD Logo" className="inline-logo" />
+                <img src="/favicon.svg" alt="MYRAD Logo" className="inline-logo" />
               </h3>
               <p>
                 Empowering decentralized data exchange with transparency and trust.

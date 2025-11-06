@@ -1,7 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const { ethers } = require('ethers');
-const { RPC_URLS } = require('./config');
+import fs from 'fs';
+import path from 'path';
+import { ethers } from 'ethers';
+import config from './config.js';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { RPC_URLS } = config;
 
 // Faucet cooldown file path
 const FAUCET_COOLDOWN_FILE = path.join(__dirname, 'faucetCooldowns.json');
@@ -182,11 +188,10 @@ async function sendUSDC(toAddress, amount) {
 // Initialize the file on module load
 initializeFaucetCooldownFile();
 
-module.exports = {
+export {
   canClaim,
   recordClaim,
   sendETH,
   sendUSDC,
   loadFaucetCooldowns
 };
-
