@@ -50,5 +50,18 @@
     "creator": "0x338323a83e9C9051a12bA93894a1DF7489a43c76",
     "total_supply": 9996,
     "created_at": 1762094882345
+  },
+  "0x5b4da23d4978abb17e443245d2d2acda875ffa5b": {
+    "name": "alpha beta",
+    "symbol": "ANDA",
+    "cid": "bafkreiflzzcvlgemgsupsjfr3da6p3pi4cyy5blf46vpl7fcg5hd3c3ha4",
+    "description": "uhuh uhuh uhuj uhjn ujin uijij ijij",
+    "token_address": "0x5B4dA23D4978abb17E443245d2D2aCdA875FfA5b",
+    "marketplace": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "marketplace_address": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "bonding_curve": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "creator": "0xEB35df454B7830510270e7313ad319E1550A23aD",
+    "total_supply": 1000000,
+    "created_at": 1762428431989
   }
 }
