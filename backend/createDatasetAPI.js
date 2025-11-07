@@ -1,20 +1,29 @@
-const { ethers } = require("ethers");
-const fs = require("fs");
-const path = require("path");
+import { ethers } from "ethers";
+import fs from "fs";
+import path from "path";
+import "dotenv/config";
+import { fileURLToPath } from "url";
+import { insertCoin } from './storage.js';
+import config from './config.js';
 
-// Load environment
-require("dotenv").config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const FACTORY_ABI = require("../artifacts/contracts/DataCoinFactory.sol/DataCoinFactory.json").abi;
-const MARKETPLACE_ABI = require("../artifacts/contracts/DataTokenMarketplace.sol/DataTokenMarketplace.json").abi;
-const ERC20_ABI = require("../artifacts/contracts/DataCoin.sol/DataCoin.json").abi;
+// Load ABI files
+const getArtifactABI = (filePath) => {
+  const data = fs.readFileSync(filePath, 'utf-8');
+  return JSON.parse(data).abi;
+};
+
+const FACTORY_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataCoinFactory.sol/DataCoinFactory.json"));
+const MARKETPLACE_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataTokenMarketplace.sol/DataTokenMarketplace.json"));
+const ERC20_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataCoin.sol/DataCoin.json"));
 
 const DATASETS_FILE = path.join(__dirname, "../datasets.json");
-const { insertCoin } = require('./storage');
 
 async function createDatasetToken(cid, name, symbol, description, totalSupply = 1000000, creatorAddress) {
   try {
-    const { RPC_URLS } = require("./config");
+    const { RPC_URLS } = config;
     const privateKey = process.env.PRIVATE_KEY;
     const factoryAddr = process.env.FACTORY_ADDRESS;
     const marketplaceAddr = process.env.MARKETPLACE_ADDRESS;
@@ -204,7 +213,7 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
           name,
           symbol,
           cid,
-          description: description !== undefined ? description : null, // Pass description as-is, null if undefined
+          description: description !== undefined ? description : null,
           creatorAddress,
           marketplaceAddress: marketplaceAddr,
           totalSupply: totalSupply
@@ -257,4 +266,4 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
   }
 }
 
-module.exports = { createDatasetToken };
+export { createDatasetToken };

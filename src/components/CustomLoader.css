@@ -1,0 +1,36 @@
+.custom-loader {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Rotating disks */
+.rotating-disks {
+  position: absolute;
+  width: 350%;
+  height: 35%;
+  animation: spin 2.5s linear infinite;
+  transform-origin: center center;
+  z-index: 1;
+}
+
+/* Static M */
+.static-m {
+  position: absolute;
+  width: 35%;
+  height: 35%;
+  z-index: 2;
+  transform-origin: center center;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,4 +1,6 @@
-const { Pool } = require('pg');
+import pg from "pg";
+
+const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   console.warn('[db] DATABASE_URL not set. PostgreSQL features will be disabled.');
@@ -41,6 +43,4 @@ async function query(text, params) {
   return pool.query(text, params);
 }
 
-module.exports = { pool, initSchema, query };
-
-
+export { pool, initSchema, query };

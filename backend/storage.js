@@ -1,4 +1,4 @@
-const { query } = require('./db');
+import { query } from './db.js';
 
 async function insertCoin({ tokenAddress, name, symbol, cid, description, creatorAddress, marketplaceAddress, totalSupply }) {
   const sql = `
@@ -63,4 +63,4 @@ async function getCoinsByCreator(creatorAddress) {
   return res.rows;
 }
 
-module.exports = { insertCoin, getAllCoins, getCoinByTokenAddress, getCoinsByCreator };
+export { insertCoin, getAllCoins, getCoinByTokenAddress, getCoinsByCreator };

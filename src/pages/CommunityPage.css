@@ -1,0 +1,361 @@
+/* ===== COMMUNITY PAGE LAYOUT ===== */
+.app-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  background: #000000;
+  min-height: 100vh;
+}
+
+.page-container {
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
+}
+
+/* ===== COMMUNITY CONTENT - INNER CONTAINER ===== */
+.community-content {
+  padding: 32px;
+  padding-top: 80px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.community-inner-wrapper {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== COMMUNITY BADGE ===== */
+.community-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+  border: 1px solid #333333;
+  border-radius: 24px;
+  font-size: 13px;
+  color: #ffffff;
+  margin-bottom: 32px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== COMMUNITY SVG CONTAINER ===== */
+.community-svg-container {
+  margin: 0 auto 48px;
+  position: relative;
+  width: 400px;
+  height: 400px;
+  animation: float 6s ease-in-out infinite;
+  transition: transform 0.1s ease-out;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.community-svg-container img {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 20px 60px rgba(255, 255, 255, 0.1));
+  border-radius: 16px;
+}
+
+/* ===== COMMUNITY TITLE ===== */
+.community-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+  letter-spacing: -2px;
+  line-height: 1;
+  animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+/* ===== COMMUNITY DESCRIPTION ===== */
+.community-description {
+  font-size: 16px;
+  color: #888888;
+  margin: 0 0 48px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+  animation: fadeIn 0.8s ease-out 0.4s both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== COMMUNITY ACTIONS ===== */
+.community-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== COMMUNITY BUTTON ===== */
+.community-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.community-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.community-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.community-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.community-btn svg {
+  position: relative;
+  z-index: 1;
+}
+
+.community-btn-primary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.community-btn-primary:hover {
+  background: #e5e5e5;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(255, 255, 255, 0.2);
+}
+
+.community-btn-secondary {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid #333333;
+}
+
+.community-btn-secondary:hover {
+  border-color: #555555;
+  background: #1a1a1a;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(255, 255, 255, 0.1);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Desktop: 1025px and above */
+@media (min-width: 1025px) {
+  .community-content {
+    margin-left: 0;
+    padding: 32px;
+    padding-top: 80px;
+  }
+}
+
+/* Tablet: 769px - 1024px */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .community-content {
+    margin-left: 0;
+    padding: 24px;
+    padding-top: 80px;
+  }
+
+  .community-title {
+    font-size: 36px;
+  }
+
+  .community-description {
+    font-size: 14px;
+  }
+
+  .community-svg-container {
+    width: 320px;
+    height: 320px;
+    margin-bottom: 32px;
+  }
+
+  .community-btn {
+    padding: 14px 28px;
+    font-size: 14px;
+  }
+}
+
+/* Small Tablet: 481px - 768px */
+@media (max-width: 768px) {
+  .community-content {
+    margin-left: 70px;
+    padding: 16px;
+    padding-top: 80px;
+  }
+
+  .community-inner-wrapper {
+    max-width: 100%;
+  }
+
+  .community-title {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .community-description {
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+
+  .community-svg-container {
+    width: 280px;
+    height: 280px;
+    margin-bottom: 28px;
+  }
+
+  .community-badge {
+    font-size: 12px;
+    padding: 6px 16px;
+    margin-bottom: 24px;
+  }
+
+  .community-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .community-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 24px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile: 0px - 480px */
+@media (max-width: 480px) {
+  .community-content {
+    margin-left: 56px;
+    padding: 12px;
+    padding-top: 80px;
+  }
+
+  .community-inner-wrapper {
+    max-width: 100%;
+  }
+
+  .community-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  .community-description {
+    font-size: 12px;
+    margin-bottom: 28px;
+  }
+
+  .community-svg-container {
+    width: 220px;
+    height: 220px;
+    margin-bottom: 24px;
+  }
+
+  .community-badge {
+    font-size: 11px;
+    padding: 6px 12px;
+    margin-bottom: 20px;
+  }
+
+  .community-badge span:first-child {
+    display: flex;
+    align-items: center;
+  }
+
+  .community-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .community-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+
+  .community-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+}
