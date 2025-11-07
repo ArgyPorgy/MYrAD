@@ -31,7 +31,12 @@
 
 /* ===== PAGE HEADER ===== */
 .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 40px;
+  animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  gap: 20px;
 }
 
 .page-title {
@@ -40,7 +45,6 @@
   color: #ffffff;
   margin: 0 0 12px 0;
   letter-spacing: -0.5px;
-  animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .page-description {
