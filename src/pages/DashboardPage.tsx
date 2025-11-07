@@ -19,7 +19,7 @@ const DashboardPage = () => {
   const [displayedDatasets, setDisplayedDatasets] = useState(0);
   const [displayedTrades, setDisplayedTrades] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [cardHovered, setCardHovered] = useState<string | null>(null);
+  const [, setCardHovered] = useState<string | null>(null);
   const counterIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

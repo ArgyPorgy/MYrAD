@@ -15,7 +15,6 @@ import {
 } from "@/constants/contracts";
 import { retryContractCall } from "@/utils/web3";
 import {
-  ChevronLeft,
   Copy,
   Check,
   TrendingUp,

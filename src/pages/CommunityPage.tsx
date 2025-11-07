@@ -1,6 +1,4 @@
-import { Home, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { WandSparkles } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { useWeb3 } from '@/hooks/useWeb3';
@@ -26,16 +24,6 @@ const CommunityPage = () => {
   }, []);
 
 
-  const handleGoHome = () => {
-    window.location.href = '/';
-  };
-
-
-  const handleGoBack = () => {
-    window.history.back();
-  };
-
-
   return (
     <div className="app-layout">
       <Sidebar />
@@ -53,11 +41,6 @@ const CommunityPage = () => {
         <div className="page-container">
           <div className="community-content">
             <div className="community-inner-wrapper">
-              <div className="community-badge">
-                <span><WandSparkles size={16} /></span>
-                <span>Coming Soon</span>
-              </div>
-
 
               <div 
                 className="community-svg-container"
@@ -69,7 +52,7 @@ const CommunityPage = () => {
               </div>
 
 
-              <h1 className="community-title">Working On It!</h1>
+              <h1 className="community-title">Coming Soon...</h1>
             </div>
           </div>
         </div>

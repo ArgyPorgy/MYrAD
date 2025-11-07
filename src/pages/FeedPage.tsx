@@ -16,7 +16,7 @@ const FeedPage = () => {
   const [likes, setLikes] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [cardHovered, setCardHovered] = useState<string | null>(null);
+  const [, setCardHovered] = useState<string | null>(null);
 
   const randomImages = [
     'https://images.unsplash.com/photo-1644088379091-d574269d422f',

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/hooks/useWeb3';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import CustomLoader from '@/components/CustomLoader';
 import { getApiUrl } from '@/config/api';
 import { Droplet, AlertCircle, Check, X, Info, Wallet } from 'lucide-react';
 import './FaucetPage.css';
