@@ -9,6 +9,7 @@ import { getApiUrl } from '@/config/api';
 import { Search, Copy, Check } from 'lucide-react';
 import './MarketplacePage.css';
 
+
 const MarketplacePage = () => {
   const navigate = useNavigate();
   const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
@@ -18,20 +19,23 @@ const MarketplacePage = () => {
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [copied, setCopied] = useState<string | null>(null);
 
+
   useEffect(() => {
     loadDatasets();
   }, []);
 
-  const copyToClipboard = async (text: string, e: React.MouseEvent) => {
+
+  const copyToClipboard = async (text: string, identifier: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(text);
+      setCopied(identifier);
       setTimeout(() => setCopied(null), 2000);
     } catch (e) {
       console.error('Clipboard copy failed:', e);
     }
   };
+
 
   const loadDatasets = async () => {
     setLoading(true);
@@ -40,14 +44,17 @@ const MarketplacePage = () => {
       const data = await resp.json();
       setDatasets(data);
 
+
       const entries = Object.entries(data) as [string, Dataset][];
       const priceResults: Record<string, number> = {};
+
 
       await Promise.all(
         entries.map(async ([tokenAddr, meta]) => {
           const marketplaceAddr =
             meta.marketplace || meta.marketplace_address || meta.bonding_curve;
           if (!marketplaceAddr) return;
+
 
           try {
             const resp = await fetch(getApiUrl(`/price/${marketplaceAddr}/${tokenAddr}`));
@@ -59,6 +66,7 @@ const MarketplacePage = () => {
         })
       );
 
+
       setPrices(priceResults);
     } catch (err) {
       console.error('Error loading datasets:', err);
@@ -66,6 +74,7 @@ const MarketplacePage = () => {
       setLoading(false);
     }
   };
+
 
   const datasetEntries = (Object.entries(datasets) as [string, Dataset][]).filter(
     ([tokenAddr, meta]) =>
@@ -76,13 +85,16 @@ const MarketplacePage = () => {
       tokenAddr.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+
   const handleTokenClick = (tokenAddress: string) => {
     navigate(`/token/${tokenAddress}`);
   };
 
+
   return (
     <div className="app-layout">
       <Sidebar />
+
 
       <main className="main-content">
         <Header
@@ -92,6 +104,7 @@ const MarketplacePage = () => {
           onDisconnect={disconnectWallet}
         />
 
+
         <div className="page-container">
           <div className="marketplace-content">
             <div className="page-header">
@@ -100,6 +113,7 @@ const MarketplacePage = () => {
                 Explore and trade available data tokens across the network
               </p>
             </div>
+
 
             <div className="search-wrapper">
               <div className="search-box">
@@ -122,6 +136,7 @@ const MarketplacePage = () => {
                 )}
               </div>
             </div>
+
 
             {loading ? (
               <div className="marketplace-loading-container">
@@ -161,6 +176,7 @@ const MarketplacePage = () => {
                           ? prices[tokenAddr] * meta.total_supply
                           : null;
 
+
                       return (
                         <tr
                           key={tokenAddr}
@@ -180,9 +196,11 @@ const MarketplacePage = () => {
                             </div>
                           </td>
 
+
                           <td data-label="Total Supply" className="supply-cell">
                             {meta.total_supply?.toLocaleString() || '—'}
                           </td>
+
 
                           <td data-label="Market Cap" className="mcap-cell">
                             {marketCap
@@ -192,11 +210,13 @@ const MarketplacePage = () => {
                               : '—'}
                           </td>
 
+
                           <td data-label="Creator">
                             {meta.creator ? (
                               <div
                                 className="copy-field"
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={(e) => copyToClipboard(meta.creator!, `creator_${tokenAddr}`, e)}
+                                style={{ cursor: 'pointer' }}
                               >
                                 <span className="address-text">
                                   {meta.creator.slice(0, 6)}...{meta.creator.slice(-4)}
@@ -205,10 +225,7 @@ const MarketplacePage = () => {
                                   className={`copy-btn ${
                                     copied === `creator_${tokenAddr}` ? 'copied' : ''
                                   }`}
-                                  onClick={(e) => {
-                                    copyToClipboard(meta.creator!, e);
-                                    setCopied(`creator_${tokenAddr}`);
-                                  }}
+                                  onClick={(e) => copyToClipboard(meta.creator!, `creator_${tokenAddr}`, e)}
                                   aria-label="Copy creator address"
                                 >
                                   {copied === `creator_${tokenAddr}` ? (
@@ -223,10 +240,12 @@ const MarketplacePage = () => {
                             )}
                           </td>
 
+
                           <td data-label="Token Address">
                             <div
                               className="copy-field"
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => copyToClipboard(tokenAddr, `token_${tokenAddr}`, e)}
+                              style={{ cursor: 'pointer' }}
                             >
                               <span className="address-text">
                                 {tokenAddr.slice(0, 6)}...{tokenAddr.slice(-4)}
@@ -235,10 +254,7 @@ const MarketplacePage = () => {
                                 className={`copy-btn ${
                                   copied === `token_${tokenAddr}` ? 'copied' : ''
                                 }`}
-                                onClick={(e) => {
-                                  copyToClipboard(tokenAddr, e);
-                                  setCopied(`token_${tokenAddr}`);
-                                }}
+                                onClick={(e) => copyToClipboard(tokenAddr, `token_${tokenAddr}`, e)}
                                 aria-label="Copy token address"
                               >
                                 {copied === `token_${tokenAddr}` ? (
@@ -262,5 +278,6 @@ const MarketplacePage = () => {
     </div>
   );
 };
+
 
 export default MarketplacePage;
