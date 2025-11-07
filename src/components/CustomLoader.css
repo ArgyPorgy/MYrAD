@@ -1,15 +1,28 @@
 .custom-loader {
+  position: relative;
+  width: 160px;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 150px;
-  height: 150px;
 }
 
-.rotating-loader {
-  width: 100%;
-  height: 100%;
-  animation: spin 2.4s linear infinite;
+/* Rotating disks */
+.rotating-disks {
+  position: absolute;
+  width: 350%;
+  height: 35%;
+  animation: spin 2.5s linear infinite;
+  transform-origin: center center;
+  z-index: 1;
+}
+
+/* Static M */
+.static-m {
+  position: absolute;
+  width: 35%;
+  height: 35%;
+  z-index: 2;
   transform-origin: center center;
 }
 
