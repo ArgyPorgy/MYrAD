@@ -7,6 +7,7 @@ import { getApiUrl } from '@/config/api';
 import { Droplet, AlertCircle, Check, X, Info, Wallet } from 'lucide-react';
 import './FaucetPage.css';
 
+
 const FaucetPage = () => {
   const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
   const [faucetLoading, setFaucetLoading] = useState<'eth' | 'usdc' | null>(null);
@@ -17,10 +18,12 @@ const FaucetPage = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | 'info'>('info');
 
+
   const showStatus = (message: string, type: 'success' | 'error' | 'info') => {
     setStatusMessage(message);
     setStatusType(type);
   };
+
 
   const loadFaucetStatus = async () => {
     if (!userAddress) return;
@@ -35,11 +38,13 @@ const FaucetPage = () => {
     }
   };
 
+
   useEffect(() => {
     if (connected && userAddress) {
       loadFaucetStatus();
     }
   }, [connected, userAddress]);
+
 
   const handleFaucetClaim = async (type: 'eth' | 'usdc') => {
     if (!connected || !userAddress) {
@@ -47,8 +52,10 @@ const FaucetPage = () => {
       return;
     }
 
+
     setFaucetLoading(type);
     showStatus(`Requesting ${type.toUpperCase()} faucet...`, 'info');
+
 
     try {
       const response = await fetch(getApiUrl(`/faucet/${type}`), {
@@ -59,7 +66,9 @@ const FaucetPage = () => {
         body: JSON.stringify({ userAddress }),
       });
 
+
       const data = await response.json();
+
 
       if (response.ok) {
         showStatus(
@@ -81,6 +90,7 @@ const FaucetPage = () => {
     }
   };
 
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -93,6 +103,7 @@ const FaucetPage = () => {
           onDisconnect={disconnectWallet}
         />
 
+
         <div className="page-container">
           <div className="faucet-content">
             <div className="page-header">
@@ -101,6 +112,7 @@ const FaucetPage = () => {
                 Get free test tokens for Base Sepolia testnet. Each faucet can be claimed once per 24 hours.
               </p>
             </div>
+
 
             <div className="faucet-container">
               {!connected ? (
@@ -137,10 +149,13 @@ const FaucetPage = () => {
                     </div>
                   </div>
 
+
                   <div className="faucet-cards">
                     <div className="faucet-card">
                       <div className="faucet-card-header">
-                        <div className="faucet-logo eth">ETH</div>
+                        <div className="faucet-logo eth">
+                          <img src="/eth.png" alt="ETH" />
+                        </div>
                         <h3 className="faucet-card-title">ETH Faucet</h3>
                       </div>
                       <div className="faucet-card-amount">0.001 ETH</div>
@@ -176,9 +191,12 @@ const FaucetPage = () => {
                       </button>
                     </div>
 
+
                     <div className="faucet-card">
                       <div className="faucet-card-header">
-                        <div className="faucet-logo usdc">USDC</div>
+                        <div className="faucet-logo usdc">
+                          <img src="/usdc.png" alt="USDC" />
+                        </div>
                         <h3 className="faucet-card-title">USDC Faucet</h3>
                       </div>
                       <div className="faucet-card-amount">5 USDC</div>
@@ -215,6 +233,7 @@ const FaucetPage = () => {
                     </div>
                   </div>
 
+
                   {statusMessage && (
                     <div className={`status-message active ${statusType}`}>
                       {statusType === 'success' && <Check size={18} strokeWidth={2.5} />}
@@ -232,5 +251,6 @@ const FaucetPage = () => {
     </div>
   );
 };
+
 
 export default FaucetPage;

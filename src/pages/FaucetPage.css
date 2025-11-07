@@ -2,11 +2,13 @@
   box-sizing: border-box;
 }
 
+
 .app-layout {
   display: flex;
   width: 100%;
   min-height: 100vh;
 }
+
 
 .main-content {
   flex: 1;
@@ -15,12 +17,14 @@
   min-height: 100vh;
 }
 
+
 /* ===== PAGE CONTAINER - OUTER WRAPPER ===== */
 .page-container {
   padding: 0;
   min-height: 100vh;
   background: linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
 }
+
 
 /* ===== FAUCET CONTENT - INNER CONTAINER ===== */
 .faucet-content {
@@ -32,11 +36,13 @@
   overflow-x: hidden;
 }
 
+
 /* ===== PAGE HEADER ===== */
 .page-header {
   margin-bottom: 40px;
   animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
 
 .page-title {
   font-size: 32px;
@@ -45,6 +51,7 @@
   margin: 0 0 12px 0;
   letter-spacing: -0.5px;
 }
+
 
 .page-description {
   font-size: 14px;
@@ -55,11 +62,13 @@
   animation: fadeIn 0.8s ease-out 0.2s both;
 }
 
+
 /* ===== FAUCET CONTAINER ===== */
 .faucet-container {
   max-width: 900px;
   margin: 0 auto;
 }
+
 
 /* ===== INFO BOX ===== */
 .info-box {
@@ -81,6 +90,7 @@
   animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
 }
 
+
 .info-box::before {
   content: "";
   position: absolute;
@@ -93,14 +103,17 @@
   pointer-events: none;
 }
 
+
 .info-box:hover::before {
   left: 100%;
 }
+
 
 .info-box:hover {
   background: rgba(255, 255, 255, 0.05);
   border-color: #333333;
 }
+
 
 .info-icon {
   flex-shrink: 0;
@@ -116,6 +129,7 @@
   color: #888888;
 }
 
+
 .info-box:hover .info-icon {
   background: rgba(255, 255, 255, 0.15);
   border-color: #444444;
@@ -123,15 +137,18 @@
   color: #ffffff;
 }
 
+
 .info-content {
   flex: 1;
   color: #aaaaaa;
 }
 
+
 .info-content strong {
   color: #ffffff;
   font-weight: 600;
 }
+
 
 /* ===== EMPTY STATE ===== */
 .empty-state {
@@ -145,6 +162,7 @@
   animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
 }
 
+
 .empty-state::before {
   content: "";
   position: absolute;
@@ -155,6 +173,7 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   pointer-events: none;
 }
+
 
 .empty-icon {
   display: flex;
@@ -170,12 +189,14 @@
   transition: all 0.3s ease;
 }
 
+
 .empty-state:hover .empty-icon {
   border-color: #3a3a3a;
   background: #222222;
   color: #888888;
   transform: scale(1.05) rotate(3deg);
 }
+
 
 .empty-title {
   font-size: 24px;
@@ -185,6 +206,7 @@
   letter-spacing: -0.3px;
 }
 
+
 .empty-description {
   font-size: 14px;
   color: #888888;
@@ -192,6 +214,7 @@
   font-weight: 500;
   line-height: 1.6;
 }
+
 
 /* ===== CONNECT BUTTON ===== */
 .btn-connect-large {
@@ -215,6 +238,7 @@
   box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
 }
 
+
 .btn-connect-large::before {
   content: "";
   position: absolute;
@@ -227,9 +251,11 @@
   pointer-events: none;
 }
 
+
 .btn-connect-large:hover::before {
   left: 100%;
 }
+
 
 .btn-connect-large:hover {
   background: #e5e5e5;
@@ -237,10 +263,12 @@
   box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
 }
 
+
 .btn-connect-large:active {
   background: #d5d5d5;
   transform: translateY(0);
 }
+
 
 /* ===== FAUCET CARDS ===== */
 .faucet-cards {
@@ -249,6 +277,7 @@
   gap: 24px;
   margin-bottom: 32px;
 }
+
 
 .faucet-card {
   background: #0a0a0a;
@@ -265,6 +294,7 @@
   animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+
 .faucet-card::before {
   content: "";
   position: absolute;
@@ -276,11 +306,13 @@
   pointer-events: none;
 }
 
+
 .faucet-card:hover {
   border-color: #333333;
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
 }
+
 
 .faucet-card::after {
   content: "";
@@ -293,10 +325,12 @@
   transition: background 0.3s ease;
 }
 
+
 .faucet-card:hover::after {
   background: #ffffff;
   opacity: 0.3;
 }
+
 
 /* ===== FAUCET CARD HEADER ===== */
 .faucet-card-header {
@@ -305,6 +339,7 @@
   align-items: center;
   margin-bottom: 16px;
 }
+
 
 .faucet-logo {
   width: 60px;
@@ -326,6 +361,14 @@
   overflow: hidden;
 }
 
+
+.faucet-logo img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+
 .faucet-logo::before {
   content: "";
   position: absolute;
@@ -338,16 +381,19 @@
   pointer-events: none;
 }
 
+
 .faucet-card:hover .faucet-logo {
-  transform: scale(1.12) rotate(-6deg);
+  transform: scale(1.12);
   box-shadow: 0 8px 24px rgba(255, 255, 255, 0.3);
   background: #f0f0f0;
   border-color: #555555;
 }
 
+
 .faucet-card:hover .faucet-logo::before {
   left: 100%;
 }
+
 
 .faucet-card-title {
   font-size: 18px;
@@ -356,6 +402,7 @@
   margin: 0;
   letter-spacing: -0.3px;
 }
+
 
 /* ===== FAUCET CARD AMOUNT ===== */
 .faucet-card-amount {
@@ -366,6 +413,7 @@
   font-family: 'Monaco', 'Menlo', monospace;
 }
 
+
 .faucet-card-description {
   font-size: 13px;
   color: #888888;
@@ -373,6 +421,7 @@
   line-height: 1.5;
   font-weight: 500;
 }
+
 
 /* ===== FAUCET BUTTON ===== */
 .faucet-btn {
@@ -398,6 +447,7 @@
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
+
 .faucet-btn::before {
   content: "";
   position: absolute;
@@ -410,9 +460,11 @@
   pointer-events: none;
 }
 
+
 .faucet-btn:hover::before {
   left: 100%;
 }
+
 
 .faucet-btn:hover:not(:disabled) {
   background: #e5e5e5;
@@ -420,10 +472,12 @@
   box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
 }
 
+
 .faucet-btn:active:not(:disabled) {
   background: #d5d5d5;
   transform: translateY(0);
 }
+
 
 .faucet-btn:disabled {
   opacity: 0.6;
@@ -434,17 +488,20 @@
   box-shadow: none;
 }
 
+
 .faucet-btn.disabled {
   background: #1a1a1a;
   color: #666666;
   border: 1px solid #2a2a2a;
 }
 
+
 .faucet-btn svg {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
 }
+
 
 /* ===== STATUS MESSAGE ===== */
 .status-message {
@@ -459,9 +516,11 @@
   animation: slideInUp 0.3s ease-out;
 }
 
+
 .status-message.active {
   display: flex;
 }
+
 
 .status-message svg {
   flex-shrink: 0;
@@ -469,15 +528,18 @@
   height: 18px;
 }
 
+
 .status-message.success {
   background: rgba(74, 222, 128, 0.08);
   color: #4ade80;
   border: 1px solid rgba(74, 222, 128, 0.2);
 }
 
+
 .status-message.success:hover {
   background: rgba(74, 222, 128, 0.12);
 }
+
 
 .status-message.error {
   background: rgba(239, 68, 68, 0.08);
@@ -485,9 +547,11 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+
 .status-message.error:hover {
   background: rgba(239, 68, 68, 0.12);
 }
+
 
 .status-message.info {
   background: rgba(255, 255, 255, 0.05);
@@ -495,9 +559,11 @@
   border: 1px solid #333333;
 }
 
+
 .status-message.info:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+
 
 /* ===== ANIMATIONS ===== */
 @keyframes slideInDown {
@@ -511,6 +577,7 @@
   }
 }
 
+
 @keyframes slideInUp {
   0% {
     opacity: 0;
@@ -522,6 +589,7 @@
   }
 }
 
+
 @keyframes fadeIn {
   0% {
     opacity: 0;
@@ -531,7 +599,9 @@
   }
 }
 
+
 /* ===== RESPONSIVE DESIGN ===== */
+
 
 /* Desktop: 1025px and above */
 @media (min-width: 1025px) {
@@ -541,10 +611,12 @@
     padding-top: 80px;
   }
 
+
   .faucet-cards {
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 }
+
 
 /* Tablet: 769px - 1024px */
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -554,19 +626,23 @@
     padding-top: 80px;
   }
 
+
   .page-title {
     font-size: 28px;
   }
+
 
   .faucet-cards {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
   }
 
+
   .faucet-card {
     padding: 24px 20px;
   }
 }
+
 
 /* Mobile: 481px - 768px */
 @media (max-width: 768px) {
@@ -576,22 +652,27 @@
     padding-top: 80px;
   }
 
+
   .page-title {
     font-size: 22px;
   }
 
+
   .page-description {
     font-size: 13px;
   }
+
 
   .faucet-cards {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
+
   .faucet-card {
     padding: 20px 16px;
   }
+
 
   .faucet-logo {
     width: 52px;
@@ -599,32 +680,39 @@
     font-size: 14px;
   }
 
+
   .faucet-card-title {
     font-size: 16px;
   }
 
+
   .faucet-card-amount {
     font-size: 24px;
   }
+
 
   .info-box {
     padding: 12px 16px;
     font-size: 13px;
   }
 
+
   .empty-state {
     padding: 40px 24px;
   }
+
 
   .empty-icon {
     width: 80px;
     height: 80px;
   }
 
+
   .empty-title {
     font-size: 20px;
   }
 }
+
 
 /* Small Mobile: 0px - 480px */
 @media (max-width: 480px) {
@@ -634,27 +722,33 @@
     padding-top: 80px;
   }
 
+
   .page-title {
     font-size: 18px;
     margin-bottom: 6px;
   }
 
+
   .page-description {
     font-size: 11px;
   }
 
+
   .page-header {
     margin-bottom: 24px;
   }
+
 
   .faucet-cards {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
+
   .faucet-card {
     padding: 16px 12px;
   }
+
 
   .faucet-logo {
     width: 44px;
@@ -662,19 +756,23 @@
     font-size: 12px;
   }
 
+
   .faucet-card-title {
     font-size: 14px;
   }
+
 
   .faucet-card-amount {
     font-size: 20px;
     margin: 12px 0;
   }
 
+
   .faucet-card-description {
     font-size: 12px;
     margin-bottom: 16px;
   }
+
 
   .faucet-btn {
     font-size: 11px;
@@ -682,39 +780,47 @@
     min-height: 40px;
   }
 
+
   .info-box {
     padding: 12px 14px;
     font-size: 12px;
     gap: 10px;
   }
 
+
   .info-icon {
     width: 28px;
     height: 28px;
   }
 
+
   .empty-state {
     padding: 32px 16px;
   }
+
 
   .empty-icon {
     width: 60px;
     height: 60px;
   }
 
+
   .empty-title {
     font-size: 16px;
   }
 
+
   .empty-description {
     font-size: 12px;
   }
+
 
   .btn-connect-large {
     width: 100%;
     padding: 10px 20px;
     font-size: 12px;
   }
+
 
   .status-message {
     font-size: 12px;
