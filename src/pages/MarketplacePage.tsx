@@ -145,9 +145,6 @@ const MarketplacePage = () => {
               </div>
             ) : datasetEntries.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">
-                  <Search size={64} strokeWidth={1.5} />
-                </div>
                 <h3 className="empty-title">
                   {searchQuery ? 'No matching tokens found' : 'No tokens available'}
                 </h3>

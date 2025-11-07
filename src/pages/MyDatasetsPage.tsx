@@ -101,9 +101,6 @@ const MyDatasetsPage = () => {
             {!connected ? (
               <div className="datasets-container">
                 <div className="empty-state">
-                  <div className="empty-icon">
-                    <Wallet size={64} strokeWidth={1.5} />
-                  </div>
                   <h3 className="empty-title">Connect your wallet</h3>
                   <p className="empty-description">Connect your wallet to view your datasets</p>
                   <button 
@@ -132,9 +129,6 @@ const MyDatasetsPage = () => {
             ) : datasets.length === 0 ? (
               <div className="datasets-container">
                 <div className="empty-state">
-                  <div className="empty-icon">
-                    <FileText size={64} strokeWidth={1.5} />
-                  </div>
                   <h3 className="empty-title">No datasets yet</h3>
                   <p className="empty-description">Create your first dataset or buy some tokens to get started</p>
                   <Link to="/create" className="btn-connect">

@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { DatasetsMap } from '@/types/web3';
 import { getApiUrl } from '@/config/api';
-import { Search, Heart, Folder } from 'lucide-react';
+import { Search, Heart } from 'lucide-react';
 import CustomLoader from '@/components/CustomLoader';
 import './FeedPage.css';
 
@@ -120,9 +120,6 @@ const FeedPage = () => {
               </div>
             ) : datasetEntries.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">
-                  <Folder size={64} strokeWidth={1.5} />
-                </div>
                 <h3 className="empty-title">No datasets available</h3>
                 <p className="empty-description">
                   Try adjusting your search or check back later

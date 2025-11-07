@@ -116,9 +116,6 @@ const FaucetPage = () => {
             <div className="faucet-container">
               {!connected ? (
                 <div className="empty-state">
-                  <div className="empty-icon">
-                    <Wallet size={64} strokeWidth={1.5} />
-                  </div>
                   <h3 className="empty-title">Connect Your Wallet</h3>
                   <p className="empty-description">Connect your wallet to use the faucet</p>
                   <button 

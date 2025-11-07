@@ -205,9 +205,6 @@ const DashboardPage = () => {
                   </div>
                   <div className="activity-list">
                     <div className="empty-state">
-                      <div className="empty-icon">
-                        <Activity size={64} strokeWidth={1.5} />
-                      </div>
                       <h3>No activity yet</h3>
                       <p>
                         Your trading activity and transactions will appear here
