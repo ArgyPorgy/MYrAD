@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import CustomLoader from '@/components/CustomLoader';
 import { Link, useNavigate } from 'react-router-dom';
 import { getApiUrl } from '@/config/api';
-import { Plus, Folder, ShoppingCart, FileText, Wallet } from 'lucide-react';
+import { Plus, Folder, ShoppingCart} from 'lucide-react';
 import './MyDatasetsPage.css';
 
 interface UserDataset {

@@ -3,7 +3,7 @@ import { useWeb3 } from '@/hooks/useWeb3';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
-import { Droplet, AlertCircle, Check, X, Info, Wallet } from 'lucide-react';
+import { Droplet, AlertCircle, Check, X, Info} from 'lucide-react';
 import './FaucetPage.css';
 
 
