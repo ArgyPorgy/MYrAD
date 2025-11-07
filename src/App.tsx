@@ -8,6 +8,7 @@ import FaucetPage from '@/pages/FaucetPage';
 import FeedPage from '@/pages/FeedPage';
 import LandingPage from './pages/LandingPage';
 import { Providers } from './AppProvider';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/create" element={<CreateDatasetPage />} />
           <Route path="/my-datasets" element={<MyDatasetsPage />} />
           <Route path="/faucet" element={<FaucetPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Providers>
     </Router>
