@@ -189,6 +189,22 @@
   border-radius: 0 3px 3px 0;
 }
 
+/* Community button styles - different active state only */
+.nav-item[href="/community"].active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+  color: #aaaaaa;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.nav-item[href="/community"].active::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item[href="/community"].active::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .community-data-item {
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%) !important;
   border: 1px solid #333333 !important;
