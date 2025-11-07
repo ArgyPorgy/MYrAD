@@ -3,6 +3,7 @@ import { BarChart3, Rss, ShoppingBag, Plus, Folder, Droplet, Users } from 'lucid
 import { useState, useEffect } from 'react';
 import './Sidebar.css';
 
+
 const Sidebar = () => {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -10,6 +11,7 @@ const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   
   const isActive = (path: string): boolean => location.pathname === path;
+
 
   useEffect(() => {
     const checkMobile = () => {
@@ -28,6 +30,7 @@ const Sidebar = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
 
   async function addBaseSepoliaNetwork(): Promise<void> {
     try {
@@ -60,6 +63,7 @@ const Sidebar = () => {
     }
   }
 
+
   const toggleSidebar = () => {
     if (isMobile) {
       setIsOpen(!isOpen);
@@ -71,11 +75,13 @@ const Sidebar = () => {
     }
   };
 
+
   const closeMobileSidebar = () => {
     if (isMobile) {
       setIsOpen(false);
     }
   };
+
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -83,11 +89,13 @@ const Sidebar = () => {
     }
   };
 
+
   return (
     <>
       {isMobile && isOpen && (
         <div className="sidebar-overlay" onClick={closeMobileSidebar} />
       )}
+
 
       <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobile && isOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
@@ -102,6 +110,7 @@ const Sidebar = () => {
           {(!isCollapsed || (isMobile && isOpen)) && <div className="beta-badge">BETA</div>}
         </div>
 
+
         <nav className="sidebar-nav">
           <Link
             to="/dashboard"
@@ -113,6 +122,7 @@ const Sidebar = () => {
             {(!isCollapsed || (isMobile && isOpen)) && <span>Dashboard</span>}
           </Link>
 
+
           <Link
             to="/feed"
             className={`nav-item ${isActive('/feed') ? 'active' : ''}`}
@@ -122,6 +132,7 @@ const Sidebar = () => {
             <Rss size={20} strokeWidth={1.5} />
             {(!isCollapsed || (isMobile && isOpen)) && <span>Feed</span>}
           </Link>
+
 
           <Link
             to="/marketplace"
@@ -133,6 +144,7 @@ const Sidebar = () => {
             {(!isCollapsed || (isMobile && isOpen)) && <span>Marketplace</span>}
           </Link>
 
+
           <Link
             to="/create"
             className={`nav-item ${isActive('/create') ? 'active' : ''}`}
@@ -142,6 +154,7 @@ const Sidebar = () => {
             <Plus size={20} strokeWidth={1.5} />
             {(!isCollapsed || (isMobile && isOpen)) && <span>Create Dataset</span>}
           </Link>
+
 
           <Link
             to="/my-datasets"
@@ -153,6 +166,7 @@ const Sidebar = () => {
             {(!isCollapsed || (isMobile && isOpen)) && <span>My Datasets</span>}
           </Link>
 
+
           <Link
             to="/faucet"
             className={`nav-item ${isActive('/faucet') ? 'active' : ''}`}
@@ -163,12 +177,18 @@ const Sidebar = () => {
             {(!isCollapsed || (isMobile && isOpen)) && <span>Faucet</span>}
           </Link>
 
-          <div className="nav-item community-data-item" title="Community">
+
+          <Link
+            to="/community"
+            className={`nav-item ${isActive('/community') ? 'active' : ''}`}
+            title="Community"
+            onClick={handleNavClick}
+          >
             <Users size={20} strokeWidth={1.5} />
-            {(!isCollapsed || (isMobile && isOpen)) && <span>Community</span>}
-            {(!isCollapsed || (isMobile && isOpen)) && <span className="coming-soon-badge">Coming Soon</span>}
-          </div>
+            {(!isCollapsed || (isMobile && isOpen)) && <span>Community Data</span>}
+          </Link>
         </nav>
+
 
         {(!isCollapsed || (isMobile && isOpen)) && (
           <div className="sidebar-footer">
@@ -189,5 +209,6 @@ const Sidebar = () => {
     </>
   );
 };
+
 
 export default Sidebar;

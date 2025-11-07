@@ -9,6 +9,7 @@ import FeedPage from '@/pages/FeedPage';
 import LandingPage from './pages/LandingPage';
 import { Providers } from './AppProvider';
 import NotFoundPage from './pages/NotFoundPage';
+import CommunityPage from './pages/CommunityPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/create" element={<CreateDatasetPage />} />
           <Route path="/my-datasets" element={<MyDatasetsPage />} />
           <Route path="/faucet" element={<FaucetPage />} />
+          <Route path="/community" element={<CommunityPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Providers>
