@@ -20,8 +20,8 @@ const CreateDatasetPage = () => {
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [description, setDescription] = useState('');
   const [totalSupply, setTotalSupply] = useState('1000000');
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'success' | 'error' | 'info'>('info');
+  const [, setStatusMessage] = useState('');
+  const [, setStatusType] = useState<'success' | 'error' | 'info'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showStatus = (message: string, type: 'success' | 'error' | 'info') => {
@@ -472,21 +472,21 @@ const CreateDatasetPage = () => {
                 </div>
 
                 {/* Status Message */}
-                {statusMessage && (
+                {/* {statusMessage && (
                   <div className={`status-message active ${statusType}`}>
                     {statusType === 'success' && <Check size={18} strokeWidth={2.5} />}
                     {statusType === 'error' && <X size={18} strokeWidth={2.5} />}
                     {statusType === 'info' && <Info size={18} strokeWidth={2} />}
                     <span>{statusMessage}</span>
                   </div>
-                )}
+                )} */}
 
                 {/* Buttons */}
                 <div className="button-group">
                   <button 
                     type="button" 
                     className="btn btn-secondary" 
-                    onClick={() => navigate('/marketplace')}
+                    onClick={() => navigate('/create')}
                     disabled={isSubmitting}
                   >
                     <X size={16} strokeWidth={2} />

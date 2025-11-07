@@ -154,5 +154,18 @@
     "creator": "0xEB35df454B7830510270e7313ad319E1550A23aD",
     "total_supply": 1000000,
     "created_at": 1762461719067
+  },
+  "0xddf641183246c5aa26627da7d94ee375ab08ded5": {
+    "name": "tui",
+    "symbol": "TAO",
+    "cid": "bafkreiflzzcvlgemgsupsjfr3da6p3pi4cyy5blf46vpl7fcg5hd3c3ha4",
+    "description": "",
+    "token_address": "0xDDF641183246c5aA26627DA7D94eE375Ab08DeD5",
+    "marketplace": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "marketplace_address": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "bonding_curve": "0xECCA28264Ca51a30215D7E2CBD4E5097B67D3690",
+    "creator": "0xEB35df454B7830510270e7313ad319E1550A23aD",
+    "total_supply": 1000000,
+    "created_at": 1762532550721
   }
 }
