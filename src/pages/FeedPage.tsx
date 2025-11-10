@@ -18,32 +18,33 @@ const FeedPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [, setCardHovered] = useState<string | null>(null);
 
-  const randomImages = [
-    'https://images.unsplash.com/photo-1644088379091-d574269d422f',
-    'https://images.unsplash.com/photo-1451187580459-43490279c0fa',
-    'https://images.unsplash.com/photo-1510906594845-bc082582c8cc',
-    'https://images.unsplash.com/photo-1563089145-599997674d42',
-    'https://images.unsplash.com/photo-1568952433726-3896e3881c65',
-    'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107',
-    'https://images.unsplash.com/photo-1683064325134-3acfdef9c6d7',
-    'https://images.unsplash.com/photo-1557264337-e8a93017fe92',
-    'https://images.unsplash.com/photo-1597733336794-12d05021d510',
-    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b',
-    'https://images.unsplash.com/photo-1454779132693-e5cd0a216ed3',
-    'https://images.unsplash.com/photo-1480506132288-68f7705954bd',
-    'https://images.unsplash.com/photo-1713557112617-e12d67bddc3a',
-    'https://images.unsplash.com/photo-1643228995868-bf698f67d053',
-    'https://images.unsplash.com/photo-1672307613484-3254a04651fd',
-    'https://images.unsplash.com/photo-1504639725590-34d0984388bd',
-    'https://images.unsplash.com/photo-1517433456452-f9633a875f6f',
-    'https://images.unsplash.com/photo-1705526828940-3e5e7f113e2c',
-    'https://images.unsplash.com/photo-1707075891545-41b982930351',
-    'https://images.unsplash.com/photo-1762279389042-9439bfb6c155',
-    'https://images.unsplash.com/photo-1762278804771-65c446b6acdb',
-    'https://images.unsplash.com/photo-1753692400335-88e37779b471',
-    'https://images.unsplash.com/photo-1760539165482-c0c83b052065',
-    'https://images.unsplash.com/photo-1758073519996-6d3c63b4922c'
-  ];
+  // Hardcoded custom images from /public/images (no external links)
+  // Filenames suggested below — drop matching SVGs into public/images
+  const customImages: Record<string, string> = {
+    // Core datasets
+    DRP: '/images/dollar-exchange.svg', // Dollar Exchange Rate Prediction
+    F1K: '/images/fortune-1000.svg', // Fortune 1000 Data
+    HP: '/images/house-prices.svg', // House Prices
+    GLD: '/images/nse-gold-cpi.svg', // NSE Gold CPI
+    POKE: '/images/pokemon.svg', // Pokemon Dataset
+    POP: '/images/population.svg', // Population datasets (2010-2019, 2020-2029)
+
+    // Additional datasets
+    CRP: '/images/car-prices.svg', // Car Prices
+    BSD: '/images/big-sales.svg', // Big Sales Data
+    ADL: '/images/airlines-delay.svg', // Airlines Delay Dataset
+    GGL: '/images/google-stock.svg', // Google Stock Data
+    APPL: '/images/apple-stock.svg', // Apple Stock Data
+    AD: '/images/amazon-stock.svg', // Amazon Stock Data
+    USB: '/images/us-shopping.svg', // US Shopping Behaviour
+    HSF: '/images/hotels-sf.svg', // Hotels in San Fransisco
+    FSA: '/images/financial-planners-sa.svg', // Financial Planners in SA
+    CLA: '/images/coffee-shops-la.svg', // Coffee Shops in LA
+    RUS: '/images/restaurants-us.svg', // Restaurants in US
+    MCD: '/images/maharastra-corp.svg', // Maharastra Corporate Data
+    EPT: '/images/event-planners-texas.svg', // Event Planners in Texas
+    NOI: '/images/noice-drop-wallets.svg', // NOICE drop allocated wallets
+  };
 
   useEffect(() => {
     loadLocalDatasets();
@@ -76,7 +77,7 @@ const FeedPage = () => {
     e.stopPropagation();
     setLikes((prev) => ({
       ...prev,
-      [tokenAddr]: (prev[tokenAddr] || 0) + 1
+      [tokenAddr]: (prev[tokenAddr] || 0) + 1,
     }));
   };
 
@@ -127,8 +128,10 @@ const FeedPage = () => {
               </div>
             ) : (
               <div className="dashboard-grid">
-                {datasetEntries.map(([tokenAddr, meta], index) => {
-                  const imageUrl = randomImages[index % randomImages.length];
+                {datasetEntries.map(([tokenAddr, meta]) => {
+                  // Prefer mapping by token address (stable) if you later add addresses to the map
+                  const imageUrl = customImages[tokenAddr] || customImages[meta.symbol] || '/images/default-dataset.svg';
+
                   return (
                     <div
                       key={tokenAddr}
@@ -145,11 +148,7 @@ const FeedPage = () => {
                       }}
                     >
                       <div className="dataset-image-container">
-                        <img
-                          src={imageUrl}
-                          alt={meta.name}
-                          className="dataset-image"
-                        />
+                        <img src={imageUrl} alt={meta.name} className="dataset-image" />
                       </div>
 
                       <div className="card-header">
@@ -168,7 +167,7 @@ const FeedPage = () => {
                       <div className="card-footer">
                         <div className="chain-info">
                           <img
-                            src="https://pbs.twimg.com/profile_images/1945608199500910592/rnk6ixxH_400x400.jpg"
+                            src="/images/base-logo.svg"
                             alt="Base"
                             className="chain-logo"
                           />
