@@ -3,6 +3,7 @@ import { BarChart3, Rss, ShoppingBag, Plus, Folder, Droplet, Users } from 'lucid
 import { useState, useEffect } from 'react';
 import './Sidebar.css';
 
+const BASE_RPC_URL = import.meta.env.VITE_BASE_RPC_URL ?? 'https://sepolia.base.org';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -50,12 +51,11 @@ const Sidebar = () => {
               symbol: 'ETH',
               decimals: 18
             },
-            rpcUrls: ['https://sepolia.base.org'],
+            rpcUrls: [BASE_RPC_URL],
             blockExplorerUrls: ['https://sepolia-explorer.base.org']
           }
         ]
       });
-      console.log('Base Sepolia network added successfully');
       alert('Base Sepolia network added successfully!');
     } catch (error) {
       console.error('Error adding network:', error);

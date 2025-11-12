@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './WalletModal.css';
 
 interface WalletModalProps {
@@ -7,14 +7,19 @@ interface WalletModalProps {
   onConnect: (provider: string) => void;
 }
 
-const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect }) => {
+const WalletModal = ({ isOpen, onClose, onConnect }: WalletModalProps) => {
   const [connecting, setConnecting] = useState<string | null>(null);
 
   const handleWalletConnect = async (provider: string) => {
     setConnecting(provider);
     try {
-      await onConnect(provider);
-      onClose();
+      if (provider === 'walletconnect') {
+        onClose();
+        await onConnect(provider);
+      } else {
+        await onConnect(provider);
+        onClose();
+      }
     } catch (error) {
       console.error('Wallet connection failed:', error);
     } finally {
@@ -29,26 +34,51 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect })
       <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
         <div className="wallet-modal-header">
           <h2>Connect Wallet</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={onClose}>
+            ×
+          </button>
         </div>
-        
+
         <div className="wallet-modal-content">
           <p className="wallet-modal-description">
             Choose a wallet to connect to the Base Sepolia testnet
           </p>
-          
+
           <div className="wallet-options">
             <button
               className="wallet-option"
               onClick={() => handleWalletConnect('metamask')}
               disabled={connecting === 'metamask'}
             >
-              <div className="wallet-icon">🦊</div>
-              <div className="wallet-info">
-                <h3>MetaMask</h3>
-                <p>Connect using MetaMask browser extension</p>
+              <div className="wallet-tile-icon">
+                <img src="/images/metamask.jpg" alt="MetaMask" />
               </div>
+              <span className="wallet-tile-name">MetaMask</span>
               {connecting === 'metamask' && <div className="connecting-spinner" />}
+            </button>
+
+            <button
+              className="wallet-option"
+              onClick={() => handleWalletConnect('rabby')}
+              disabled={connecting === 'rabby'}
+            >
+              <div className="wallet-tile-icon">
+                <img src="/images/rabby.jpg" alt="Rabby Wallet" />
+              </div>
+              <span className="wallet-tile-name">Rabby</span>
+              {connecting === 'rabby' && <div className="connecting-spinner" />}
+            </button>
+
+            <button
+              className="wallet-option"
+              onClick={() => handleWalletConnect('okx')}
+              disabled={connecting === 'okx'}
+            >
+              <div className="wallet-tile-icon">
+                <img src="/images/okx.jpg" alt="OKX Wallet" />
+              </div>
+              <span className="wallet-tile-name">OKX</span>
+              {connecting === 'okx' && <div className="connecting-spinner" />}
             </button>
 
             <button
@@ -56,11 +86,10 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect })
               onClick={() => handleWalletConnect('coinbase')}
               disabled={connecting === 'coinbase'}
             >
-              <div className="wallet-icon">🔷</div>
-              <div className="wallet-info">
-                <h3>Coinbase Wallet</h3>
-                <p>Connect using Coinbase Wallet extension</p>
+              <div className="wallet-tile-icon">
+                <img src="/images/base app.jpg" alt="Coinbase Wallet" />
               </div>
+              <span className="wallet-tile-name">Coinbase</span>
               {connecting === 'coinbase' && <div className="connecting-spinner" />}
             </button>
 
@@ -69,11 +98,10 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect })
               onClick={() => handleWalletConnect('walletconnect')}
               disabled={connecting === 'walletconnect'}
             >
-              <div className="wallet-icon">🔗</div>
-              <div className="wallet-info">
-                <h3>WalletConnect</h3>
-                <p>Connect using WalletConnect protocol</p>
+              <div className="wallet-tile-icon">
+                <img src="/images/walletconnect.jpg" alt="WalletConnect" />
               </div>
+              <span className="wallet-tile-name">WalletConnect</span>
               {connecting === 'walletconnect' && <div className="connecting-spinner" />}
             </button>
           </div>
@@ -83,7 +111,10 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect })
               <strong>Network:</strong> Base Sepolia Testnet (Chain ID: 84532)
             </p>
             <p className="help-text">
-              Don't have a wallet? <a href="https://metamask.io" target="_blank" rel="noopener noreferrer">Install MetaMask</a>
+              Don't have a wallet?{' '}
+              <a href="https://metamask.io" target="_blank" rel="noopener noreferrer">
+                Install MetaMask
+              </a>
             </p>
           </div>
         </div>

@@ -13,20 +13,13 @@ async function uploadToLighthouse(fileBuffer, fileName) {
       throw new Error("LIGHTHOUSE_API_KEY not configured in .env file");
     }
 
-    console.log(`📤 Uploading to Lighthouse IPFS (using SDK): ${fileName} (${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
-
     tempFilePath = path.join(os.tmpdir(), `lighthouse-upload-${Date.now()}-${fileName}`);
     fs.writeFileSync(tempFilePath, fileBuffer);
-
-    console.log(`   Temporary file created: ${tempFilePath}`);
-    console.log(`   Uploading to Lighthouse...`);
 
     const uploadResponse = await lighthouse.upload(tempFilePath, LIGHTHOUSE_API_KEY);
 
     if (uploadResponse && uploadResponse.data && uploadResponse.data.Hash) {
       const cid = uploadResponse.data.Hash;
-      console.log(`✅ File uploaded to IPFS: ${cid}`);
-      console.log(`   Gateway URL: https://gateway.lighthouse.storage/ipfs/${cid}`);
       return cid;
     } else {
       console.error("❌ Unexpected Lighthouse response:", uploadResponse);
@@ -42,7 +35,6 @@ async function uploadToLighthouse(fileBuffer, fileName) {
     if (tempFilePath && fs.existsSync(tempFilePath)) {
       try {
         fs.unlinkSync(tempFilePath);
-        console.log(`   Temp file cleaned up`);
       } catch (cleanupErr) {
         console.warn(`⚠️  Could not delete temp file: ${cleanupErr.message}`);
       }

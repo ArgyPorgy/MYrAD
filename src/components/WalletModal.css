@@ -1,26 +1,23 @@
 .wallet-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
 }
 
 .wallet-modal {
   background: #0f0f0f;
   border: 1px solid #1a1a1a;
-  border-radius: 16px;
+  border-radius: 18px;
   width: 90%;
-  max-width: 480px;
+  max-width: 520px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55);
 }
 
 .wallet-modal-header {
@@ -32,7 +29,7 @@
 }
 
 .wallet-modal-header h2 {
-  color: #fff;
+  color: #ffffff;
   font-size: 20px;
   font-weight: 700;
   margin: 0;
@@ -47,9 +44,8 @@
   padding: 0;
   width: 32px;
   height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
@@ -64,106 +60,89 @@
 }
 
 .wallet-modal-description {
-  color: #999;
+  color: #9aa0b3;
   font-size: 14px;
-  margin: 0 0 24px 0;
+  margin: 0 0 28px;
   text-align: center;
 }
 
 .wallet-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
 .wallet-option {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
-}
-
-.wallet-option::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s ease;
-}
-
-.wallet-option:hover:not(:disabled)::before {
-  left: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: #141414;
+  border: 1px solid #1f1f1f;
+  border-radius: 14px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .wallet-option:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
-  border-color: #00d4ff;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+  border-color: #3b82f6;
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.12);
 }
 
 .wallet-option:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-.wallet-icon {
-  font-size: 24px;
-  margin-right: 16px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f0f0f0;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+.wallet-tile-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #1f1f1f;
+  display: grid;
+  place-items: center;
+  border: 1px solid #262626;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
 }
 
-.wallet-info {
-  flex: 1;
-  text-align: left;
+.wallet-tile-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.wallet-info h3 {
-  color: #333;
-  font-size: 16px;
+.wallet-tile-name {
+  font-size: 15px;
   font-weight: 600;
-  margin: 0 0 4px 0;
-}
-
-.wallet-info p {
-  color: #666;
-  font-size: 13px;
-  margin: 0;
+  letter-spacing: 0.1px;
 }
 
 .connecting-spinner {
   position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  border: 2px solid #1a1a1a;
-  border-top: 2px solid #00d4ff;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top: 2px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .wallet-modal-footer {
@@ -173,9 +152,9 @@
 }
 
 .network-info {
-  color: #00d4ff;
+  color: #3b82f6;
   font-size: 13px;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px;
 }
 
 .help-text {
@@ -185,7 +164,7 @@
 }
 
 .help-text a {
-  color: #00d4ff;
+  color: #3b82f6;
   text-decoration: none;
 }
 

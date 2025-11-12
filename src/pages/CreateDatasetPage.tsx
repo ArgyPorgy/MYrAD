@@ -1,9 +1,10 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3 } from '@/hooks/useWeb3';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import CustomLoader from '@/components/CustomLoader';
+import Toast from '@/components/Toast';
 import { formatFileSize } from '@/utils/web3';
 import { getApiUrl } from '@/config/api';
 import { Upload, FileText, Tag, DollarSign, FileType, Info, X, Check } from 'lucide-react';
@@ -19,14 +20,16 @@ const CreateDatasetPage = () => {
   const [datasetName, setDatasetName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [description, setDescription] = useState('');
-  const [totalSupply, setTotalSupply] = useState('1000000');
-  const [, setStatusMessage] = useState('');
-  const [, setStatusType] = useState<'success' | 'error' | 'info'>('info');
+  const TOTAL_SUPPLY = 1_000_000;
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'success' | 'error' | 'info' | 'warning'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
-  const showStatus = (message: string, type: 'success' | 'error' | 'info') => {
+  const showStatus = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     setStatusMessage(message);
     setStatusType(type);
+    setShowToast(true);
   };
 
   const handleFileSelect = async (file: File) => {
@@ -61,8 +64,6 @@ const CreateDatasetPage = () => {
         if (xhr.status === 200) {
           try {
             const response = JSON.parse(xhr.responseText);
-            console.log('✅ Upload success:', response);
-            
             if (response.cid) {
               setUploadedCid(response.cid);
               setUploadProgress(100);
@@ -118,11 +119,6 @@ const CreateDatasetPage = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('🚀 Submit handler started');
-    console.log('   uploadedCid:', uploadedCid);
-    console.log('   datasetName:', datasetName);
-    console.log('   tokenSymbol:', tokenSymbol);
-    
     if (!uploadedCid) {
       showStatus('Please upload a file first', 'error');
       return;
@@ -135,12 +131,6 @@ const CreateDatasetPage = () => {
 
     if (!tokenSymbol) {
       showStatus('Please enter a token symbol', 'error');
-      return;
-    }
-
-    const supplyNum = parseInt(totalSupply);
-    if (isNaN(supplyNum) || supplyNum <= 0) {
-      showStatus('Please enter a valid total supply', 'error');
       return;
     }
 
@@ -158,11 +148,9 @@ const CreateDatasetPage = () => {
         name: datasetName,
         symbol: tokenSymbol,
         description: description,
-        totalSupply: supplyNum,
+        totalSupply: TOTAL_SUPPLY,
         creatorAddress: userAddress,
       };
-
-      console.log('📤 Sending payload:', payload);
 
       // Add timeout to fetch
       const controller = new AbortController();
@@ -180,16 +168,11 @@ const CreateDatasetPage = () => {
 
         clearTimeout(timeoutId);
 
-        console.log('📨 Response status:', response.status);
-        console.log('📨 Response ok:', response.ok);
-
         const data = await response.json();
-        console.log('📥 Response data:', data);
 
         if (response.ok && data.success) {
           // New async flow - poll for completion
           if (data.jobId) {
-            console.log('🔄 Job started, polling for completion...');
             showStatus('Creating dataset on blockchain...', 'info');
             
             // Poll for status
@@ -197,18 +180,13 @@ const CreateDatasetPage = () => {
               try {
                 const statusResponse = await fetch(getApiUrl(`/dataset-status/${data.jobId}`));
                 const statusData = await statusResponse.json();
-                
-                console.log('📊 Status update:', statusData);
-                
                 if (statusData.status === 'completed' && statusData.tokenAddress) {
                   clearInterval(pollInterval);
-                  console.log('✅ Dataset creation completed!');
                   
                   const tokenAddress = statusData.tokenAddress;
                   showStatus('Dataset created successfully! Redirecting...', 'success');
                   
                   setTimeout(() => {
-                    console.log('🔄 Navigating to:', `/token/${tokenAddress}`);
                     navigate(`/token/${tokenAddress}`, { 
                       replace: false,
                       state: { 
@@ -246,13 +224,11 @@ const CreateDatasetPage = () => {
           } else if (data.tokenAddress) {
             // Old sync flow - immediate response (backward compatible)
             const tokenAddress = data.tokenAddress;
-            console.log('✅ SUCCESS! Token address:', tokenAddress);
-          
-            showStatus('Dataset created successfully! Redirecting...', 'success');
-          
-            console.log('🔄 About to navigate to:', `/token/${tokenAddress}`);
-          
-            requestAnimationFrame(() => {
+            
+            showStatus('🎉 Dataset created successfully! Redirecting to token page...', 'success');
+            
+            // Use setTimeout to ensure toast is visible before navigation
+            setTimeout(() => {
               try {
                 navigate(`/token/${tokenAddress}`, { 
                   replace: false,
@@ -265,13 +241,11 @@ const CreateDatasetPage = () => {
                     }
                   }
                 });
-              
-                console.log('✅ Navigation called successfully');
               } catch (navError) {
                 console.error('❌ Navigation error:', navError);
                 window.location.href = `/token/${tokenAddress}`;
               }
-            });
+            }, 1500); // Give time to show the success toast
           }
         } else {
           const errorMsg = data.error || data.message || `Server error (${response.status})`;
@@ -301,7 +275,7 @@ const CreateDatasetPage = () => {
       <Sidebar />
       
       <main className="main-content">
-        <Header 
+        <Header
           userAddress={userAddress}
           connected={connected}
           onConnect={(provider) => connectWallet(provider)}
@@ -444,15 +418,11 @@ const CreateDatasetPage = () => {
                     id="totalSupply"
                     className="form-input"
                     placeholder="1000000"
-                    value={totalSupply}
-                    onChange={(e) => setTotalSupply(e.target.value)}
-                    min="1"
-                    required
-                    disabled={isSubmitting}
+                    value={TOTAL_SUPPLY}
+                    readOnly
+                    disabled
                   />
-                  <small className="form-hint">
-                    Total number of tokens to create (default: 1,000,000)
-                  </small>
+                  <small className="input-helper">Fixed supply of 1,000,000 tokens per dataset.</small>
                 </div>
 
                 {/* Description */}
@@ -506,6 +476,16 @@ const CreateDatasetPage = () => {
           </div>
         </div>
       </main>
+      
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast
+          message={statusMessage}
+          type={statusType}
+          onClose={() => setShowToast(false)}
+          duration={statusType === 'success' ? 3000 : 5000}
+        />
+      )}
     </div>
   );
 };

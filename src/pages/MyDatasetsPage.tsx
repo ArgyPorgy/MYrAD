@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { useWeb3 } from '@/hooks/useWeb3';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import CustomLoader from '@/components/CustomLoader';
@@ -34,7 +34,6 @@ const MyDatasetsPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('MyDatasetsPage useEffect - connected:', connected, 'userAddress:', userAddress);
     if (connected && userAddress) {
       loadUserDatasets();
     } else {
@@ -45,16 +44,12 @@ const MyDatasetsPage = () => {
   const loadUserDatasets = async () => {
     try {
       setLoading(true);
-      console.log('Loading datasets for user:', userAddress);
       const apiUrl = getApiUrl(`/api/my-datasets/${userAddress}`);
-      console.log('API URL:', apiUrl);
       
       const response = await fetch(apiUrl);
-      console.log('Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Datasets loaded:', data);
         const datasets = Array.isArray(data) ? data : (data.datasets || []);
         setDatasets(datasets);
       } else {
@@ -80,7 +75,7 @@ const MyDatasetsPage = () => {
       <Sidebar />
       
       <main className="main-content">
-        <Header 
+        <Header
           userAddress={userAddress}
           connected={connected}
           onConnect={(provider) => connectWallet(provider)}
@@ -103,16 +98,8 @@ const MyDatasetsPage = () => {
                 <div className="empty-state">
                   <h3 className="empty-title">Connect your wallet</h3>
                   <p className="empty-description">Connect your wallet to view your datasets</p>
-                  <button 
-                    onClick={async () => {
-                      if (window.ethereum) {
-                        await connectWallet('metamask');
-                      } else if (window.coinbaseWalletExtension) {
-                        await connectWallet('coinbase');
-                      } else {
-                        alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
-                      }
-                    }} 
+                  <button
+                    onClick={() => connectWallet()}
                     className="btn-connect"
                   >
                     Connect Wallet

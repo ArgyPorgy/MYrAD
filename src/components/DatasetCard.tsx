@@ -8,7 +8,7 @@ import {
   BASE_SEPOLIA_USDC,
   BASE_SEPOLIA_CHAIN_ID
 } from '@/constants/contracts';
-import { retryContractCall } from '@/utils/web3';
+import { retryContractCall, getPublicRpcProvider } from '@/utils/web3';
 import { getApiUrl } from '@/config/api';
 import './DatasetCard.css';
 
@@ -37,6 +37,7 @@ const DatasetCard = ({
   const [balance, setBalance] = useState<string>('—');
   const [buyAmount, setBuyAmount] = useState<string>('');
   const [sellAmount, setSellAmount] = useState<string>('');
+  const publicProvider = getPublicRpcProvider();
 
   // Function to trigger automatic file download
   const downloadFile = async (url: string, filename: string) => {
@@ -66,16 +67,18 @@ const DatasetCard = ({
   };
 
   useEffect(() => {
-    if (connected && provider) {
+    if (connected && userAddress) {
       readBalance();
-      updatePrice();
+    } else {
+      setBalance('—');
     }
-  }, [connected, provider, tokenAddress]);
+    updatePrice();
+  }, [connected, userAddress, tokenAddress, dataset.marketplace_address, dataset.bonding_curve]);
 
   const readBalance = async () => {
     try {
-      if (!provider) return;
-      const token = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      if (!userAddress) return;
+      const token = new ethers.Contract(tokenAddress, ERC20_ABI, publicProvider);
       const bal = await retryContractCall(() => token.balanceOf(userAddress));
       setBalance(ethers.formatUnits(bal, 18));
     } catch (err) {
@@ -85,31 +88,29 @@ const DatasetCard = ({
 
   const updatePrice = async () => {
     try {
-      if (!provider) return;
       const marketplaceAddr = dataset.marketplace_address || dataset.bonding_curve;
       if (!marketplaceAddr) {
         setPrice('N/A');
         return;
       }
 
-      const code = await retryContractCall(() => provider.getCode(marketplaceAddr));
-      if (code === '0x') {
-        setPrice('N/A (contract not found)');
-        return;
+      const response = await fetch(
+        getApiUrl(`/price/${marketplaceAddr}/${tokenAddress}`)
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setPrice('pool not initialized');
+          return;
+        }
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      const marketplace = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
-      const exists = await retryContractCall(() => marketplace.poolExists(tokenAddress));
-      if (!exists) {
-        setPrice('pool not initialized');
-        return;
-      }
-
-      const priceValue = await retryContractCall(() => marketplace.getPriceUSDCperToken(tokenAddress));
-      setPrice(`${ethers.formatUnits(priceValue, 18)} USDC`);
+      const data = await response.json();
+      setPrice(`${Number(data.price).toFixed(6)} USDC`);
     } catch (err: any) {
       setPrice('error');
-      console.error('Price update error:', err.message);
+      console.error('Price update error:', err?.message || err);
     }
   };
 
@@ -148,7 +149,7 @@ const DatasetCard = ({
         return;
       }
 
-      const code = await retryContractCall(() => provider!.getCode(dataset.marketplace_address!));
+      const code = await retryContractCall(() => publicProvider.getCode(dataset.marketplace_address!));
       if (code === '0x') {
         onStatusChange('❌ Error: Marketplace contract not found at address');
         return;
@@ -166,7 +167,7 @@ const DatasetCard = ({
       }
 
       onStatusChange('⏳ Confirm buy in wallet...');
-      const tx = await retryContractCall(() => marketplace.buy(tokenAddress, usdcAmount, 0n));
+      const tx = await retryContractCall(() => marketplace.buy(usdcAmount, 0n));
       await tx.wait();
 
       onStatusChange('✅ Buy confirmed!');
@@ -216,7 +217,7 @@ const DatasetCard = ({
         return;
       }
 
-      const code = await retryContractCall(() => provider!.getCode(dataset.marketplace_address!));
+      const code = await retryContractCall(() => publicProvider.getCode(dataset.marketplace_address!));
       if (code === '0x') {
         onStatusChange('❌ Error: Marketplace contract not found at address');
         return;
@@ -235,7 +236,7 @@ const DatasetCard = ({
       }
 
       onStatusChange('⏳ Confirm sell in wallet...');
-      const tx = await retryContractCall(() => marketplace.sell(tokenAddress, tokenAmount, 0n));
+      const tx = await retryContractCall(() => marketplace.sell(tokenAmount, 0n));
       await tx.wait();
 
       onStatusChange('✅ Sell confirmed!');
@@ -341,7 +342,9 @@ const DatasetCard = ({
         </div>
         <div className="meta-item">
           <span className="meta-label">Your Balance</span>
-          <span className="meta-value">{parseFloat(balance).toFixed(2)}</span>
+          <span className="meta-value">
+            {balance === '—' || balance === 'n/a' ? balance : Number(balance).toFixed(2)}
+          </span>
         </div>
       </div>
 

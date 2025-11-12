@@ -25,7 +25,7 @@
 /* ===== MARKETPLACE CONTENT - INNER CONTAINER ===== */
 .marketplace-content {
   padding: 32px;
-  padding-top: 80px;
+  padding-top: 48px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 100%;
   width: 100%;
@@ -659,7 +659,7 @@
   .marketplace-content {
     margin-left: 0;
     padding: 32px;
-    padding-top: 80px;
+    padding-top: 48px;
     max-width: 100%;
   }
 
@@ -702,8 +702,8 @@
 @media (min-width: 769px) and (max-width: 1024px) {
   .marketplace-content {
     margin-left: 0;
-    padding: 16px;
-    padding-top: 80px;
+    padding: 24px;
+    padding-top: 40px;
     max-width: 100%;
     width: 100%;
     overflow-x: hidden;
@@ -847,8 +847,8 @@
 @media (max-width: 768px) {
   .marketplace-content {
     margin-left: 70px;
-    padding: 12px;
-    padding-top: 80px;
+    padding: 16px;
+    padding-top: 32px;
     max-width: 100%;
     width: 100%;
     overflow-x: hidden;
@@ -1002,8 +1002,8 @@
 @media (max-width: 480px) {
   .marketplace-content {
     margin-left: 56px;
-    padding: 8px;
-    padding-top: 80px;
+    padding: 12px;
+    padding-top: 28px;
     max-width: 100%;
     width: 100%;
     overflow-x: hidden;

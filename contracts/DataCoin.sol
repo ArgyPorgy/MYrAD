@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract DataCoin is ERC20 {
     address public creator;
+    address public platform;
     string public datasetCid;
 
     constructor(
@@ -12,13 +13,14 @@ contract DataCoin is ERC20 {
         string memory symbol_,
         uint256 totalSupply_,
         address creator_,
-        string memory cid_
+        string memory cid_,
+        address platform_
     ) ERC20(name_, symbol_) {
         creator = creator_;
+        platform = platform_;
         datasetCid = cid_;
-        // Mint all tokens to creator
         if (totalSupply_ > 0) {
-            _mint(creator_, totalSupply_);
+            _mint(platform_, totalSupply_);
         }
     }
 

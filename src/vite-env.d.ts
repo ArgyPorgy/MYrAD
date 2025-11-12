@@ -3,5 +3,6 @@
 interface Window {
   ethereum?: any;
   coinbaseWalletExtension?: any;
+  okxwallet?: any;
 }
 

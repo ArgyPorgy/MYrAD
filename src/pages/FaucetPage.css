@@ -29,7 +29,7 @@
 /* ===== FAUCET CONTENT - INNER CONTAINER ===== */
 .faucet-content {
   padding: 32px;
-  padding-top: 80px;
+  padding-top: 48px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 100%;
   width: 100%;
@@ -608,7 +608,7 @@
   .faucet-content {
     margin-left: 0;
     padding: 32px;
-    padding-top: 80px;
+    padding-top: 48px;
   }
 
 
@@ -623,7 +623,7 @@
   .faucet-content {
     margin-left: 0;
     padding: 24px;
-    padding-top: 80px;
+    padding-top: 40px;
   }
 
 
@@ -649,7 +649,7 @@
   .faucet-content {
     margin-left: 70px;
     padding: 16px;
-    padding-top: 80px;
+    padding-top: 32px;
   }
 
 
@@ -719,7 +719,7 @@
   .faucet-content {
     margin-left: 56px;
     padding: 12px;
-    padding-top: 80px;
+    padding-top: 28px;
   }
 
 

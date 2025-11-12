@@ -13,15 +13,27 @@ const __dirname = path.dirname(__filename);
 
 const { RPC_URLS, DATASETS_FILE, MAX_BLOCK_RANGE } = config;
 
-const POLL_INTERVAL = 30000; // 30s polling when using HTTP (reduced to avoid rate limits)
+const POLL_INTERVAL = 60000; // polling interval when using HTTP (increased to 60s to reduce load)
 const LAST_BLOCK_FILE = path.join(__dirname, "lastBlock.json");
+const MAX_CHUNKS_PER_POLL = parseInt(process.env.MAX_CHUNKS_PER_POLL || "10", 10); // Reduced from 50 to 10 to avoid rate limits
 
-// Create provider - will use first available RPC
+// Reuse JsonRpcProviders instead of instantiating a new one per chunk call
+const providerPool = [];
+for (let i = 0; i < RPC_URLS.length; i++) {
+  const url = RPC_URLS[i];
+  providerPool.push(new ethers.JsonRpcProvider(url));
+}
+let currentProviderIndex = 0;
+
+// Primary provider for general reads, rotates when necessary
 function createProvider() {
-  const rpcUrl = RPC_URLS[0];
-  console.log(`Using JsonRpcProvider (HTTP) for RPC: ${rpcUrl}`);
-  console.log(`📊 Block range limit: ${MAX_BLOCK_RANGE} blocks per query (free tier optimized)`);
-  return new ethers.JsonRpcProvider(rpcUrl);
+  return providerPool[currentProviderIndex];
+}
+
+function rotateProvider() {
+  currentProviderIndex = (currentProviderIndex + 1) % providerPool.length;
+  console.warn(`⚠️ Switching to fallback RPC provider: ${RPC_URLS[currentProviderIndex]}`);
+  return providerPool[currentProviderIndex];
 }
 
 // Helper to try multiple RPCs for getLogs with automatic chunking for free tier limits
@@ -30,9 +42,9 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
   
   // If range is within free tier limit, query directly
   if (blockRange <= MAX_BLOCK_RANGE) {
-    for (let i = 0; i < RPC_URLS.length; i++) {
+    for (let i = 0; i < providerPool.length; i++) {
       try {
-        const provider = new ethers.JsonRpcProvider(RPC_URLS[i]);
+        const provider = providerPool[i];
         const logs = await provider.getLogs({
           address,
           fromBlock,
@@ -41,9 +53,11 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
         });
         return logs;
       } catch (err) {
-        if (i < RPC_URLS.length - 1) {
+        if (i < providerPool.length - 1) {
           console.warn(`⚠️  RPC ${RPC_URLS[i]} failed, trying next...`);
         } else {
+          console.error(`❌ All RPCs failed for direct query ${fromBlock}-${toBlock}`);
+          rotateProvider();
           throw err; // All RPCs failed
         }
       }
@@ -53,7 +67,6 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
   
   // Range too large - chunk it into smaller pieces
   const totalChunks = Math.ceil(blockRange / MAX_BLOCK_RANGE);
-  console.log(`📊 Chunking getLogs query: blocks ${fromBlock}-${toBlock} (${blockRange} blocks) into ${totalChunks} chunks of ${MAX_BLOCK_RANGE} blocks`);
   const allLogs = [];
   let chunkNum = 0;
   
@@ -61,9 +74,10 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
     const end = Math.min(start + MAX_BLOCK_RANGE - 1, toBlock);
     chunkNum++;
     
-    for (let i = 0; i < RPC_URLS.length; i++) {
+    let chunkSuccessful = false;
+    for (let i = 0; i < providerPool.length; i++) {
       try {
-        const provider = new ethers.JsonRpcProvider(RPC_URLS[i]);
+        const provider = providerPool[i];
         const logs = await provider.getLogs({
           address,
           fromBlock: start,
@@ -72,27 +86,31 @@ async function getLogsWithFallback(address, fromBlock, toBlock, topics) {
         });
         
         if (logs.length > 0) {
-          console.log(`   ✓ Chunk ${chunkNum}/${totalChunks} (blocks ${start}-${end}): found ${logs.length} log(s)`);
         }
         allLogs.push(...logs);
+        chunkSuccessful = true;
         break; // Success, move to next chunk
       } catch (err) {
-        if (i < RPC_URLS.length - 1) {
+        if (i < providerPool.length - 1) {
           console.warn(`⚠️  RPC ${RPC_URLS[i]} failed for chunk ${start}-${end}, trying next...`);
         } else {
           console.error(`❌ All RPCs failed for chunk ${chunkNum}/${totalChunks} (${start}-${end}), skipping...`);
+          rotateProvider();
           // Continue with next chunk instead of failing completely
         }
       }
     }
     
-    // Small delay between chunks to avoid rate limiting
+    if (!chunkSuccessful) {
+      saveLastBlock(end);
+    }
+    
+    // Longer delay between chunks to avoid rate limiting
     if (start + MAX_BLOCK_RANGE <= toBlock) {
-      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between chunks
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between chunks (increased from 300ms)
     }
   }
   
-  console.log(`   📦 Total logs collected: ${allLogs.length} from ${totalChunks} chunks`);
   return allLogs;
 }
 
@@ -180,7 +198,6 @@ function loadLastBlock() {
 async function handleRedeemOrBurn(tokenAddr, userAddress, amount, symbol) {
   const meta = await getDatasetByTokenAddress(tokenAddr);
   if (!meta) {
-    console.log("Unknown token (not in database or datasets.json):", tokenAddr);
     return;
   }
   const cid = (meta.cid || "").replace("ipfs://", "");
@@ -193,7 +210,6 @@ async function handleRedeemOrBurn(tokenAddr, userAddress, amount, symbol) {
     downloadUrl: url,
     ts: Date.now()
   };
-  console.log("🔥 Granting access:", entry);
   saveAccess(entry);
 }
 
@@ -213,18 +229,16 @@ async function saveBoughtDataset(tokenAddr, buyerAddress, tokensOut) {
         description: '',
         total_supply: 0,
         creator: '',
-        marketplace: process.env.MARKETPLACE_ADDRESS || '',
-        marketplace_address: process.env.MARKETPLACE_ADDRESS || ''
+        marketplace: '',
+        marketplace_address: ''
       };
       // No need to track balance in JSON - blockchain is source of truth
       // Just log the trade (already tracked via addTrade below)
-      console.log(`✅ Trade recorded for ${minimalMeta.symbol}: ${buyerAddress} bought ${ethers.formatUnits(tokensOut, 18)} tokens`);
       return;
     }
 
     // No need to track balance in userDatasets.json - blockchain is source of truth
     // Balance will be fetched directly from blockchain when needed
-    console.log(`✅ Trade recorded for ${meta.symbol}: ${buyerAddress} bought ${ethers.formatUnits(tokensOut, 18)} tokens`);
   } catch (err) {
     console.error("Error saving bought dataset:", err);
   }
@@ -234,13 +248,11 @@ async function handleSoldDataset(tokenAddr, sellerAddress, tokensIn) {
   try {
     const meta = await getDatasetByTokenAddress(tokenAddr);
     if (!meta) {
-      console.log("Unknown token for sold dataset:", tokenAddr);
       return;
     }
 
     // No need to track balance in userDatasets.json - blockchain is source of truth
     // Balance will be fetched directly from blockchain when needed
-    console.log(`✅ Trade recorded for ${meta.symbol}: ${sellerAddress} sold ${ethers.formatUnits(tokensIn, 18)} tokens`);
   } catch (err) {
     console.error("Error handling sold dataset:", err);
   }
@@ -256,10 +268,12 @@ const ERC20_ABI = [
 const REDEEMED_ABI = [
   "event Redeemed(address indexed user,uint256 amount,string indexed ticker)"
 ];
-const MARKETPLACE_ABI = [
-  "event AccessGranted(address indexed token, address indexed buyer)",
-  "event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)",
-  "event Sold(address indexed token, address indexed seller, uint256 tokenIn, uint256 usdcOut)"
+// BondingCurve ABI - each token has its own pool
+const BONDING_CURVE_ABI = [
+  "event AccessGranted(address indexed buyer)",
+  "event Bought(address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)",
+  "event Sold(address indexed seller, uint256 tokensIn, uint256 usdcOut)",
+  "event TokensBurned(address indexed burner, uint256 amountBurned, uint256 newPrice)"
 ];
 
 // If WebSocket provider: subscribe per-contract (best)
@@ -269,12 +283,9 @@ if (provider instanceof ethers.WebSocketProvider) {
     for (const [tokenAddr, meta] of Object.entries(datasets)) {
       const addr = tokenAddr.toLowerCase();
       const contract = new ethers.Contract(addr, ERC20_ABI.concat(REDEEMED_ABI), provider);
-      console.log("👀 Subscribing via WS to:", addr, meta.symbol);
-
       contract.on("Transfer", (from, to, value, event) => {
         try {
           if (to === ethers.ZeroAddress) {
-            console.log(`Transfer burn detected (WS): ${from} burned ${ethers.formatUnits(value, 18)} ${meta.symbol}`);
             handleRedeemOrBurn(addr, from, value, meta.symbol);
           }
         } catch (err) {
@@ -284,7 +295,6 @@ if (provider instanceof ethers.WebSocketProvider) {
 
       contract.on("Redeemed", (user, amount, ticker, event) => {
         try {
-          console.log(`Redeemed event (WS): ${user} ${amount.toString()} ${ticker}`);
           handleRedeemOrBurn(addr, user, amount, ticker);
         } catch (err) {
           console.error("Redeemed handler error:", err);
@@ -301,52 +311,62 @@ if (provider instanceof ethers.WebSocketProvider) {
       }
     }
     
-    // Also add the marketplace from env if available (for catching events from newly created tokens)
-    if (process.env.MARKETPLACE_ADDRESS) {
-      uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
+    // Build a map of bondingCurve address => token address
+    const bondingCurveToToken = {};
+    for (const [tokenAddr, meta] of Object.entries(datasets)) {
+      const bondingCurve = meta.marketplace || meta.marketplace_address || meta.bonding_curve;
+      if (bondingCurve) {
+        bondingCurveToToken[bondingCurve.toLowerCase()] = tokenAddr.toLowerCase();
+      }
     }
 
     for (const marketplaceAddr of uniqueMarketplaces) {
-      const marketplaceContract = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, provider);
-      console.log("👀 Subscribing to marketplace AccessGranted events:", marketplaceAddr);
-
-      marketplaceContract.on("AccessGranted", async (tokenAddr, buyer, event) => {
+      const tokenAddr = bondingCurveToToken[marketplaceAddr];
+      const bondingCurveContract = new ethers.Contract(marketplaceAddr, BONDING_CURVE_ABI, provider);
+      const tokenMeta = datasets[tokenAddr];
+      bondingCurveContract.on("AccessGranted", async (buyer, event) => {
         try {
-          console.log(`AccessGranted event (WS): ${buyer} granted access for token ${tokenAddr}`);
           // Find the token symbol from database
           const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
           if (tokenMeta) {
             await handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
           } else {
-            console.log("Unknown token in AccessGranted event:", tokenAddr);
           }
         } catch (err) {
           console.error("AccessGranted handler error:", err);
         }
       });
 
-      marketplaceContract.on("Bought", async (tokenAddr, buyer, usdcIn, fee, tokensOut, event) => {
+      bondingCurveContract.on("Bought", async (buyer, usdcIn, fee, tokensOut, event) => {
         try {
-          console.log(`Bought event (WS): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
-          
           // Save dataset entry
-          await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+          await saveBoughtDataset(tokenAddr, buyer, tokensOut);
           
           // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
           const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
-          console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${tokenMeta ? tokenMeta.symbol : 'UNKNOWN'}`);
         } catch (err) {
           console.error("Bought handler error:", err);
         }
       });
 
-      marketplaceContract.on("Sold", async (tokenAddr, seller, tokenIn, usdcOut, event) => {
+      bondingCurveContract.on("Sold", async (seller, tokensIn, usdcOut, event) => {
         try {
-          console.log(`Sold event (WS): ${seller} sold ${ethers.formatUnits(tokenIn, 18)} tokens of ${tokenAddr}`);
           // Subtract tokens from user's balance when they sell
-          await handleSoldDataset(tokenAddr.toLowerCase(), seller, tokenIn);
+          await handleSoldDataset(tokenAddr, seller, tokensIn);
         } catch (err) {
           console.error("Sold handler error:", err);
+        }
+      });
+
+      bondingCurveContract.on("TokensBurned", async (burner, amountBurned, newPrice, event) => {
+        try {
+          const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
+          if (tokenMeta) {
+            await handleRedeemOrBurn(tokenAddr, burner, amountBurned, tokenMeta.symbol);
+          } else {
+          }
+        } catch (err) {
+          console.error("TokensBurned handler error:", err);
         }
       });
     }
@@ -362,7 +382,6 @@ if (provider instanceof ethers.WebSocketProvider) {
           if (!global.__ws_subscribed) global.__ws_subscribed = new Set();
           if (global.__ws_subscribed.has(addr)) continue;
           const contract = new ethers.Contract(addr, ERC20_ABI.concat(REDEEMED_ABI), provider);
-          console.log("👀 WS subscribing new token:", addr, meta.symbol);
           contract.on("Transfer", (from, to, value, event) => {
             try {
               if (to === ethers.ZeroAddress) handleRedeemOrBurn(addr, from, value, meta.symbol);
@@ -376,7 +395,6 @@ if (provider instanceof ethers.WebSocketProvider) {
       } catch (e) { console.error("WS repeat subscribe error:", e); }
     }, 20000);
 
-    console.log("Listener running (WS subscriptions active).");
   })().catch(console.error);
 
 } else {
@@ -389,8 +407,6 @@ if (provider instanceof ethers.WebSocketProvider) {
       lastBlock = Math.max(0, latest - 6);
       saveLastBlock(lastBlock);
     }
-    console.log("Starting polling from block:", lastBlock);
-
     async function pollOnce() {
       try {
         const datasets = await loadDatasets();
@@ -407,19 +423,33 @@ if (provider instanceof ethers.WebSocketProvider) {
         }
 
         const latest = await provider.getBlockNumber();
+        const MAX_BACKFILL_BLOCKS = parseInt(process.env.MAX_BACKFILL_BLOCKS || "100", 10); // Reduced from 5000 to 100 to minimize RPC load
+        if (latest - lastBlock > MAX_BACKFILL_BLOCKS) {
+          const newStart = Math.max(0, latest - MAX_BACKFILL_BLOCKS);
+          console.warn(
+            `⚠️ Large block gap detected (${latest - lastBlock} blocks). ` +
+            `Skipping ahead to block ${newStart} to avoid massive RPC backfill.`
+          );
+          lastBlock = newStart;
+          saveLastBlock(lastBlock);
+        }
         if (latest <= lastBlock) return; // nothing new
+
+        const maxBlocksPerPoll = MAX_BLOCK_RANGE * MAX_CHUNKS_PER_POLL; // Now 10 blocks × 10 chunks = 100 blocks max per poll
+        const cappedLatest = Math.min(latest, lastBlock + maxBlocksPerPoll);
 
         // for each token, query logs from lastBlock+1 .. latest
         const from = lastBlock + 1;
-        const to = latest;
+        const to = cappedLatest;
         // topics for Transfer and Redeemed (using ethers.id to get topic hash)
         const iface = new ethers.Interface(ERC20_ABI.concat(REDEEMED_ABI));
         const transferTopic = ethers.id("Transfer(address,address,uint256)");
         const redeemedTopic = ethers.id("Redeemed(address,uint256,string)");
-        const marketplaceIface = new ethers.Interface(MARKETPLACE_ABI);
-        const accessGrantedTopic = ethers.id("AccessGranted(address,address)");
-        const boughtTopic = ethers.id("Bought(address,address,uint256,uint256,uint256)");
-        const soldTopic = ethers.id("Sold(address,address,uint256,uint256)");
+        const bondingCurveIface = new ethers.Interface(BONDING_CURVE_ABI);
+        const accessGrantedTopic = ethers.id("AccessGranted(address)");
+        const boughtTopic = ethers.id("Bought(address,uint256,uint256,uint256)");
+        const soldTopic = ethers.id("Sold(address,uint256,uint256)");
+        const tokensBurnedTopic = ethers.id("TokensBurned(address,uint256,uint256)");
 
         for (const addr of tokenAddrs) {
           const token = addr.toLowerCase();
@@ -447,14 +477,12 @@ if (provider instanceof ethers.WebSocketProvider) {
                 if (to === ethers.ZeroAddress) {
                   const tokenMeta = datasets[token];
                   const symbol = tokenMeta ? tokenMeta.symbol : 'UNK';
-                  console.log(`Poll-detected burn: ${from} burned ${ethers.formatUnits(value, 18)} on ${token}`);
                   await handleRedeemOrBurn(token, from, value, symbol);
                 }
               } else if (parsed.name === "Redeemed") {
                 const user = parsed.args.user;
                 const amt = parsed.args.amount;
                 const ticker = parsed.args.ticker;
-                console.log(`Poll-detected Redeemed: ${user} ${amt.toString()} ${ticker}`);
                 await handleRedeemOrBurn(token, user, amt, ticker);
               }
             } catch (err) {
@@ -466,63 +494,57 @@ if (provider instanceof ethers.WebSocketProvider) {
         // Poll marketplace AccessGranted events
         // Get unique marketplaces from the datasets we already loaded
         const uniqueMarketplaces = new Set();
+        const marketplaceToToken = {};
         for (const [tokenAddr, meta] of Object.entries(datasets)) {
           const marketplace = meta.marketplace || meta.marketplace_address;
           if (marketplace) {
-            uniqueMarketplaces.add(marketplace.toLowerCase());
+            const lower = marketplace.toLowerCase();
+            uniqueMarketplaces.add(lower);
+            marketplaceToToken[lower] = tokenAddr.toLowerCase();
           }
         }
         
-        // CRITICAL: Always include marketplace from env to catch ALL events
-        // Even if a token isn't in datasets.json, we can still catch its events
-        if (process.env.MARKETPLACE_ADDRESS) {
-          uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
-        }
-        
-        // If no datasets loaded, still poll marketplace if address is known
-        if (uniqueMarketplaces.size === 0 && process.env.MARKETPLACE_ADDRESS) {
-          uniqueMarketplaces.add(process.env.MARKETPLACE_ADDRESS.toLowerCase());
-        }
-
         for (const marketplaceAddr of uniqueMarketplaces) {
           try {
-            const marketplaceLogs = await getLogsWithFallback(marketplaceAddr, from, to, [[accessGrantedTopic, boughtTopic, soldTopic]]);
+            const marketplaceLogs = await getLogsWithFallback(marketplaceAddr, from, to, [[accessGrantedTopic, boughtTopic, soldTopic, tokensBurnedTopic]]);
             
             for (const log of marketplaceLogs) {
               try {
-                const parsed = marketplaceIface.parseLog(log);
+                const parsed = bondingCurveIface.parseLog(log);
+                const tokenAddr = marketplaceToToken[marketplaceAddr];
+                if (!tokenAddr) {
+                  console.warn("⚠️ Bonding curve address not mapped to token:", marketplaceAddr);
+                  continue;
+                }
+                const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
                 if (parsed && parsed.name === "AccessGranted") {
-                  const [tokenAddr, buyer] = parsed.args;
-                  console.log(`AccessGranted event (HTTP): ${buyer} granted access for token ${tokenAddr}`);
-                  
-                  // Find the token symbol from database
-                  const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
+                  const [buyer] = parsed.args;
                   if (tokenMeta) {
-                    await handleRedeemOrBurn(tokenAddr.toLowerCase(), buyer, 0, tokenMeta.symbol);
+                    await handleRedeemOrBurn(tokenAddr, buyer, 0, tokenMeta.symbol);
                   } else {
-                    console.log("Unknown token in AccessGranted event:", tokenAddr);
                   }
                 } else if (parsed && parsed.name === "Bought") {
-                  const [tokenAddr, buyer, usdcIn, fee, tokensOut] = parsed.args;
-                  console.log(`Bought event (HTTP): ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} tokens of ${tokenAddr}`);
-                  
+                  const [buyer, usdcIn, fee, tokensOut] = parsed.args;
                   // Save dataset entry
-                  await saveBoughtDataset(tokenAddr.toLowerCase(), buyer, tokensOut);
+                  await saveBoughtDataset(tokenAddr, buyer, tokensOut);
                   
                   // Transaction is automatically tracked on-chain - query getTradeCount() to retrieve count
-                  const tokenMeta = await getDatasetByTokenAddress(tokenAddr);
-                  console.log(`✅ Trade on-chain: ${buyer} bought ${ethers.formatUnits(tokensOut, 18)} ${tokenMeta ? tokenMeta.symbol : 'UNKNOWN'}`);
                 } else if (parsed && parsed.name === "Sold") {
-                  const [tokenAddr, seller, tokenIn, usdcOut] = parsed.args;
-                  console.log(`Sold event (HTTP): ${seller} sold ${ethers.formatUnits(tokenIn, 18)} tokens of ${tokenAddr}`);
-                  await handleSoldDataset(tokenAddr.toLowerCase(), seller, tokenIn);
+                  const [seller, tokenIn, usdcOut] = parsed.args;
+                  await handleSoldDataset(tokenAddr, seller, tokenIn);
+                } else if (parsed && parsed.name === "TokensBurned") {
+                  const [burner, amountBurned] = parsed.args;
+                  if (tokenMeta) {
+                    await handleRedeemOrBurn(tokenAddr, burner, amountBurned, tokenMeta.symbol);
+                  } else {
+                  }
                 }
               } catch (err) {
                 console.error("Marketplace log parsing error:", err);
               }
             }
           } catch (err) {
-            console.error("Marketplace polling error:", err);
+            console.error("Bonding curve polling error:", err);
           }
         }
 
@@ -537,6 +559,5 @@ if (provider instanceof ethers.WebSocketProvider) {
     await pollOnce();
     // then periodic
     setInterval(pollOnce, POLL_INTERVAL);
-    console.log("Listener running (HTTP polling). Poll interval:", POLL_INTERVAL, "ms");
   })().catch(console.error);
 }

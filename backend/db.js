@@ -30,7 +30,6 @@ async function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_coins_symbol ON coins(symbol);
       CREATE INDEX IF NOT EXISTS idx_coins_created_at ON coins(created_at DESC);
     `);
-    console.log('[db] Schema ensured (coins)');
   } finally {
     client.release();
   }

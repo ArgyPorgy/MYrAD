@@ -1,7 +1,20 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
+import EthereumProvider from '@walletconnect/ethereum-provider';
+import { Web3Modal } from '@web3modal/standalone';
 import { Web3State } from '@/types/web3';
 import { switchToBaseSepolia, checkNetwork } from '@/utils/web3';
+import { BASE_SEPOLIA_CHAIN_ID } from '@/constants/contracts';
+
+const SIGNATURE_STORAGE_PREFIX = 'myrad-signature';
+
+const buildSignatureStorageKey = (address: string) =>
+  `${SIGNATURE_STORAGE_PREFIX}-${address.toLowerCase()}`;
+
+const buildSignMessage = (address: string) => {
+  const timestamp = new Date().toISOString();
+  return `Sign in to MYrAD\nAddress: ${address}\nTimestamp: ${timestamp}`;
+};
 
 export const useWeb3 = () => {
   const [web3State, setWeb3State] = useState<Web3State>({
@@ -11,103 +24,196 @@ export const useWeb3 = () => {
     connected: false,
   });
   const [status, setStatus] = useState<string>('');
+  const walletConnectRef = useRef<any>(null);
+  const walletConnectModalRef = useRef<any>(null);
+  const isConnectingRef = useRef<boolean>(false);
 
-  // Listen for account and chain changes
-  // Auto-reconnect on page reload if wallet is still connected (but don't show selector if already connected)
+  const clearState = useCallback(() => {
+    setWeb3State({
+      provider: null,
+      signer: null,
+      userAddress: '',
+      connected: false,
+    });
+  }, []);
+
+  const ensureSignature = useCallback(
+    async (signer: ethers.Signer, address: string) => {
+      const storageKey = buildSignatureStorageKey(address);
+      const existingSignature = localStorage.getItem(storageKey);
+      console.log('🔑 Checking signature for', address);
+      console.log('🔑 Storage key:', storageKey);
+      console.log('🔑 Signature exists:', !!existingSignature);
+      console.log('🔑 Signature value:', existingSignature);
+      
+      if (existingSignature) {
+        console.log('✅ Found existing signature, skipping sign request');
+        return existingSignature;
+      }
+
+      const message = buildSignMessage(address);
+
+      setStatus('🔐 Awaiting signature to sign in to MYrAD...');
+      console.log('📝 Requesting new signature for', address);
+      console.log('📝 Message to sign:', message);
+      try {
+        const signature = await signer.signMessage(message);
+        const signatureData = JSON.stringify({
+          signature,
+          message,
+          timestamp: Date.now(),
+        });
+        localStorage.setItem(storageKey, signatureData);
+        console.log('💾 Signature saved to localStorage with key:', storageKey);
+        console.log('💾 Saved data:', signatureData);
+        
+        // Verify it was saved
+        const verification = localStorage.getItem(storageKey);
+        console.log('✅ Verification - signature saved:', !!verification);
+        
+        setStatus('✅ Signed in to MYrAD successfully');
+        return signature;
+      } catch (error: any) {
+        console.warn('User declined MYrAD sign-in signature', error);
+        throw new Error(
+          error?.message ?? 'Signature declined. Sign in is required to continue.'
+        );
+      }
+    },
+    []
+  );
+
+  // Check for existing connection on mount
   useEffect(() => {
-    // Check if wallet is already connected on page load (reload scenario)
     const checkExistingConnection = async () => {
-      // If user manually disconnected, don't auto-reconnect
-      if (localStorage.getItem('wallet-disconnected') === 'true') {
-        console.log('Wallet was manually disconnected - not auto-reconnecting');
+      // Don't check if we're actively connecting
+      if (isConnectingRef.current) {
+        console.log('⏭️ Skipping checkExistingConnection - actively connecting');
         return;
       }
 
-      if (!window.ethereum) return;
+      if (typeof window === 'undefined' || !window.ethereum) return;
+
+      console.log('🔍 checkExistingConnection running...');
+
+      const userDisconnected = localStorage.getItem('wallet-disconnected');
+      if (userDisconnected === 'true') {
+        console.log('❌ User previously disconnected, skipping auto-connect');
+        return;
+      }
 
       try {
-        // Try to get accounts without requesting (if already connected, this works)
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const accounts = await provider.send("eth_accounts", []);
-        
-        if (accounts && accounts.length > 0) {
-          // Wallet is already connected - restore connection
-          const signer = await provider.getSigner();
-          const userAddress = await signer.getAddress();
-          
-          const isCorrectNetwork = await checkNetwork(provider);
-          if (isCorrectNetwork) {
-            setWeb3State({
-              provider,
-              signer,
-              userAddress,
-              connected: true,
-            });
-            setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
-            console.log('✅ Auto-reconnected to existing wallet connection');
-          } else {
-            setStatus("❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)");
-          }
-        }
-      } catch (err) {
-        // Wallet not connected or error - that's fine, user will connect manually
-        console.log('No existing wallet connection found');
-      }
-    };
-
-    // Check for existing connection on mount
-    checkExistingConnection();
-
-    // Listen for account changes
-    const handleAccountsChanged = async (accounts: string[]) => {
-      if (accounts.length === 0) {
-        // User disconnected
-        setWeb3State({
-          provider: null,
-          signer: null,
-          userAddress: '',
-          connected: false,
+        const accounts = await window.ethereum.request({
+          method: 'eth_accounts',
         });
-        setStatus('');
-      } else {
-        // User switched accounts
-        try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const userAddress = await signer.getAddress();
-          
-          const isCorrectNetwork = await checkNetwork(provider);
-          if (isCorrectNetwork) {
-            setWeb3State({
-              provider,
-              signer,
-              userAddress,
-              connected: true,
-            });
-            // Clear disconnect flag since user switched accounts (still connected)
-            localStorage.removeItem('wallet-disconnected');
-            setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
-          } else {
-            setStatus("❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)");
-          }
-        } catch (err) {
-          console.error("Account change error:", err);
-          setStatus("❌ Account change failed: " + (err as any)?.message);
+        console.log('📋 Found accounts:', accounts);
+        
+        if (accounts.length === 0) {
+          console.log('❌ No accounts found');
+          return;
         }
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const signatureKey = buildSignatureStorageKey(userAddress);
+        const signatureData = localStorage.getItem(signatureKey);
+        console.log('🔑 Signature check for', userAddress);
+        console.log('🔑 Expected storage key:', signatureKey);
+        console.log('🔑 Signature exists:', !!signatureData);
+        console.log('🔑 All localStorage keys:', Object.keys(localStorage));
+        console.log('🔑 Keys matching "myrad-signature":', Object.keys(localStorage).filter(k => k.includes('myrad-signature')));
+        
+        if (!signatureData) {
+          console.log('⚠️ No signature found, clearing state');
+          setStatus('⚠️ Sign in required. Please reconnect and sign in to continue.');
+          clearState();
+          return;
+        }
+        
+        console.log('✅ Signature found, proceeding with auto-connect');
+
+        const isCorrectNetwork = await checkNetwork(provider);
+        if (!isCorrectNetwork) {
+          console.log('❌ Wrong network detected');
+          setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
+          clearState();
+          return;
+        }
+
+        console.log('✅ Auto-connecting to existing session');
+        setWeb3State({
+          provider,
+          signer,
+          userAddress,
+          connected: true,
+        });
+        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+      } catch (err) {
+        console.error('Check existing connection error:', err);
       }
     };
 
-      // Listen for chain changes
-      const handleChainChanged = async () => {
-        if (web3State.connected) {
-          const isCorrectNetwork = await checkNetwork(web3State.provider!);
-          if (isCorrectNetwork) {
-            setStatus(`✅ Wallet connected: ${web3State.userAddress} (Base Sepolia testnet)`);
-          } else {
-            setStatus("❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)");
-          }
+    void checkExistingConnection();
+
+    const handleAccountsChanged = async (accounts: string[]) => {
+      // Ignore account changes while actively connecting
+      if (isConnectingRef.current) {
+        console.log('🔄 Ignoring accountsChanged event during active connection');
+        return;
+      }
+
+      console.log('👤 accountsChanged event:', accounts);
+
+      if (accounts.length === 0) {
+        clearState();
+        setStatus('');
+        return;
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const isCorrectNetwork = await checkNetwork(provider);
+        if (!isCorrectNetwork) {
+          setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
+          clearState();
+          return;
         }
-      };
+
+        const signatureKey = buildSignatureStorageKey(userAddress);
+        if (!localStorage.getItem(signatureKey)) {
+          setStatus('⚠️ Sign in required. Please reconnect and sign in to continue.');
+          clearState();
+          return;
+        }
+
+        setWeb3State({
+          provider,
+          signer,
+          userAddress,
+          connected: true,
+        });
+        localStorage.removeItem('wallet-disconnected');
+        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+      } catch (err) {
+        console.error('Account change error:', err);
+        setStatus(`❌ Account change failed: ${(err as any)?.message ?? 'Unknown error'}`);
+      }
+    };
+
+    const handleChainChanged = async () => {
+      if (!web3State.connected || !web3State.provider) return;
+      const isCorrectNetwork = await checkNetwork(web3State.provider);
+      if (isCorrectNetwork) {
+        setStatus(`✅ Wallet connected: ${web3State.userAddress} (Base Sepolia testnet)`);
+      } else {
+        setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
+      }
+    };
 
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
@@ -120,231 +226,256 @@ export const useWeb3 = () => {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
     };
-  }, []);
+  }, [clearState, web3State.connected, web3State.provider]);
 
-  const connectWallet = useCallback(async (providerType: string = 'metamask') => {
-    try {
-      let ethereumProvider = window.ethereum;
-
-      // CRITICAL: Find and use MetaMask's provider aggregator when multiple wallets are installed
-      // When MetaMask + OKX (or other wallets) are both installed:
-      // - MetaMask creates an aggregator at window.ethereum that has a .providers property
-      // - The aggregator shows a wallet selector UI when you request permissions
-      // - If OKX overrides window.ethereum, we need to find the aggregator differently
-      
-      if (window.ethereum) {
-        const providers = (window.ethereum as any).providers;
-        
-        // Check if window.ethereum itself is MetaMask's aggregator (has providers array)
-        if (providers && Array.isArray(providers) && providers.length > 1) {
-          // ✅ This IS MetaMask's aggregator - use it (will show selector)
-          ethereumProvider = window.ethereum;
-          console.log(`✅ Using MetaMask aggregator (${providers.length} wallets detected). Selector will appear.`);
-        } 
-        // Check if window.ethereum is MetaMask itself (single provider, but is MetaMask)
-        else if ((window.ethereum as any).isMetaMask) {
-          // This is MetaMask directly (only one wallet installed)
-          ethereumProvider = window.ethereum;
-          console.log('Using MetaMask provider directly.');
+  const connectWallet = useCallback(
+    async (providerType?: string) => {
+      try {
+        if (typeof window === 'undefined') {
+          throw new Error('Window context unavailable');
         }
-        // OKX or other wallet might have overridden window.ethereum
-        else {
-          // Try to find MetaMask's aggregator even when OKX overrides window.ethereum
-          // MetaMask's aggregator might be accessible through:
-          // 1. window.ethereum.providers[0] (if MetaMask is first provider)
-          // 2. Or we'll use wallet_requestPermissions which should trigger selector
-          
-          if (providers && Array.isArray(providers) && providers.length > 0) {
-            // Providers array exists but only one - might be MetaMask or aggregator
-            // Try to find MetaMask in the array
-            const metamaskProvider = providers.find((p: any) => p?.isMetaMask);
-            if (metamaskProvider) {
-              // Found MetaMask - but we want the aggregator, not individual provider
-              // The aggregator is usually at window.ethereum itself when it has providers
-              // Since OKX overrode it, we might need to reconstruct or use requestPermissions
-              console.log('MetaMask found in providers but window.ethereum overridden. Using requestPermissions to trigger selector.');
-              ethereumProvider = window.ethereum; // Will use requestPermissions below
-            } else {
-              ethereumProvider = window.ethereum;
+
+        const dispatchWalletModal = () => {
+          window.dispatchEvent(new CustomEvent('openWalletModal'));
+          setStatus('🔔 Select a wallet to connect.');
+        };
+
+        if (!providerType) {
+          dispatchWalletModal();
+          return;
+        }
+
+        // Set connecting flag to prevent accountsChanged from interfering
+        isConnectingRef.current = true;
+        console.log('🔌 Starting connection process...');
+
+        const aggregator = window.ethereum;
+        const providerList: any[] = Array.isArray((aggregator as any)?.providers)
+          ? (aggregator as any).providers
+          : [];
+
+        const matchProvider = (
+          identifiers: Array<(provider: any) => boolean>,
+          fallback?: () => any | null
+        ): any | null => {
+          if (providerList.length) {
+            const found = providerList.find((provider: any) =>
+              identifiers.some((fn) => {
+                try {
+                  return fn(provider);
+                } catch {
+                  return false;
+                }
+              })
+            );
+            if (found) {
+              return found;
             }
+          }
+          if (fallback) {
+            try {
+              return fallback();
+            } catch {
+              return null;
+            }
+          }
+          return null;
+        };
+
+        const requestAccounts = async (eth: any) => {
+          if (!eth) {
+            throw new Error('Wallet provider unavailable.');
+          }
+          if (typeof eth.enable === 'function' && providerType === 'walletconnect') {
+            await eth.enable();
           } else {
-            // No providers array - OKX or other wallet overrode window.ethereum
-            // We'll rely on wallet_requestPermissions to show selector
-            ethereumProvider = window.ethereum;
-            console.log('⚠️ No providers array detected. Using wallet_requestPermissions to trigger selector.');
+            await eth.request?.({ method: 'eth_requestAccounts' });
+          }
+        };
+
+        const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+        let ethereumProvider: any = null;
+
+        if (providerType === 'metamask') {
+          ethereumProvider = matchProvider(
+            [
+              (p) => {
+                const name = (p?.providerInfo?.name || '').toLowerCase();
+                const rdns = (p?.providerInfo?.rdns || '').toLowerCase();
+                return p?.isMetaMask || name.includes('metamask') || rdns.includes('metamask');
+              },
+              (p) => p?.isMetaMask && !p?.isOkxWallet && !p?.isRabby,
+            ],
+            () => ((aggregator as any)?.isMetaMask ? aggregator : null)
+          );
+          if (!ethereumProvider) {
+            throw new Error('MetaMask not detected. Please install MetaMask and refresh.');
+          }
+        } else if (providerType === 'rabby') {
+          ethereumProvider = matchProvider(
+            [
+              (p) => p?.isRabby,
+              (p) => (p?.providerInfo?.name || '').toLowerCase().includes('rabby'),
+              (p) => (p?.providerInfo?.rdns || '').toLowerCase().includes('rabby'),
+              (p) => Boolean(p?.rabby),
+            ],
+            () => (window as any)?.rabby?.ethereum || (window as any)?.rabby || null
+          );
+          if (!ethereumProvider) {
+            throw new Error('Rabby Wallet not detected. Please install the Rabby extension.');
+          }
+        } else if (providerType === 'okx') {
+          ethereumProvider = matchProvider(
+            [
+              (p) => p?.isOkxWallet,
+              (p) => (p?.providerInfo?.name || '').toLowerCase().includes('okx'),
+              (p) => (p?.providerInfo?.rdns || '').toLowerCase().includes('okex'),
+            ],
+            () => (window as any)?.okxwallet?.ethereum || (window as any)?.okxwallet || null
+          );
+          if (!ethereumProvider) {
+            throw new Error('OKX Wallet extension not detected.');
+          }
+        } else if (providerType === 'coinbase') {
+          ethereumProvider = matchProvider(
+            [
+              (p) => p?.isCoinbaseWallet,
+              (p) => (p?.providerInfo?.name || '').toLowerCase().includes('coinbase'),
+              (p) => (p?.providerInfo?.rdns || '').toLowerCase().includes('coinbase'),
+            ],
+            () => window.coinbaseWalletExtension ?? null
+          );
+          if (!ethereumProvider) {
+            throw new Error('Coinbase Wallet extension not detected.');
+          }
+        } else if (providerType === 'walletconnect') {
+          if (!projectId) {
+            throw new Error('WalletConnect project ID missing. Set VITE_WALLETCONNECT_PROJECT_ID in your environment.');
+          }
+
+          if (!walletConnectModalRef.current) {
+            walletConnectModalRef.current = new Web3Modal({
+              projectId,
+              walletConnectVersion: 2,
+              standaloneChains: [`eip155:${Number(BASE_SEPOLIA_CHAIN_ID)}`],
+              themeMode: 'dark',
+            });
+          }
+
+          const wcProvider = await EthereumProvider.init({
+            projectId,
+            showQrModal: false,
+            chains: [Number(BASE_SEPOLIA_CHAIN_ID)],
+            optionalChains: [Number(BASE_SEPOLIA_CHAIN_ID)],
+            metadata: {
+              name: 'MYrAD',
+              description: 'MYrAD Data Marketplace',
+              url: window.location.origin,
+              icons: ['https://pbs.twimg.com/profile_images/1977080620548255745/uoo-Vir5_400x400.jpg'],
+            },
+          });
+
+          const handleDisplayUri = (uri: string) => {
+            walletConnectModalRef.current?.openModal({ uri });
+          };
+
+          wcProvider.on('display_uri', handleDisplayUri);
+
+          await wcProvider.enable();
+          walletConnectModalRef.current?.closeModal();
+          wcProvider.removeListener('display_uri', handleDisplayUri);
+          ethereumProvider = wcProvider;
+          walletConnectRef.current = wcProvider;
+        } else {
+          throw new Error('Unsupported wallet type selected.');
+        }
+
+        if (providerType !== 'walletconnect') {
+          walletConnectRef.current = null;
+        }
+
+        if (aggregator && typeof (aggregator as any).setSelectedProvider === 'function' && providerList.includes(ethereumProvider)) {
+          try {
+            await (aggregator as any).setSelectedProvider(ethereumProvider);
+          } catch (setErr) {
+            console.warn('Failed to set selected provider on aggregator:', setErr);
           }
         }
-      }
 
-      // Check for specific wallet providers (if explicitly requested)
-      if (providerType === 'coinbase' && window.coinbaseWalletExtension) {
-        ethereumProvider = window.coinbaseWalletExtension;
-      } else if (providerType === 'walletconnect') {
-        if (!window.ethereum) {
-          throw new Error("WalletConnect not implemented yet. Please use MetaMask.");
+        await requestAccounts(ethereumProvider);
+
+        const switched = await switchToBaseSepolia(ethereumProvider);
+        if (!switched) {
+          setStatus('❌ Failed to switch to Base Sepolia. Please switch manually in your wallet.');
+          return;
         }
-      } else if (!window.ethereum) {
-        throw new Error("No wallet provider found. Please install MetaMask or Coinbase Wallet.");
-      }
 
-      // IMPORTANT: Use the provider we selected (MetaMask aggregator if available)
-      const provider = new ethers.BrowserProvider(ethereumProvider);
-      
-      // CRITICAL: Use wallet_requestPermissions on the SELECTED provider to trigger wallet selector
-      // If we found MetaMask's aggregator (has .providers array), this will show the selector
-      // If OKX overrode window.ethereum, we're using OKX and it might not show selector
-      try {
-        // Request permissions on the provider - MetaMask aggregator will show selector
-        await ethereumProvider.request({
-          method: 'wallet_requestPermissions',
-          params: [{ eth_accounts: {} }]
+        const provider = new ethers.BrowserProvider(ethereumProvider);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const isCorrectNetwork = await checkNetwork(provider);
+        if (!isCorrectNetwork) {
+          setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
+          return;
+        }
+
+        try {
+          await ensureSignature(signer, userAddress);
+        } catch (error: any) {
+          console.error('Signature error:', error);
+          setStatus(error?.message ?? 'Signature declined. Sign in is required to continue.');
+          localStorage.setItem('wallet-disconnected', 'true');
+          clearState();
+          return;
+        }
+
+        console.log('✅ Setting web3 state for address:', userAddress);
+        setWeb3State({
+          provider,
+          signer,
+          userAddress,
+          connected: true,
         });
-        console.log('✅ Permissions requested - selector should have appeared if multiple wallets');
-      } catch (permError: any) {
-        // If wallet_requestPermissions is not supported or user denies, fall back to eth_requestAccounts
-        // Error code 4001 means user rejected, which is fine
-        if (permError.code !== 4001) {
-          console.log('wallet_requestPermissions not supported, using eth_requestAccounts');
-          await provider.send("eth_requestAccounts", []);
-        } else {
-          throw permError; // User rejected, re-throw
-        }
+        localStorage.removeItem('wallet-disconnected');
+        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+        console.log('✅ Web3 state updated successfully');
+
+        // Clear connecting flag after a short delay to ensure state is settled
+        setTimeout(() => {
+          isConnectingRef.current = false;
+          console.log('🔓 Connection process complete, re-enabling accountsChanged listener');
+        }, 1000);
+      } catch (err: any) {
+        console.error('Connect error', err);
+        setStatus(`❌ Connect failed: ${err?.message ?? err}`);
+        isConnectingRef.current = false;
       }
-      
-      // Ensure accounts are available after permission request
-      await provider.send("eth_requestAccounts", []);
-
-      // Force switch to Base Sepolia testnet
-      const switched = await switchToBaseSepolia();
-      if (!switched) {
-        return;
-      }
-
-      // Reinitialize provider after network switch
-      const newProvider = new ethers.BrowserProvider(ethereumProvider);
-      const signer = await newProvider.getSigner();
-      const userAddress = await signer.getAddress();
-
-      const isCorrectNetwork = await checkNetwork(newProvider);
-      if (!isCorrectNetwork) {
-        setStatus("❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)");
-        return;
-      }
-
-      setWeb3State({
-        provider: newProvider,
-        signer,
-        userAddress,
-        connected: true,
-      });
-
-      // Clear disconnect flag since user is connecting
-      localStorage.removeItem('wallet-disconnected');
-
-      setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
-    } catch (err: any) {
-      console.error("Connect error", err);
-      setStatus("❌ Connect failed: " + (err.message || err));
-    }
-  }, []);
+    },
+    [clearState, ensureSignature]
+  );
 
   const disconnectWallet = useCallback(async () => {
     try {
-      // Try to revoke permissions (EIP-2255) to actually disconnect from wallet
-      if (window.ethereum) {
-        try {
-          // Get current permissions
-          const permissions = await window.ethereum.request({
-            method: 'wallet_getPermissions'
-          });
-          
-          // Revoke all permissions - pass the permission objects directly
-          if (permissions && permissions.length > 0) {
-            // For each permission, revoke it
-            for (const permission of permissions) {
-              try {
-                await window.ethereum.request({
-                  method: 'wallet_revokePermissions',
-                  params: [permission]
-                });
-              } catch (revokeError) {
-                // If individual revoke fails, try with just the parentCapability
-                try {
-                  await window.ethereum.request({
-                    method: 'wallet_revokePermissions',
-                    params: [{ parentCapability: permission.parentCapability }]
-                  });
-                } catch (e) {
-                  console.log('Alternative revoke method also failed');
-                }
-              }
-            }
-          }
-        } catch (permissionError) {
-          // If wallet_revokePermissions fails, try alternative methods
-          console.log('Permission revocation method not supported, trying alternative...');
-          
-          // Some wallets might support disconnect method
-          if (typeof (window.ethereum as any).disconnect === 'function') {
-            await (window.ethereum as any).disconnect();
-          }
-          
-          // For wallets that support close() method
-          if (typeof (window.ethereum as any).close === 'function') {
-            await (window.ethereum as any).close();
-          }
-        }
+      if (typeof window !== 'undefined' && window.ethereum && window.ethereum.disconnect) {
+        await window.ethereum.disconnect();
       }
-      
-      // Mark as manually disconnected in localStorage
-      localStorage.setItem('wallet-disconnected', 'true');
-      
-      // CRITICAL: Clear wallet selection cache to force selector on next connection
-      // When multiple wallets are installed, we need to reset the cached selection
-      if (window.ethereum) {
-        try {
-          // Check if there are multiple providers (multiple wallets installed)
-          const hasMultipleProviders = (window.ethereum as any).providers && 
-                                      Array.isArray((window.ethereum as any).providers) && 
-                                      (window.ethereum as any).providers.length > 1;
-          
-          if (hasMultipleProviders) {
-            // Multiple wallets detected - clear any cached selection
-            // The next eth_requestAccounts should trigger the wallet selector
-            console.log('Multiple wallets detected - selector will appear on next connection');
-          }
-          
-          // Request accounts to reset any internal state
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length === 0) {
-            console.log('✅ Successfully disconnected from wallet');
-          }
-        } catch (e) {
-          // Ignore errors here
-        }
+      if (walletConnectRef.current && typeof walletConnectRef.current.disconnect === 'function') {
+        await walletConnectRef.current.disconnect();
       }
-      
-      // Clear frontend state
-      setWeb3State({
-        provider: null,
-        signer: null,
-        userAddress: '',
-        connected: false,
-      });
-      setStatus('');
+      walletConnectModalRef.current?.closeModal?.();
     } catch (err) {
-      console.error("Disconnect error:", err);
-      // Even if wallet disconnect fails, clear frontend state and mark as disconnected
+      console.error('Disconnect error:', err);
+    } finally {
+      walletConnectRef.current = null;
+      if (web3State.userAddress) {
+        localStorage.removeItem(buildSignatureStorageKey(web3State.userAddress));
+      }
       localStorage.setItem('wallet-disconnected', 'true');
-      setWeb3State({
-        provider: null,
-        signer: null,
-        userAddress: '',
-        connected: false,
-      });
+      clearState();
       setStatus('');
     }
-  }, []);
+  }, [clearState, web3State.userAddress]);
 
   return {
     ...web3State,
@@ -354,4 +485,3 @@ export const useWeb3 = () => {
     disconnectWallet,
   };
 };
-

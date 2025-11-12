@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWeb3 } from '@/hooks/useWeb3';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
@@ -134,10 +134,10 @@ const DashboardPage = () => {
                 className="dashboard-connect-prompt"
                 role="button"
                 tabIndex={0}
-                onClick={() => connectWallet('injected')}
+                onClick={() => connectWallet()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    connectWallet('injected');
+                    connectWallet();
                   }
                 }}
               >

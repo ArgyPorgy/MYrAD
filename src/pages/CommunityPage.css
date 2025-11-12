@@ -21,7 +21,7 @@
 /* ===== COMMUNITY CONTENT - INNER CONTAINER ===== */
 .community-content {
   padding: 32px;
-  padding-top: 80px;
+  padding-top: 48px;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -222,7 +222,7 @@
   .community-content {
     margin-left: 0;
     padding: 32px;
-    padding-top: 80px;
+    padding-top: 48px;
   }
 }
 
@@ -231,7 +231,7 @@
   .community-content {
     margin-left: 0;
     padding: 24px;
-    padding-top: 80px;
+    padding-top: 40px;
   }
 
   .community-title {
@@ -259,7 +259,7 @@
   .community-content {
     margin-left: 70px;
     padding: 16px;
-    padding-top: 80px;
+    padding-top: 32px;
   }
 
   .community-inner-wrapper {
@@ -307,7 +307,7 @@
   .community-content {
     margin-left: 56px;
     padding: 12px;
-    padding-top: 80px;
+    padding-top: 28px;
   }
 
   .community-inner-wrapper {

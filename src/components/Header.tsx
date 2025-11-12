@@ -1,20 +1,28 @@
-import { Name } from '@coinbase/onchainkit/identity';
-import { LogOut, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { shortenAddress } from '@/utils/web3';
+import WalletModal from './WalletModal';
 import './Header.css';
-import { base } from 'viem/chains';
 
 interface HeaderProps {
   userAddress: string;
   connected: boolean;
-  onConnect: (provider?: string) => void;
-  onDisconnect: () => void;
+  onConnect: (provider?: string) => Promise<void> | void;
+  onDisconnect: () => Promise<void> | void;
 }
 
-const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps) => {
-  const displayAddress = userAddress as `0x${string}`;
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+const Header = ({
+  userAddress,
+  connected,
+  onConnect,
+  onDisconnect,
+}: HeaderProps) => {
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Header render - connected:', connected, 'userAddress:', userAddress);
+  }, [connected, userAddress]);
 
   useEffect(() => {
     const handleSidebarToggle = () => {
@@ -38,85 +46,69 @@ const Header = ({ userAddress, connected, onConnect, onDisconnect }: HeaderProps
       }
     };
 
+    const openModal = () => {
+      setIsWalletModalOpen(true);
+    };
+
     checkInitialState();
     window.addEventListener('sidebarToggle', handleSidebarToggle);
     window.addEventListener('resize', handleResize);
+    window.addEventListener('openWalletModal', openModal);
 
     return () => {
       window.removeEventListener('sidebarToggle', handleSidebarToggle);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('openWalletModal', openModal);
     };
   }, []);
 
-  const handleConnectClick = async (): Promise<void> => {
+  const handlePrimaryConnectClick = async () => {
     try {
-      if (window.ethereum) {
-        await onConnect('metamask');
-      } else if (window.coinbaseWalletExtension) {
-        await onConnect('coinbase');
-      } else {
-        alert('No wallet found. Please install a wallet extension.');
-      }
+      await onConnect();
     } catch (err) {
-      console.error('Connection error:', err);
+      console.error('Connect handler error:', err);
     }
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
+  const handleWalletConnect = async (provider: string) => {
+    await onConnect(provider);
+  };
+
+  const handleDisconnectClick = async () => {
+    await onDisconnect();
+    setIsWalletModalOpen(false);
   };
 
   return (
-    <header className={`header ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <div className="header-content">
-        <div className="header-right">
-          {connected ? (
-            <div className="wallet-actions">
-              <div className="wallet-info">
-                <div className="avatar-circle"></div>
-                <Name
-                  address={displayAddress}
-                  chain={base}
-                  className="wallet-name"
-                />
-              </div>
-
-              <div className="wallet-dropdown-container">
-                <button 
-                  className="wallet-dropdown-toggle" 
-                  onClick={toggleDropdown}
-                  type="button"
-                >
-                  <div className="avatar-circle-small"></div>
-                  <ChevronDown size={16} className={`chevron-icon ${isDropdownOpen ? 'open' : ''}`} />
+    <>
+      <header className={`header ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="header-content">
+          <div className="header-right">
+            {connected ? (
+              <div className="wallet-actions">
+                <div className="wallet-badge">
+                  <div className="wallet-status"></div>
+                  <span>{shortenAddress(userAddress)}</span>
+                </div>
+                <button className="disconnect-button" onClick={handleDisconnectClick}>
+                  Disconnect
                 </button>
-
-                {isDropdownOpen && (
-                  <div className="wallet-dropdown-menu">
-                    <div className="dropdown-address">
-                      <Name
-                        address={displayAddress}
-                        chain={base}
-                        className="dropdown-wallet-name"
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
-
-              <button className="disconnect-button" onClick={onDisconnect} type="button">
-                <LogOut size={16} />
-                <span>Disconnect</span>
+            ) : (
+              <button className="connect-button" onClick={handlePrimaryConnectClick}>
+                Connect Wallet
               </button>
-            </div>
-          ) : (
-            <button className="connect-button" onClick={handleConnectClick} type="button">
-              Connect Wallet
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        onConnect={handleWalletConnect}
+      />
+    </>
   );
 };
 

@@ -12,15 +12,18 @@ export const ERC20_ABI = [
   "function burnForAccess() external"
 ];
 
+// BondingCurve ABI - each token has its own bonding curve pool
 export const MARKETPLACE_ABI = [
-  "function buy(address token, uint256 usdcIn, uint256 minTokensOut) external",
-  "function sell(address token, uint256 tokenIn, uint256 minUsdcOut) external",
-  "function burnForAccess(address token, uint256 amount) external",
-  "function getPriceUSDCperToken(address token) external view returns (uint256)",
-  "function getReserves(address token) external view returns (uint256 rToken, uint256 rUSDC)",
-  "function poolExists(address token) external view returns (bool)",
-  "event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)",
-  "event Sold(address indexed token, address indexed seller, uint256 tokensIn, uint256 usdcOut)"
+  "function buy(uint256 usdcIn, uint256 minTokensOut) external",
+  "function sell(uint256 tokenIn, uint256 minUsdcOut) external",
+  "function burnForAccess(uint256 amount) external",
+  "function getPriceUSDCperToken() external view returns (uint256)",
+  "function getReserves() external view returns (uint256 rToken, uint256 rUSDC)",
+  "function poolExists() external view returns (bool)",
+  "event Bought(address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut)",
+  "event Sold(address indexed seller, uint256 tokensIn, uint256 usdcOut)",
+  "event TokensBurned(address indexed burner, uint256 amountBurned, uint256 newPrice)",
+  "event AccessGranted(address indexed buyer)"
 ];
 
 export const USDC_ABI = [

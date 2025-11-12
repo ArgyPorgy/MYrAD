@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWeb3 } from '@/hooks/useWeb3';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
@@ -95,7 +95,7 @@ const FaucetPage = () => {
       <Sidebar />
       
       <main className="main-content">
-        <Header 
+        <Header
           userAddress={userAddress}
           connected={connected}
           onConnect={(provider) => connectWallet(provider)}
@@ -118,17 +118,9 @@ const FaucetPage = () => {
                 <div className="empty-state">
                   <h3 className="empty-title">Connect Your Wallet</h3>
                   <p className="empty-description">Connect your wallet to use the faucet</p>
-                  <button 
+                  <button
                     className="btn-connect-large"
-                    onClick={async () => {
-                      if (window.ethereum) {
-                        await connectWallet('metamask');
-                      } else if (window.coinbaseWalletExtension) {
-                        await connectWallet('coinbase');
-                      } else {
-                        alert('No wallet found. Please install MetaMask or Coinbase Wallet.');
-                      }
-                    }}
+                    onClick={() => connectWallet()}
                   >
                     Connect Wallet
                   </button>

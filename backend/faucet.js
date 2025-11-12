@@ -16,7 +16,6 @@ const FAUCET_COOLDOWN_FILE = path.join(__dirname, 'faucetCooldowns.json');
 function initializeFaucetCooldownFile() {
   if (!fs.existsSync(FAUCET_COOLDOWN_FILE)) {
     fs.writeFileSync(FAUCET_COOLDOWN_FILE, JSON.stringify({}, null, 2));
-    console.log('✅ Created faucetCooldowns.json file');
   }
 }
 
@@ -120,10 +119,7 @@ async function sendETH(toAddress, amount) {
       value: amountWei,
     });
 
-    console.log(`💧 Sending ${amount} ETH to ${toAddress}, tx: ${tx.hash}`);
     const receipt = await tx.wait();
-    console.log(`✅ ETH sent successfully, confirmed in block ${receipt.blockNumber}`);
-
     return { success: true, txHash: tx.hash };
   } catch (error) {
     console.error('Error sending ETH:', error);
@@ -174,10 +170,7 @@ async function sendUSDC(toAddress, amount) {
 
     // Send transaction
     const tx = await usdcContract.transfer(toAddress, amountWei);
-    console.log(`💧 Sending ${amount} USDC to ${toAddress}, tx: ${tx.hash}`);
     const receipt = await tx.wait();
-    console.log(`✅ USDC sent successfully, confirmed in block ${receipt.blockNumber}`);
-
     return { success: true, txHash: tx.hash };
   } catch (error) {
     console.error('Error sending USDC:', error);

@@ -25,7 +25,7 @@
 /* ===== MY DATASETS CONTENT - INNER CONTAINER ===== */
 .my-datasets-content {
   padding: 32px;
-  padding-top: 80px;
+  padding-top: 48px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   max-width: 100%;
   width: 100%;
@@ -35,11 +35,11 @@
 /* ===== PAGE HEADER ===== */
 .page-header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 40px;
   animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  gap: 20px;
 }
 
 .page-title {
@@ -534,11 +534,7 @@
   .my-datasets-content {
     margin-left: 0;
     padding: 32px;
-    padding-top: 80px;
-  }
-
-  .page-header {
-    flex-direction: row;
+    padding-top: 48px;
   }
 
   .datasets-grid {
@@ -551,7 +547,7 @@
   .my-datasets-content {
     margin-left: 0;
     padding: 24px;
-    padding-top: 80px;
+    padding-top: 40px;
   }
 
   .page-title {
@@ -583,7 +579,7 @@
   .my-datasets-content {
     margin-left: 70px;
     padding: 16px;
-    padding-top: 80px;
+    padding-top: 32px;
   }
 
   .page-title {
@@ -632,7 +628,7 @@
   .my-datasets-content {
     margin-left: 56px;
     padding: 12px;
-    padding-top: 80px;
+    padding-top: 28px;
   }
 
   .page-title {

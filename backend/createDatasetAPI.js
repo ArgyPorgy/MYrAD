@@ -16,20 +16,54 @@ const getArtifactABI = (filePath) => {
 };
 
 const FACTORY_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataCoinFactory.sol/DataCoinFactory.json"));
-const MARKETPLACE_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataTokenMarketplace.sol/DataTokenMarketplace.json"));
+const BONDING_CURVE_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/BondingCurve.sol/BondingCurve.json"));
 const ERC20_ABI = getArtifactABI(path.join(__dirname, "../artifacts/contracts/DataCoin.sol/DataCoin.json"));
 
 const DATASETS_FILE = path.join(__dirname, "../datasets.json");
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRateLimitError = (err) => {
+  const message =
+    err?.message ||
+    err?.reason ||
+    err?.error?.message ||
+    err?.data?.message ||
+    "";
+  return typeof message === "string" && message.toLowerCase().includes("rate limit");
+};
+
+async function waitForReceiptWithRetry(tx, label, provider) {
+  const maxAttempts = 5;
+  let attempt = 0;
+  const baseDelay = 2000;
+
+  while (attempt < maxAttempts) {
+    try {
+      return await tx.wait();
+    } catch (err) {
+      attempt++;
+      if (isRateLimitError(err) && attempt < maxAttempts) {
+        const backoff = baseDelay * Math.pow(2, attempt - 1);
+        await sleep(backoff);
+        if (provider?.pollingInterval) {
+          provider.pollingInterval = Math.min(provider.pollingInterval + 1000, 20000);
+        }
+        continue;
+      }
+      throw err;
+    }
+  }
+}
 
 async function createDatasetToken(cid, name, symbol, description, totalSupply = 1000000, creatorAddress) {
   try {
     const { RPC_URLS } = config;
     const privateKey = process.env.PRIVATE_KEY;
     const factoryAddr = process.env.FACTORY_ADDRESS;
-    const marketplaceAddr = process.env.MARKETPLACE_ADDRESS;
     const treasuryAddr = process.env.MYRAD_TREASURY;
 
-    if (!RPC_URLS || !RPC_URLS.length || !privateKey || !factoryAddr || !marketplaceAddr) {
+    if (!RPC_URLS || !RPC_URLS.length || !privateKey || !factoryAddr) {
       throw new Error("Missing required environment variables");
     }
 
@@ -46,11 +80,10 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     for (const rpcUrl of RPC_URLS) {
       try {
         provider = new ethers.JsonRpcProvider(rpcUrl);
+        provider.pollingInterval = parseInt(process.env.RPC_POLL_INTERVAL_MS || "6000", 10);
         await provider.getBlockNumber(); // Test connection
-        console.log(`   ✓ Connected to RPC: ${rpcUrl}`);
         break;
       } catch (err) {
-        console.warn(`   ✗ RPC ${rpcUrl} failed, trying next...`);
         if (rpcUrl === RPC_URLS[RPC_URLS.length - 1]) {
           throw new Error("All RPC providers failed");
         }
@@ -59,31 +92,19 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     
     const wallet = new ethers.Wallet(privateKey, provider);
 
-    console.log(`🚀 Creating dataset: ${name} (${symbol})`);
-    console.log(`   CID: ${cid}`);
-    console.log(`   Total Supply: ${totalSupply.toLocaleString()}`);
-    console.log(`   Creator: ${creatorAddress}`);
-    console.log(`   Company Wallet: ${wallet.address}`);
-
-    // Get contracts
+    // Get factory contract
     const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, wallet);
-    const marketplace = new ethers.Contract(marketplaceAddr, MARKETPLACE_ABI, wallet);
-
-    // Get nonce for transaction management
-    let txCount = await wallet.getNonce();
 
     // Step 1: Create token via factory
-    console.log(`💰 Creating token...`);
     const totalSupplyWei = ethers.parseUnits(totalSupply.toString(), 18);
     const createTx = await factory.createDataCoin(
       name,
       symbol,
       totalSupplyWei,
       creatorAddress,  // Store creator address in contract
-      cid,
-      { nonce: txCount++, gasLimit: 3000000 }
+      cid
     );
-    const receipt = await createTx.wait();
+    const receipt = await waitForReceiptWithRetry(createTx, "Token creation", provider);
 
     // Get the token address from the event
     const event = receipt.logs.find(log => {
@@ -101,55 +122,64 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
 
     const parsedEvent = factory.interface.parseLog(event);
     const tokenAddr = parsedEvent.args.dataCoinAddress;
-    console.log(`   ✅ Token: ${tokenAddr}`);
+    const bondingCurveAddr = parsedEvent.args.bondingCurveAddress;
+    // Wait for the contract to be fully indexed/propagated
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const token = new ethers.Contract(tokenAddr, ERC20_ABI, wallet);
+    const bondingCurve = new ethers.Contract(bondingCurveAddr, BONDING_CURVE_ABI, wallet);
 
-    // Step 2: Token distribution (from company wallet)
-    console.log(`💳 Distributing tokens...`);
-    console.log(`   Distribution: 10% Creator | 5% Treasury | 85% Liquidity Pool`);
-
-    // Calculate allocations
-    const CREATOR_ALLOCATION = (totalSupplyWei * 10n) / 100n;  // 10%
-    const TREASURY_ALLOCATION = (totalSupplyWei * 5n) / 100n;  // 5%
-    const LIQUIDITY_ALLOCATION = (totalSupplyWei * 85n) / 100n; // 85%
-
-    console.log(`   Creator (10%): ${ethers.formatUnits(CREATOR_ALLOCATION, 18)}`);
-    console.log(`   Treasury (5%): ${ethers.formatUnits(TREASURY_ALLOCATION, 18)}`);
-    console.log(`   Liquidity (85%): ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)}`);
-
-    // Transfer to creator (10%)
-    const creatorTransferTx = await token.transfer(
-      ethers.getAddress(creatorAddress), 
-      CREATOR_ALLOCATION, 
-      { 
-        nonce: txCount++,
-        gasLimit: 100000
+    // Check wallet token balance with retry logic
+    let walletBalance = 0n;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        walletBalance = await token.balanceOf(wallet.address);
+        break;
+      } catch (err) {
+        retries--;
+        if (retries === 0) {
+          console.error(`   ❌ Failed to read token balance after 3 attempts:`, err.message);
+          throw new Error(`Cannot read token balance from ${tokenAddr}. Contract may not be deployed correctly.`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-    );
-    await creatorTransferTx.wait();
-    console.log(`   ✅ Transferred to creator: ${creatorAddress}`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
-    // Transfer to treasury (5%)
-    const treasuryTransferTx = await token.transfer(
-      ethers.getAddress(treasuryAddr), 
-      TREASURY_ALLOCATION, 
-      { 
-        nonce: txCount++,
-        gasLimit: 100000
-      }
-    );
-    await treasuryTransferTx.wait();
-    console.log(`   ✅ Transferred to treasury: ${treasuryAddr}`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (walletBalance === 0n) {
+      throw new Error(`❌ Platform wallet has 0 tokens! Token minting failed. Check DataCoin.sol constructor.`);
+    }
 
-    // Remaining 85% stays in company wallet for liquidity pool
-    console.log(`   ✅ Liquidity allocation kept in company wallet`);
+    const CREATOR_ALLOCATION = (totalSupplyWei * 10n) / 100n;
+    const TREASURY_ALLOCATION = (totalSupplyWei * 5n) / 100n;
+    const LIQUIDITY_ALLOCATION = totalSupplyWei - CREATOR_ALLOCATION - TREASURY_ALLOCATION;
+
+    try {
+      const creatorTransferTx = await token.transfer(
+        ethers.getAddress(creatorAddress),
+        CREATOR_ALLOCATION
+      );
+      await waitForReceiptWithRetry(creatorTransferTx, "Creator distribution", provider);
+    } catch (err) {
+      console.error('   ❌ Creator transfer failed:', err);
+      console.error('   Transaction data:', err.transaction);
+      throw err;
+    }
+    await sleep(2000);
+
+    try {
+      const treasuryTransferTx = await token.transfer(
+        ethers.getAddress(treasuryAddr),
+        TREASURY_ALLOCATION
+      );
+      await waitForReceiptWithRetry(treasuryTransferTx, "Treasury distribution", provider);
+    } catch (err) {
+      console.error('   ❌ Treasury transfer failed:', err);
+      throw err;
+    }
+    await sleep(2000);
 
     // Step 3: Initialize pool with liquidity
-    console.log(`💧 Initializing USDC pool...`);
-
     const USDC_ADDRESS = process.env.BASE_SEPOLIA_USDC || "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
     const INITIAL_USDC = ethers.parseUnits("1", 6); // 1 USDC
 
@@ -157,57 +187,75 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
 
     // Check USDC balance BEFORE trying to use it
     const usdcBalance = await usdc.balanceOf(wallet.address);
-    console.log(`   Company USDC balance: ${ethers.formatUnits(usdcBalance, 6)} USDC`);
     
     if (usdcBalance < INITIAL_USDC) {
       throw new Error(`❌ INSUFFICIENT USDC: Have ${ethers.formatUnits(usdcBalance, 6)} USDC, Need 1 USDC. Please fund wallet ${wallet.address} with USDC from https://faucet.circle.com/`);
     }
 
-    // Check token balance BEFORE approval
-    const tokenBalance = await token.balanceOf(wallet.address);
-    console.log(`   Company token balance: ${ethers.formatUnits(tokenBalance, 18)} ${symbol}`);
+    // Approve tokens to bonding curve (unlimited)
+    const approveTokenTx = await token.approve(bondingCurveAddr, ethers.MaxUint256);
+    await waitForReceiptWithRetry(approveTokenTx, "Token approval", provider);
     
-    if (tokenBalance < LIQUIDITY_ALLOCATION) {
-      throw new Error(`❌ INSUFFICIENT TOKENS: Have ${ethers.formatUnits(tokenBalance, 18)}, Need ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)}`);
+    // Wait a bit longer for approval to be confirmed
+    await sleep(3000);
+    
+    // Verify token approval with retry
+    let tokenAllowance = 0n;
+    let tokenRetries = 5;
+    while (tokenRetries > 0 && tokenAllowance < LIQUIDITY_ALLOCATION) {
+      tokenAllowance = await token.allowance(wallet.address, bondingCurveAddr);
+      
+      if (tokenAllowance >= LIQUIDITY_ALLOCATION) {
+        break;
+      }
+      
+      tokenRetries--;
+      if (tokenRetries > 0) {
+        await sleep(2000);
+      }
+    }
+    
+    if (tokenAllowance < LIQUIDITY_ALLOCATION) {
+      throw new Error(`Token approval failed! Allowance: ${ethers.formatUnits(tokenAllowance, 18)}, Needed: ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)}`);
     }
 
-    // Approve tokens to marketplace
-    console.log(`   Approving ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)} tokens...`);
-    const approveTokenTx = await token.approve(marketplaceAddr, LIQUIDITY_ALLOCATION, { 
-      nonce: txCount++,
-      gasLimit: 100000
-    });
-    await approveTokenTx.wait();
-    console.log(`   ✅ Approved tokens to marketplace`);
-
-    // Approve USDC to marketplace
-    console.log(`   Approving ${ethers.formatUnits(INITIAL_USDC, 6)} USDC...`);
-    const approveUsdcTx = await usdc.approve(marketplaceAddr, INITIAL_USDC, { 
-      nonce: txCount++,
-      gasLimit: 100000
-    });
-    await approveUsdcTx.wait();
-    console.log(`   ✅ Approved USDC to marketplace`);
-
-    // Initialize pool (creator address for fee collection, not token holder)
-    console.log(`   Calling initPool: ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)} tokens + ${ethers.formatUnits(INITIAL_USDC, 6)} USDC...`);
-    const initPoolTx = await marketplace.initPool(
-      tokenAddr, 
-      creatorAddress, // Creator receives trading fees
-      LIQUIDITY_ALLOCATION, 
-      INITIAL_USDC, 
-      { 
-        nonce: txCount++,
-        gasLimit: 500000
+    // Approve USDC to bonding curve (unlimited)
+    const approveUsdcTx = await usdc.approve(bondingCurveAddr, ethers.MaxUint256);
+    await waitForReceiptWithRetry(approveUsdcTx, "USDC approval", provider);
+    
+    // Wait a bit longer for approval to be confirmed
+    await sleep(3000);
+    
+    // Verify USDC approval with retry
+    let usdcAllowance = 0n;
+    let usdcRetries = 5;
+    while (usdcRetries > 0 && usdcAllowance < INITIAL_USDC) {
+      usdcAllowance = await usdc.allowance(wallet.address, bondingCurveAddr);
+      
+      if (usdcAllowance >= INITIAL_USDC) {
+        break;
       }
+      
+      usdcRetries--;
+      if (usdcRetries > 0) {
+        await sleep(2000);
+      }
+    }
+    
+    if (usdcAllowance < INITIAL_USDC) {
+      throw new Error(`USDC approval failed! Allowance: ${ethers.formatUnits(usdcAllowance, 6)}, Needed: ${ethers.formatUnits(INITIAL_USDC, 6)}`);
+    }
+
+    // Initialize pool with liquidity
+    const initPoolTx = await bondingCurve.initPool(
+      LIQUIDITY_ALLOCATION, 
+      INITIAL_USDC
     );
-    await initPoolTx.wait();
-    console.log(`   ✅ Pool initialized with ${ethers.formatUnits(LIQUIDITY_ALLOCATION, 18)} tokens and 1 USDC`);
+    await waitForReceiptWithRetry(initPoolTx, "Pool initialization", provider);
 
     // Step 4: Persist in PostgreSQL (preferred)
     if (process.env.DATABASE_URL) {
       try {
-        console.log(`   📝 Saving to DB - description: "${description}" (type: ${typeof description})`);
         await insertCoin({
           tokenAddress: tokenAddr,
           name,
@@ -215,10 +263,9 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
           cid,
           description: description !== undefined ? description : null,
           creatorAddress,
-          marketplaceAddress: marketplaceAddr,
+          marketplaceAddress: bondingCurveAddr,
           totalSupply: totalSupply
         });
-        console.log('   ✅ Saved to Postgres (coins)');
       } catch (dbErr) {
         console.error('   ⚠️ Postgres save error:', dbErr.message);
       }
@@ -237,25 +284,22 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
         cid,
         description,
         token_address: tokenAddr,
-        marketplace: marketplaceAddr,
-        marketplace_address: marketplaceAddr,
-        bonding_curve: marketplaceAddr,
+        marketplace: bondingCurveAddr,
+        marketplace_address: bondingCurveAddr,
+        bonding_curve: bondingCurveAddr,
         creator: creatorAddress,
         total_supply: totalSupply,
         created_at: Date.now(),
       };
 
       fs.writeFileSync(DATASETS_FILE, JSON.stringify(datasets, null, 2));
-      console.log('   ✅ JSON mirror updated');
     } catch (jsonErr) {
       console.error('   ⚠️ JSON mirror update error:', jsonErr.message);
     }
 
-    console.log(`✅ COMPLETE - Token ready for trading!\n`);
-
     return {
       tokenAddress: tokenAddr,
-      marketplaceAddress: marketplaceAddr,
+      marketplaceAddress: bondingCurveAddr,
       symbol,
       name,
       cid,

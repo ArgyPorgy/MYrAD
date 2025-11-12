@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3 } from '@/hooks/useWeb3';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { DatasetsMap } from '@/types/web3';
@@ -43,7 +43,7 @@ const FeedPage = () => {
     RUS: '/images/restaurants-us.svg', // Restaurants in US
     MCD: '/images/maharastra-corp.svg', // Maharastra Corporate Data
     EPT: '/images/event-planners-texas.svg', // Event Planners in Texas
-    NOI: '/images/noice-drop-wallets.svg', // NOICE drop allocated wallets
+     // NOICE drop allocated wallets
   };
 
   useEffect(() => {
@@ -63,11 +63,13 @@ const FeedPage = () => {
     }
   };
 
-  const datasetEntries = Object.entries(datasets).filter(([_, meta]) =>
-    searchQuery === '' ||
-    meta.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    meta.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const datasetEntries = Object.entries(datasets).filter(([_, meta]) => {
+    if (searchQuery === '') return true;
+    const query = searchQuery.toLowerCase();
+    const symbol = meta.symbol?.toLowerCase?.() ?? '';
+    const name = meta.name?.toLowerCase?.() ?? '';
+    return symbol.includes(query) || name.includes(query);
+  });
 
   const handleTokenClick = (tokenAddress: string) => {
     navigate(`/token/${tokenAddress}`);

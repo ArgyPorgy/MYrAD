@@ -1,24 +1,78 @@
 import { ethers } from 'ethers';
 import { BASE_SEPOLIA_CHAIN_ID_HEX, BASE_SEPOLIA_CHAIN_ID } from '@/constants/contracts';
 
+const PUBLIC_RPC_URL =
+  import.meta.env?.VITE_BASE_RPC_URL || 'https://sepolia.base.org';
+
+const publicRpcProvider = new ethers.JsonRpcProvider(PUBLIC_RPC_URL);
+
+export const getPublicRpcProvider = () => publicRpcProvider;
+
 export const shortenAddress = (addr: string): string => {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 };
 
-export const switchToBaseSepolia = async (): Promise<boolean> => {
-  if (!window.ethereum) return false;
+export const switchToBaseSepolia = async (provider?: any): Promise<boolean> => {
+  const ethProvider = provider || window.ethereum;
+  if (!ethProvider) return false;
 
   try {
-    await window.ethereum.request({
+    await ethProvider.request({
       method: 'wallet_switchEthereumChain',
       params: [{ chainId: BASE_SEPOLIA_CHAIN_ID_HEX }],
     });
     return true;
   } catch (switchErr: any) {
-    if (switchErr.code === 4902) {
-      alert("Please add Base Sepolia testnet to MetaMask and switch to it");
-      return false;
+    // Handle both standard error code 4902 and Rabby's -32603 with "Unrecognized chain" message
+    const needsToAddChain = 
+      switchErr.code === 4902 || 
+      (switchErr.code === -32603 && switchErr.message?.includes('Unrecognized chain')) ||
+      switchErr.message?.includes('wallet_addEthereumChain');
+    
+    if (needsToAddChain) {
+      try {
+        console.log('🔗 Chain not found, attempting to add Base Sepolia...');
+        await ethProvider.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: BASE_SEPOLIA_CHAIN_ID_HEX,
+              chainName: 'Base Sepolia',
+              rpcUrls: [PUBLIC_RPC_URL],
+              nativeCurrency: {
+                name: 'ETH',
+                symbol: 'ETH',
+                decimals: 18,
+              },
+              blockExplorerUrls: ['https://sepolia.basescan.org'],
+            },
+          ],
+        });
+        console.log('✅ Base Sepolia chain added successfully');
+        
+        // After adding, try switching again
+        try {
+          await ethProvider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: BASE_SEPOLIA_CHAIN_ID_HEX }],
+          });
+          console.log('✅ Switched to Base Sepolia');
+          return true;
+        } catch (secondSwitchErr: any) {
+          if (secondSwitchErr.code !== 4001) {
+            console.error("Failed to switch after adding chain:", secondSwitchErr);
+          }
+          return false;
+        }
+      } catch (addErr: any) {
+        if (addErr.code !== 4001) {
+          console.error("Failed to add Base Sepolia network:", addErr);
+        }
+        return false;
+      }
     }
+    
+    // User rejected or other error
     if (switchErr.code !== 4001) {
       console.error("Network switch error:", switchErr);
     }

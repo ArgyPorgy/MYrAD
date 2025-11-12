@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { useWeb3 } from '@/hooks/useWeb3';
 import './CommunityPage.css';
 
 

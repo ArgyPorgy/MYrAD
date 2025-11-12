@@ -5,8 +5,8 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Single reliable RPC URL - Alchemy Base Sepolia
-const RPC_URL = "https://sepolia.base.org";
+const DEFAULT_RPC_URL = "https://sepolia.base.org";
+const RPC_URL = process.env.BASE_RPC_URL || DEFAULT_RPC_URL;
 
 export default {
   RPC: RPC_URL,

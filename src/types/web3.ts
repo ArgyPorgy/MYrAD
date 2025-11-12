@@ -55,6 +55,10 @@ export interface AccessResponse {
 declare global {
   interface Window {
     ethereum?: any;
+    coinbaseWalletExtension?: any;
+    okxwallet?: any;
+    rabby?: any;
+    walletConnectProvider?: any;
   }
 }
 

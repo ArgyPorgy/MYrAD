@@ -125,8 +125,8 @@ After buying tokens, users burn them to unlock the dataset:
 
 ### Prerequisites
 - Node.js 18+
-- pnpm (preferred) or npm
-- MetaMask or Web3 wallet
+- npm 9+ (or another Node package manager)
+- MetaMask or compatible Web3 wallet
 - USDC tokens on Base Sepolia (get from faucet)
 
 ### Setup
@@ -137,7 +137,7 @@ git clone https://github.com/ArgyPorgy/MYrAD.git
 cd MYrAD
 
 # Install dependencies
-pnpm install
+npm install
 
 # Set up environment variables
 cp .env.example .env.local
@@ -146,12 +146,13 @@ cp .env.example .env.local
 # - PRIVATE_KEY (for server operations)
 # - LIGHTHOUSE_API_KEY
 # - FACTORY_ADDRESS
-# - MARKETPLACE_ADDRESS
 # - USDC_ADDRESS
-# RPC URL is now hardcoded to Alchemy endpoint
+# - BASE_RPC_URL (shared RPC endpoint)
+# - VITE_BASE_RPC_URL (frontend RPC endpoint)
+# - Additional addresses/secrets described below
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 The app runs on `http://localhost:5173` with the backend API on `http://localhost:4000`.
@@ -182,28 +183,36 @@ The app runs on `http://localhost:5173` with the backend API on `http://localhos
 - `DOWNLOAD_SECRET` - JWT signing secret
 - `LIGHTHOUSE_API_KEY` - IPFS API key
 - `FACTORY_ADDRESS` - DataCoinFactory contract address
-- `MARKETPLACE_ADDRESS` - Marketplace contract address
+- `MARKETPLACE_ADDRESS` - Marketplace contract address (legacy tokens only)
 - `USDC_ADDRESS` - USDC token contract address
+- `BASE_RPC_URL` - RPC endpoint used by backend and scripts (default `https://sepolia.base.org`)
+- `VITE_BASE_RPC_URL` - RPC endpoint exposed to the browser (default `https://sepolia.base.org`)
+- `VITE_WALLETCONNECT_PROJECT_ID` - WalletConnect v2 project ID for enabling the Web3Modal wallet flow
 - `PORT` - Server port (default: 4000)
-- RPC URL is now hardcoded to Alchemy endpoint
 
 ## Development Commands
 
 ```bash
 # Start development server (client + API)
-pnpm dev
+npm run dev
 
 # Build for production
-pnpm build
+npm run build
 
-# Start production server
-pnpm start
+# Start backend + serve built frontend (after npm run build)
+npm run server
+
+# Run combined build + backend start in one step
+npm run start
+
+# Backend only (API + optional listener)
+npm run backend
 
 # Run tests
-pnpm test
+npm run test
 
 # Type check
-pnpm typecheck
+npm run typecheck
 ```
 
 ## Contributing

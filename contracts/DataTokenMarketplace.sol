@@ -29,6 +29,8 @@ contract DataTokenMarketplace {
 
     mapping(address => Pool) public pools;
 
+    uint256 public constant MIN_BURN_VALUE_USDC = 5e5; // 0.5 USDC with 6 decimals
+
     event PoolCreated(address indexed token, address indexed creator, uint256 tokenSeed, uint256 usdcSeed);
     event Bought(address indexed token, address indexed buyer, uint256 usdcIn, uint256 fee, uint256 tokensOut);
     event Sold(address indexed token, address indexed seller, uint256 tokensIn, uint256 usdcOut);
@@ -129,17 +131,28 @@ contract DataTokenMarketplace {
         Pool storage p = pools[token];
         require(p.exists, "no pool");
         require(amount > 0, "zero amount");
-        require(p.rToken > amount, "burn exceeds pool");
+
+        // Value of tokens in USDC (6 decimals)
+        require(p.rToken > 0, "empty pool");
+
+        uint256 usdcValue = (amount * p.rUSDC) / p.rToken;
+        require(usdcValue >= MIN_BURN_VALUE_USDC, "burn below minimum value");
+
+        uint256 burnAmount = amount / 2;
 
         // Pull tokens from user to this contract
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "pull token");
 
-        // Actually burn the tokens to address(0) - removes them from total supply
-        IDataCoin(token).burn(amount);
+        // All tokens now sit in the pool contract
+        p.rToken += amount;
 
-        // Reduce pool token reserves (affects price calculation)
-        // USDC stays the same, so price increases: price = rUSDC / rToken
-        p.rToken -= amount;
+        // Burn 50% of the tokens to reduce total supply
+        if (burnAmount > 0) {
+            IDataCoin(token).burn(burnAmount);
+            p.rToken -= burnAmount;
+        }
+
+        // returnAmount automatically deepens liquidity by remaining in the pool
 
         // Calculate new price after burn
         uint256 newPrice = (p.rUSDC * 1e18) / p.rToken;

@@ -8,14 +8,15 @@ import multer from "multer";
 import { uploadBase64ToLighthouse } from "./uploadService.js";
 import { createDatasetToken } from "./createDatasetAPI.js";
 import { initSchema } from './db.js';
-import { getAllCoins, getCoinsByCreator } from './storage.js';
+import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress } from './storage.js';
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
+import { signDownloadUrl, saveAccess } from "./utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const { PORT, DATASETS_FILE, DB_FILE } = config;
+const { PORT, DATASETS_FILE, DB_FILE, RPC_URLS } = config;
 
 // ERC20 ABI for balance checking
 const ERC20_ABI = [
@@ -45,14 +46,95 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Serve static frontend files from 'dist' folder (production build)
 app.use(express.static(path.join(__dirname, "../dist")));
 
-const MARKETPLACE_ABI = [
+const MARKETPLACE_ABI_NEW = [
+  "function getPriceUSDCperToken() external view returns (uint256)",
+  "function getReserves() external view returns (uint256 rToken, uint256 rUSDC)",
+  "function poolExists() external view returns (bool)"
+];
+
+const MARKETPLACE_ABI_OLD = [
   "function getPriceUSDCperToken(address token) external view returns (uint256)",
   "function getReserves(address token) external view returns (uint256 rToken, uint256 rUSDC)",
   "function poolExists(address token) external view returns (bool)"
 ];
 
-// Use config RPC
-const provider = new ethers.JsonRpcProvider(config.RPC_URLS[0]);
+const BONDING_CURVE_EVENTS_IFACE = new ethers.Interface([
+  "event TokensBurned(address indexed burner, uint256 amountBurned, uint256 newPrice)",
+  "event AccessGranted(address indexed buyer)"
+]);
+
+// Use config RPC (first URL as primary)
+const provider = new ethers.JsonRpcProvider(RPC_URLS[0]);
+
+// Simple in-memory cache for pool state to reduce RPC usage
+const CACHE_TTL_MS = parseInt(process.env.PRICE_CACHE_TTL_MS || "15000", 10); // default 15s
+const poolCache = new Map();
+
+const cacheKey = (marketplaceAddress, tokenAddress) =>
+  `${marketplaceAddress.toLowerCase()}::${tokenAddress.toLowerCase()}`;
+
+const getCachedPoolState = (marketplaceAddress, tokenAddress) => {
+  const key = cacheKey(marketplaceAddress, tokenAddress);
+  const entry = poolCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    poolCache.delete(key);
+    return null;
+  }
+  return entry.value;
+};
+
+const setCachedPoolState = (marketplaceAddress, tokenAddress, value) => {
+  const key = cacheKey(marketplaceAddress, tokenAddress);
+  poolCache.set(key, {
+    value,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
+};
+
+async function fetchPoolState(marketplaceAddress, tokenAddress) {
+  const cached = getCachedPoolState(marketplaceAddress, tokenAddress);
+  if (cached) {
+    return cached;
+  }
+
+  let exists, price, rToken, rUSDC;
+
+  try {
+    // BondingCurve (no token arg)
+    const marketplace = new ethers.Contract(marketplaceAddress, MARKETPLACE_ABI_NEW, provider);
+    exists = await marketplace.poolExists();
+    price = await marketplace.getPriceUSDCperToken();
+    [rToken, rUSDC] = await marketplace.getReserves();
+  } catch (e) {
+    try {
+      // DataTokenMarketplace (requires token arg)
+      const legacyMarketplace = new ethers.Contract(marketplaceAddress, MARKETPLACE_ABI_OLD, provider);
+      exists = await legacyMarketplace.poolExists(tokenAddress);
+      if (!exists) {
+        return { exists: false };
+      }
+      price = await legacyMarketplace.getPriceUSDCperToken(tokenAddress);
+      [rToken, rUSDC] = await legacyMarketplace.getReserves(tokenAddress);
+    } catch (innerError) {
+      // Silently handle legacy/broken contracts - cache the failure to avoid spam
+      const failResult = { exists: false, error: 'legacy_contract' };
+      setCachedPoolState(marketplaceAddress, tokenAddress, failResult);
+      return failResult;
+    }
+  }
+
+  const result = { exists, price, rToken, rUSDC };
+  if (exists) {
+    setCachedPoolState(marketplaceAddress, tokenAddress, result);
+  }
+  return result;
+}
+
+function clearPoolCacheFor(marketplaceAddress, tokenAddress) {
+  const key = cacheKey(marketplaceAddress, tokenAddress);
+  poolCache.delete(key);
+}
 
 app.get("/", (req, res) => {
   res.send("🚀 MYRAD Backend API running ✅");
@@ -98,15 +180,15 @@ app.get("/price/:marketplaceAddress/:tokenAddress", async (req, res) => {
       return res.status(400).json({ error: "Invalid address" });
     }
 
-    const marketplace = new ethers.Contract(marketplaceAddress, MARKETPLACE_ABI, provider);
-    
-    const exists = await marketplace.poolExists(tokenAddress);
+    const state = await fetchPoolState(marketplaceAddress, tokenAddress);
+    const { exists, price, rToken, rUSDC, error } = state;
+
     if (!exists) {
+      // Don't log errors for known legacy contracts
+      if (error !== 'legacy_contract') {
+      }
       return res.status(404).json({ error: "Pool not initialized" });
     }
-
-    const price = await marketplace.getPriceUSDCperToken(tokenAddress);
-    const [rToken, rUSDC] = await marketplace.getReserves(tokenAddress);
 
     res.json({
       price: ethers.formatUnits(price, 6), // Price is returned in USDC format (6 decimals)
@@ -127,10 +209,12 @@ app.get("/quote/buy/:marketplaceAddress/:tokenAddress/:usdcAmount", async (req, 
       return res.status(400).json({ error: "Invalid address" });
     }
 
-    const marketplace = new ethers.Contract(marketplaceAddress, MARKETPLACE_ABI, provider);
+    const { exists, rToken, rUSDC } = await fetchPoolState(marketplaceAddress, tokenAddress);
+    if (!exists) {
+      return res.status(404).json({ error: "Pool not initialized" });
+    }
+
     const usdcValue = ethers.parseUnits(usdcAmount, 6);
-    
-    const [rToken, rUSDC] = await marketplace.getReserves(tokenAddress);
     
     // Calculate using constant product formula: k = rToken * rUSDC
     // newRUSDC = rUSDC + usdcToPool
@@ -161,10 +245,12 @@ app.get("/quote/sell/:marketplaceAddress/:tokenAddress/:tokenAmount", async (req
       return res.status(400).json({ error: "Invalid address" });
     }
 
-    const marketplace = new ethers.Contract(marketplaceAddress, MARKETPLACE_ABI, provider);
+    const { exists, rToken, rUSDC } = await fetchPoolState(marketplaceAddress, tokenAddress);
+    if (!exists) {
+      return res.status(404).json({ error: "Pool not initialized" });
+    }
+
     const tokenValue = ethers.parseUnits(tokenAmount, 18);
-    
-    const [rToken, rUSDC] = await marketplace.getReserves(tokenAddress);
     
     // Calculate using constant product formula
     const k = rToken * rUSDC;
@@ -211,18 +297,126 @@ app.get("/access/:user/:symbol", (req, res) => {
   });
 });
 
+const getDatasetMeta = async (tokenAddress) => {
+  const lower = tokenAddress.toLowerCase();
+  const dbEntry = await getCoinByTokenAddress(lower);
+  if (dbEntry) {
+    return {
+      symbol: dbEntry.symbol,
+      cid: dbEntry.cid,
+    };
+  }
+
+  if (fs.existsSync(DATASETS_FILE)) {
+    try {
+      const datasets = JSON.parse(fs.readFileSync(DATASETS_FILE));
+      const entry = datasets[lower];
+      if (entry) {
+        return {
+          symbol: entry.symbol,
+          cid: entry.cid,
+        };
+      }
+    } catch (err) {
+      console.error("Failed to read datasets.json:", err.message);
+    }
+  }
+  return null;
+};
+
+app.post("/access/fast-track", async (req, res) => {
+  try {
+    const { txHash, userAddress, tokenAddress, marketplaceAddress, symbol: fallbackSymbol } = req.body || {};
+
+    if (!txHash || !ethers.isHexString(txHash)) {
+      return res.status(400).json({ error: "Valid txHash is required" });
+    }
+    if (!userAddress || !ethers.isAddress(userAddress)) {
+      return res.status(400).json({ error: "Valid userAddress is required" });
+    }
+    if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
+      return res.status(400).json({ error: "Valid tokenAddress is required" });
+    }
+    if (!marketplaceAddress || !ethers.isAddress(marketplaceAddress)) {
+      return res.status(400).json({ error: "Valid marketplaceAddress is required" });
+    }
+
+    const expAddress = marketplaceAddress.toLowerCase();
+
+    let receipt = await provider.getTransactionReceipt(txHash);
+    if (!receipt) {
+      receipt = await provider.waitForTransaction(txHash, 1, 15_000);
+    }
+    if (!receipt) {
+      return res.status(404).json({ error: "Transaction not yet available" });
+    }
+    if (receipt.status !== 1n && receipt.status !== 1) {
+      return res.status(400).json({ error: "Transaction failed" });
+    }
+
+    const userLower = userAddress.toLowerCase();
+    let authorized = false;
+
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== expAddress) continue;
+      try {
+        const parsed = BONDING_CURVE_EVENTS_IFACE.parseLog(log);
+        if (!parsed) continue;
+
+        if (parsed.name === "TokensBurned" && parsed.args?.burner?.toLowerCase?.() === userLower) {
+          authorized = true;
+          break;
+        }
+        if (parsed.name === "AccessGranted" && parsed.args?.buyer?.toLowerCase?.() === userLower) {
+          authorized = true;
+          break;
+        }
+      } catch {
+        // ignore logs that don't match our interface
+      }
+    }
+
+    if (!authorized) {
+      return res.status(403).json({ error: "Burn event not found in transaction logs" });
+    }
+
+    const datasetMeta = await getDatasetMeta(tokenAddress);
+    if (!datasetMeta || !datasetMeta.cid) {
+      return res.status(404).json({ error: "Dataset metadata not found" });
+    }
+
+    const cid = (datasetMeta.cid || "").replace("ipfs://", "");
+    if (!cid) {
+      return res.status(404).json({ error: "Dataset CID missing" });
+    }
+
+    const downloadUrl = signDownloadUrl(cid, userAddress);
+    saveAccess({
+      user: userLower,
+      symbol: datasetMeta.symbol || fallbackSymbol || "",
+      token: tokenAddress.toLowerCase(),
+      downloadUrl,
+      ts: Date.now(),
+    });
+
+    res.json({
+      download: downloadUrl,
+      symbol: datasetMeta.symbol || fallbackSymbol || "",
+    });
+  } catch (err) {
+    console.error("Fast-track access error:", err);
+    res.status(500).json({ error: "Failed to grant access" });
+  }
+});
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file provided" });
     }
 
-    console.log(`📤 Uploading file: ${req.file.originalname}`);
-
     const base64Data = req.file.buffer.toString("base64");
     const cid = await uploadBase64ToLighthouse(base64Data, req.file.originalname);
-
-    console.log(`✅ File uploaded, CID: ${cid}`);
 
     res.json({
       success: true,
@@ -273,25 +467,11 @@ app.post("/create-dataset", async (req, res) => {
       });
     }
 
-    console.log(`\n📝 Creating dataset: ${name} (${symbol})`);
-    console.log(`   CID: ${cid}`);
-    console.log(`   Description: ${description || "N/A"}`);
-    console.log(`   Total Supply: ${supply.toLocaleString()}`);
-    console.log(`   Creator: ${creatorAddress}`);
-
     if (!process.env.FACTORY_ADDRESS) {
       console.warn("FACTORY_ADDRESS not configured");
       return res.status(400).json({
         error: "FACTORY_ADDRESS not configured",
         message: "Please deploy factory first and set FACTORY_ADDRESS in .env",
-      });
-    }
-
-    if (!process.env.MARKETPLACE_ADDRESS || process.env.MARKETPLACE_ADDRESS === "0x0000000000000000000000000000000000000000") {
-      console.warn("MARKETPLACE_ADDRESS not configured");
-      return res.status(400).json({
-        error: "MARKETPLACE_ADDRESS not configured",
-        message: "Please deploy marketplace first and set MARKETPLACE_ADDRESS in .env",
       });
     }
 
@@ -303,22 +483,13 @@ app.post("/create-dataset", async (req, res) => {
       });
     }
 
-    console.log(`   Factory: ${process.env.FACTORY_ADDRESS}`);
-    console.log(`   Marketplace: ${process.env.MARKETPLACE_ADDRESS}`);
-    console.log(`   Treasury: ${process.env.MYRAD_TREASURY}`);
-
     // Preserve description as-is (don't convert undefined to empty string)
     // If description is provided (even if empty string), pass it through
     // If description is undefined/null, pass undefined so it can be saved as null in DB
     const descriptionToPass = description !== undefined ? description : undefined;
     const result = await createDatasetToken(cid, name, symbol, descriptionToPass, supply, creatorAddress);
 
-    console.log(`   ✅ Token created: ${result.tokenAddress}`);
-    console.log(`   ✅ Marketplace: ${result.marketplaceAddress}`);
-
     // No need to save to userDatasets.json - PostgreSQL and blockchain are the source of truth
-    console.log(`   ✅ Dataset created: ${result.symbol} (stored in PostgreSQL)`);
-
     const responseData = {
       success: true,
       tokenAddress: result.tokenAddress,
@@ -329,16 +500,13 @@ app.post("/create-dataset", async (req, res) => {
       message: "Dataset created successfully",
     };
 
-    console.log("   Sending response:", JSON.stringify(responseData));
     res.json(responseData);
   } catch (err) {
     console.error("❌ Dataset creation error:", err.message);
     console.error("   Stack:", err.stack);
 
     let errorMessage = err.message;
-    if (err.message.includes("MARKETPLACE_ADDRESS")) {
-      errorMessage = "Marketplace not configured. Deploy and set MARKETPLACE_ADDRESS first.";
-    } else if (err.message.includes("FACTORY_ADDRESS")) {
+    if (err.message.includes("FACTORY_ADDRESS")) {
       errorMessage = "Factory address not configured. Deploy factory first.";
     } else if (err.message.includes("Insufficient USDC")) {
       errorMessage = "You need more USDC. Get faucet USDC from Base Sepolia.";
@@ -358,7 +526,6 @@ app.post("/create-dataset", async (req, res) => {
       details: err.message,
     };
 
-    console.log("   Sending error response:", JSON.stringify(errorResponse));
     res.status(500).json(errorResponse);
   }
 });
@@ -635,7 +802,5 @@ app.listen(PORT, async () => {
   } catch (e) {
     console.warn('[db] init error:', e.message);
   }
-  console.log(`🚀 Backend API running on port ${PORT}`);
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-  console.log(`📊 Available at: ${url}`);
 });

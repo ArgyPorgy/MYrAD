@@ -68,7 +68,6 @@ async function getTradeCount(userAddress) {
               tx.from?.toLowerCase() === userAddrLower
             ).length;
             
-            console.log(`✅ Fetched ${txCount} transactions from BaseScan for ${userAddress}`);
             return txCount;
           }
         }
@@ -87,8 +86,6 @@ async function getTradeCount(userAddress) {
       const latestBlock = await provider.getBlockNumber();
       const startBlock = Math.max(0, latestBlock - 10000); // Last ~10k blocks (reasonable history)
       
-      console.log(`Querying transactions for ${userAddress} from block ${startBlock} to ${latestBlock}`);
-
       // Query for Bought events (user bought tokens)
       if (MARKETPLACE_ADDRESS) {
         const marketplaceIface = new ethers.Interface([
@@ -179,7 +176,6 @@ async function getTradeCount(userAddress) {
         }
       }
 
-      console.log(`✅ Total transaction count for ${userAddress}: ${transactionCount}`);
       return transactionCount;
 
     } catch (rpcError) {
@@ -199,7 +195,6 @@ async function getTradeCount(userAddress) {
  */
 function addTrade(userAddress, tokenAddress, amount, type = 'buy') {
   // No-op: transactions are tracked on-chain
-  console.log(`Transaction recorded on-chain: ${type} for ${userAddress}`);
   return true;
 }
 
