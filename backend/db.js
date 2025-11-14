@@ -29,6 +29,15 @@ async function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_coins_creator ON coins(LOWER(creator_address));
       CREATE INDEX IF NOT EXISTS idx_coins_symbol ON coins(symbol);
       CREATE INDEX IF NOT EXISTS idx_coins_created_at ON coins(created_at DESC);
+      
+      CREATE TABLE IF NOT EXISTS users (
+        wallet_address TEXT PRIMARY KEY,
+        first_connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        connection_count INTEGER NOT NULL DEFAULT 1
+      );
+      CREATE INDEX IF NOT EXISTS idx_users_first_connected ON users(first_connected_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_users_last_connected ON users(last_connected_at DESC);
     `);
   } finally {
     client.release();
