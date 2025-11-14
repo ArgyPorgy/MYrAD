@@ -3,6 +3,7 @@ import { useAccount, useConnect, useDisconnect, useSignMessage, useSwitchChain }
 import { baseSepolia } from 'wagmi/chains';
 import { BrowserProvider, JsonRpcSigner } from 'ethers';
 import { Web3State } from '@/types/web3';
+import { getApiUrl } from '@/config/api';
 
 interface Web3ContextType extends Web3State {
   status: string;
@@ -21,6 +22,25 @@ const buildSignatureStorageKey = (address: string) =>
 const buildSignMessage = (address: string) => {
   const timestamp = new Date().toISOString();
   return `Sign in to MYrAD\nAddress: ${address}\nTimestamp: ${timestamp}`;
+};
+
+const trackWalletConnection = async (walletAddress: string) => {
+  try {
+    const response = await fetch(getApiUrl('/track-wallet'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ walletAddress }),
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to track wallet connection:', response.statusText);
+    }
+  } catch (error) {
+    // Silently fail - don't interrupt user flow if tracking fails
+    console.warn('Error tracking wallet connection:', error);
+  }
 };
 
 export const Web3Provider = ({ children }: { children: ReactNode }) => {
@@ -88,6 +108,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           setSignedIn(true);
           setStatus(`✅ Wallet connected: ${address} (Base Sepolia testnet)`);
           setIsReconnecting(false);
+          // Track wallet connection on auto-reconnect
+          void trackWalletConnection(address);
         } else if (!isRequestingSignatureRef.current) {
           console.log('📝 No signature found, requesting new one');
           isRequestingSignatureRef.current = true;
@@ -171,6 +193,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       
       setSignedIn(true);
       setStatus('✅ Signed in successfully');
+      
+      // Track wallet connection after successful sign-in
+      void trackWalletConnection(walletAddress);
     } catch (error: any) {
       console.error('Signature error:', error);
       if (error.name !== 'UserRejectedRequestError' && error.code !== 4001) {

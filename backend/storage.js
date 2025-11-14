@@ -63,4 +63,52 @@ async function getCoinsByCreator(creatorAddress) {
   return res.rows;
 }
 
-export { insertCoin, getAllCoins, getCoinByTokenAddress, getCoinsByCreator };
+async function trackUserConnection(walletAddress) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    const sql = `
+      INSERT INTO users (wallet_address, first_connected_at, last_connected_at, connection_count)
+      VALUES ($1, NOW(), NOW(), 1)
+      ON CONFLICT (wallet_address) DO UPDATE SET
+        last_connected_at = NOW(),
+        connection_count = users.connection_count + 1
+      RETURNING *;
+    `;
+    const params = [walletAddress.toLowerCase()];
+    const res = await query(sql, params);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error tracking user connection:', err);
+    return null;
+  }
+}
+
+async function getAllUsers() {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return [];
+    }
+    const res = await query('SELECT * FROM users ORDER BY first_connected_at DESC', []);
+    return res.rows;
+  } catch (err) {
+    console.error('Error getting all users:', err);
+    return [];
+  }
+}
+
+async function getUserByWalletAddress(walletAddress) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    const res = await query('SELECT * FROM users WHERE wallet_address = $1', [walletAddress.toLowerCase()]);
+    return res.rows[0];
+  } catch (err) {
+    console.error('Error getting user by wallet address:', err);
+    return null;
+  }
+}
+
+export { insertCoin, getAllCoins, getCoinByTokenAddress, getCoinsByCreator, trackUserConnection, getAllUsers, getUserByWalletAddress };
