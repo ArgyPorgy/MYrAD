@@ -37,6 +37,9 @@ const DatasetCard = ({
   const [balance, setBalance] = useState<string>('—');
   const [buyAmount, setBuyAmount] = useState<string>('');
   const [sellAmount, setSellAmount] = useState<string>('');
+  const [hasDownloadAccess, setHasDownloadAccess] = useState<boolean>(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<string>('0.00');
   const publicProvider = getPublicRpcProvider();
 
   // Function to trigger automatic file download
@@ -66,14 +69,68 @@ const DatasetCard = ({
     }
   };
 
+  const checkAccessStatus = async () => {
+    if (!userAddress || !dataset?.symbol) {
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
+      return;
+    }
+
+    try {
+      const accessUrl = getApiUrl(`/access/${userAddress}/${dataset.symbol}`);
+      const response = await fetch(accessUrl);
+      
+      if (response.status === 200) {
+        const data = await response.json();
+        if (data.download || data.downloadUrl) {
+          setHasDownloadAccess(true);
+          setDownloadUrl(data.download || data.downloadUrl);
+        } else {
+          setHasDownloadAccess(false);
+          setDownloadUrl(null);
+        }
+      } else {
+        setHasDownloadAccess(false);
+        setDownloadUrl(null);
+      }
+    } catch (err) {
+      console.error("Error checking access status:", err);
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!downloadUrl) return;
+    
+    try {
+      await downloadFile(downloadUrl, dataset.name || dataset.symbol);
+      onStatusChange('Download started!');
+    } catch (err) {
+      console.error("Download error:", err);
+      onStatusChange('Download failed. Please try again.');
+    }
+  };
+
+  const setMaxBuy = () => {
+    setBuyAmount(usdcBalance);
+  };
+
+  const setMaxSell = () => {
+    setSellAmount(balance === '—' || balance === 'n/a' ? '0' : balance);
+  };
+
   useEffect(() => {
     if (connected && userAddress) {
       readBalance();
+      checkAccessStatus();
     } else {
       setBalance('—');
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
     }
     updatePrice();
-  }, [connected, userAddress, tokenAddress, dataset.marketplace_address, dataset.bonding_curve]);
+  }, [connected, userAddress, tokenAddress, dataset.marketplace_address, dataset.bonding_curve, dataset.symbol]);
 
   const readBalance = async () => {
     try {
@@ -81,8 +138,14 @@ const DatasetCard = ({
       const token = new ethers.Contract(tokenAddress, ERC20_ABI, publicProvider);
       const bal = await retryContractCall(() => token.balanceOf(userAddress));
       setBalance(ethers.formatUnits(bal, 18));
+      
+      // Also read USDC balance for max button
+      const usdc = new ethers.Contract(BASE_SEPOLIA_USDC, USDC_ABI, publicProvider);
+      const usdcBal = await retryContractCall(() => usdc.balanceOf(userAddress));
+      setUsdcBalance(ethers.formatUnits(usdcBal, 6));
     } catch (err) {
       setBalance('n/a');
+      setUsdcBalance('0.00');
     }
   };
 
@@ -131,7 +194,7 @@ const DatasetCard = ({
     try {
       const network = await provider!.getNetwork();
       if (network.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-        onStatusChange('❌ Wrong network! Must be on Base Sepolia testnet (84532)');
+        onStatusChange('Wrong network! Must be on Base Sepolia testnet (84532)');
         return;
       }
     } catch (err: any) {
@@ -142,16 +205,16 @@ const DatasetCard = ({
     const usdcAmount = ethers.parseUnits(buyAmount, 6);
 
     try {
-      onStatusChange('📊 Calculating tokens...');
+      onStatusChange('Calculating tokens...');
 
       if (!dataset.marketplace_address) {
-        onStatusChange('❌ Error: Marketplace address not found');
+        onStatusChange('Error: Marketplace address not found');
         return;
       }
 
       const code = await retryContractCall(() => publicProvider.getCode(dataset.marketplace_address!));
       if (code === '0x') {
-        onStatusChange('❌ Error: Marketplace contract not found at address');
+        onStatusChange('Error: Marketplace contract not found at address');
         return;
       }
 
@@ -160,17 +223,17 @@ const DatasetCard = ({
 
       const allowance = await retryContractCall(() => usdc.allowance(userAddress, dataset.marketplace_address));
       if (allowance < usdcAmount) {
-        onStatusChange('⏳ Approving USDC...');
+        onStatusChange('Approving USDC...');
         const approveTx = await retryContractCall(() => usdc.approve(dataset.marketplace_address, ethers.parseUnits('1000', 6)));
         await approveTx.wait();
-        onStatusChange('✅ Approved, calculating tokens...');
+        onStatusChange('Approved, calculating tokens...');
       }
 
-      onStatusChange('⏳ Confirm buy in wallet...');
+      onStatusChange('Confirm buy in wallet...');
       const tx = await retryContractCall(() => marketplace.buy(usdcAmount, 0n));
       await tx.wait();
 
-      onStatusChange('✅ Buy confirmed!');
+      onStatusChange('Buy confirmed!');
       setTimeout(() => {
         readBalance();
         updatePrice();
@@ -178,7 +241,7 @@ const DatasetCard = ({
       }, 1000);
     } catch (err: any) {
       console.error('Buy error:', err);
-      onStatusChange('❌ Buy failed: ' + (err?.message || err));
+      onStatusChange('Buy failed: ' + (err?.message || err));
     }
   };
 
@@ -199,47 +262,47 @@ const DatasetCard = ({
     try {
       const network = await provider!.getNetwork();
       if (network.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-        onStatusChange('❌ Wrong network! Must be on Base Sepolia testnet (84532)');
+        onStatusChange('Wrong network! Must be on Base Sepolia testnet (84532)');
         return;
       }
     } catch (err: any) {
-      onStatusChange('❌ Network error: ' + err.message);
+      onStatusChange('Network error: ' + err.message);
       return;
     }
 
     const tokenAmount = ethers.parseUnits(sellAmount, 18);
 
     try {
-      onStatusChange('📊 Calculating USDC...');
+      onStatusChange('Calculating USDC...');
 
       if (!dataset.marketplace_address) {
-        onStatusChange('❌ Error: Marketplace address not found');
+        onStatusChange('Error: Marketplace address not found');
         return;
       }
 
       const code = await retryContractCall(() => publicProvider.getCode(dataset.marketplace_address!));
       if (code === '0x') {
-        onStatusChange('❌ Error: Marketplace contract not found at address');
+        onStatusChange('Error: Marketplace contract not found at address');
         return;
       }
 
       const marketplace = new ethers.Contract(dataset.marketplace_address, MARKETPLACE_ABI, signer);
       const token = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
 
-      onStatusChange('⏳ Checking approval...');
+      onStatusChange('Checking approval...');
       const allowance = await retryContractCall(() => token.allowance(userAddress, dataset.marketplace_address));
       if (allowance < tokenAmount) {
-        onStatusChange('⏳ Approving tokens...');
+        onStatusChange('Approving tokens...');
         const approveTx = await retryContractCall(() => token.approve(dataset.marketplace_address, ethers.parseUnits('1000000000', 18)));
         await approveTx.wait();
-        onStatusChange('✅ Approved, now selling...');
+        onStatusChange('Approved, now selling...');
       }
 
-      onStatusChange('⏳ Confirm sell in wallet...');
+      onStatusChange('Confirm sell in wallet...');
       const tx = await retryContractCall(() => marketplace.sell(tokenAmount, 0n));
       await tx.wait();
 
-      onStatusChange('✅ Sell confirmed!');
+      onStatusChange('Sell confirmed!');
       setTimeout(() => {
         readBalance();
         updatePrice();
@@ -247,7 +310,7 @@ const DatasetCard = ({
       }, 1000);
     } catch (err: any) {
       console.error('Sell error:', err);
-      onStatusChange('❌ Sell failed: ' + (err?.message || err));
+      onStatusChange('Sell failed: ' + (err?.message || err));
     }
   };
 
@@ -260,16 +323,16 @@ const DatasetCard = ({
     try {
       const network = await provider!.getNetwork();
       if (network.chainId !== BASE_SEPOLIA_CHAIN_ID) {
-        onStatusChange('❌ Wrong network! Must be on Base Sepolia testnet (84532)');
+        onStatusChange('Wrong network! Must be on Base Sepolia testnet (84532)');
         return;
       }
     } catch (err: any) {
-      onStatusChange('❌ Network error: ' + err.message);
+      onStatusChange('Network error: ' + err.message);
       return;
     }
 
     try {
-      onStatusChange('🔥 Sending burn transaction...');
+      onStatusChange('Sending burn transaction...');
 
       const token = new ethers.Contract(
         tokenAddress,
@@ -290,34 +353,67 @@ const DatasetCard = ({
       }
 
       await tx.wait();
-      onStatusChange('✅ Burned! Waiting for backend access...');
+      onStatusChange('Burned! Your dataset is ready to download!');
 
+      // Try fast-track first
+      try {
+        const fastTrackResp = await fetch(getApiUrl("/access/fast-track"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            txHash: tx.hash,
+            userAddress,
+            tokenAddress,
+            marketplaceAddress: dataset.marketplace_address || dataset.bonding_curve,
+            symbol: dataset.symbol,
+          }),
+        });
+
+        if (fastTrackResp.ok) {
+          const fastTrackData = await fastTrackResp.json();
+          if (fastTrackData?.download) {
+            setHasDownloadAccess(true);
+            setDownloadUrl(fastTrackData.download);
+            readBalance();
+            return;
+          }
+        }
+      } catch (fastTrackError) {
+        console.error("Fast-track error:", fastTrackError);
+      }
+
+      // If fast-track didn't work, retry checking access status
       let accessGranted = false;
       for (let i = 0; i < 20; i++) {
         await new Promise(r => setTimeout(r, 1000));
+        
+        // Check access directly
         try {
-          const r = await fetch(getApiUrl(`/access/${userAddress}/${dataset.symbol}`));
-          if (r.status === 200) {
-            const j = await r.json();
-            if (j.download) {
-              // Trigger automatic download instead of opening in new tab
-              await downloadFile(j.download, dataset.name || dataset.symbol);
-              onStatusChange('✅ Dataset downloaded!');
+          const accessUrl = getApiUrl(`/access/${userAddress}/${dataset.symbol}`);
+          const response = await fetch(accessUrl);
+          
+          if (response.status === 200) {
+            const data = await response.json();
+            if (data.download || data.downloadUrl) {
+              setHasDownloadAccess(true);
+              setDownloadUrl(data.download || data.downloadUrl);
               accessGranted = true;
               break;
             }
           }
-        } catch (e) {}
+        } catch (err) {
+          console.error("Error checking access:", err);
+        }
       }
 
       if (!accessGranted) {
-        onStatusChange('⚠️ Burn confirmed but download not ready. Try again in a moment.');
+        onStatusChange('Burn confirmed. Download access may take a moment to process.');
       }
 
       readBalance();
     } catch (err: any) {
       console.error(err);
-      onStatusChange('❌ Burn failed: ' + (err?.message || err));
+      onStatusChange('Burn failed: ' + (err?.message || err));
     }
   };
 
@@ -350,34 +446,50 @@ const DatasetCard = ({
 
       <div className="dataset-actions">
         <div className="action-group">
-          <input
-            type="text"
-            placeholder="USDC amount"
-            value={buyAmount}
-            onChange={(e) => setBuyAmount(e.target.value)}
-            className="action-input"
-          />
+          <div className="action-input-wrapper">
+            <input
+              type="text"
+              placeholder="USDC amount"
+              value={buyAmount}
+              onChange={(e) => setBuyAmount(e.target.value)}
+              className="action-input"
+            />
+            <button className="max-button" onClick={setMaxBuy}>
+              MAX
+            </button>
+          </div>
           <button className="btn-primary" onClick={handleBuy}>
             Buy
           </button>
         </div>
 
         <div className="action-group">
-          <input
-            type="text"
-            placeholder="Token amount"
-            value={sellAmount}
-            onChange={(e) => setSellAmount(e.target.value)}
-            className="action-input"
-          />
+          <div className="action-input-wrapper">
+            <input
+              type="text"
+              placeholder="Token amount"
+              value={sellAmount}
+              onChange={(e) => setSellAmount(e.target.value)}
+              className="action-input"
+            />
+            <button className="max-button" onClick={setMaxSell}>
+              MAX
+            </button>
+          </div>
           <button className="btn-secondary" onClick={handleSell}>
             Sell
           </button>
         </div>
 
-        <button className="btn-burn" onClick={handleBurnForAccess}>
-          🔥 Burn for Access
-        </button>
+        {hasDownloadAccess ? (
+          <button className="btn-download" onClick={handleDownload}>
+            Your dataset is ready, download it
+          </button>
+        ) : (
+          <button className="btn-burn" onClick={handleBurnForAccess}>
+            Burn for Access
+          </button>
+        )}
       </div>
 
       <div className="dataset-footer">

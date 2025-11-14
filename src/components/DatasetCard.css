@@ -98,9 +98,18 @@
   gap: 8px;
 }
 
+.action-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .action-input {
   flex: 1;
   padding: 10px 12px;
+  padding-right: 60px;
   background: #0a0a0a;
   border: 1px solid #1a1a1a;
   border-radius: 6px;
@@ -117,9 +126,36 @@
   color: #555;
 }
 
+.max-button {
+  position: absolute;
+  right: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.max-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.max-button:active {
+  transform: scale(0.95);
+}
+
 .btn-primary,
 .btn-secondary,
-.btn-burn {
+.btn-burn,
+.btn-download {
   padding: 10px 20px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
@@ -129,6 +165,20 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  width: 100%;
+}
+
+.btn-download {
+  background: #f0f0f0;
+  color: #000000;
+  border-color: #d0d0d0;
+}
+
+.btn-download:hover {
+  background: #e5e5e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+  border-color: #c0c0c0;
 }
 
 .btn-primary {
@@ -189,6 +239,13 @@
   width: 100%;
   background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
   color: #333;
+  border: 1px solid #d0d0d0;
+}
+
+.btn-download {
+  width: 100%;
+  background: #f0f0f0;
+  color: #000000;
   border: 1px solid #d0d0d0;
 }
 

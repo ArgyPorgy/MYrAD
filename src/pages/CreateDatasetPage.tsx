@@ -42,7 +42,7 @@ const CreateDatasetPage = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      showStatus("🔍 Scanning file... You can fill the form while waiting!", "info");
+      showStatus("Scanning file... You can fill the form while waiting!", "info");
 
       const response = await fetch(getApiUrl("/upload"), {
         method: 'POST',
@@ -56,7 +56,7 @@ const CreateDatasetPage = () => {
         showStatus("File scan passed! Click 'Create Dataset Token' when ready.", "success");
       } else {
         const errorMsg = data.message || data.error || "Scan failed";
-        showStatus(`❌ ${errorMsg}`, "error");
+        showStatus(`${errorMsg}`, "error");
         setSelectedFile(null);
       }
 
@@ -248,7 +248,7 @@ const CreateDatasetPage = () => {
                         <div className="progress-fill scanning-animation"></div>
                       </div>
                       <div className="progress-text">
-                        🔍 Scanning with VirusTotal... Fill the form below while you wait!
+                        Scanning with VirusTotal... Fill the form below while you wait!
                       </div>
                     </div>
                   )}
@@ -256,7 +256,7 @@ const CreateDatasetPage = () => {
                   {scanPassed && (
                     <div className="upload-success-badge">
                       <Check size={16} strokeWidth={2.5} />
-                      <span>✅ File scan passed - Ready to create token</span>
+                      <span>File scan passed - Ready to create token</span>
                     </div>
                   )}
                 </div>

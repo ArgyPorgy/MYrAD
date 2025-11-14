@@ -41,21 +41,21 @@ export const useWeb3 = () => {
     async (signer: ethers.Signer, address: string) => {
       const storageKey = buildSignatureStorageKey(address);
       const existingSignature = localStorage.getItem(storageKey);
-      console.log('🔑 Checking signature for', address);
-      console.log('🔑 Storage key:', storageKey);
-      console.log('🔑 Signature exists:', !!existingSignature);
-      console.log('🔑 Signature value:', existingSignature);
+      console.log(' Checking signature for', address);
+      console.log(' Storage key:', storageKey);
+      console.log(' Signature exists:', !!existingSignature);
+      console.log(' Signature value:', existingSignature);
       
       if (existingSignature) {
-        console.log('✅ Found existing signature, skipping sign request');
+        console.log(' Found existing signature, skipping sign request');
         return existingSignature;
       }
 
       const message = buildSignMessage(address);
 
-      setStatus('🔐 Awaiting signature to sign in to MYrAD...');
-      console.log('📝 Requesting new signature for', address);
-      console.log('📝 Message to sign:', message);
+      setStatus(' Awaiting signature to sign in to MYrAD...');
+      console.log(' Requesting new signature for', address);
+      console.log(' Message to sign:', message);
       try {
         const signature = await signer.signMessage(message);
         const signatureData = JSON.stringify({
@@ -64,14 +64,14 @@ export const useWeb3 = () => {
           timestamp: Date.now(),
         });
         localStorage.setItem(storageKey, signatureData);
-        console.log('💾 Signature saved to localStorage with key:', storageKey);
-        console.log('💾 Saved data:', signatureData);
+        console.log(' Signature saved to localStorage with key:', storageKey);
+        console.log(' Saved data:', signatureData);
         
         // Verify it was saved
         const verification = localStorage.getItem(storageKey);
-        console.log('✅ Verification - signature saved:', !!verification);
+        console.log(' Verification - signature saved:', !!verification);
         
-        setStatus('✅ Signed in to MYrAD successfully');
+        setStatus(' Signed in to MYrAD successfully');
         return signature;
       } catch (error: any) {
         console.warn('User declined MYrAD sign-in signature', error);
@@ -119,11 +119,11 @@ export const useWeb3 = () => {
 
         const signatureKey = buildSignatureStorageKey(userAddress);
         const signatureData = localStorage.getItem(signatureKey);
-        console.log('🔑 Signature check for', userAddress);
-        console.log('🔑 Expected storage key:', signatureKey);
-        console.log('🔑 Signature exists:', !!signatureData);
-        console.log('🔑 All localStorage keys:', Object.keys(localStorage));
-        console.log('🔑 Keys matching "myrad-signature":', Object.keys(localStorage).filter(k => k.includes('myrad-signature')));
+        console.log(' Signature check for', userAddress);
+        console.log(' Expected storage key:', signatureKey);
+        console.log(' Signature exists:', !!signatureData);
+        console.log(' All localStorage keys:', Object.keys(localStorage));
+        console.log(' Keys matching "myrad-signature":', Object.keys(localStorage).filter(k => k.includes('myrad-signature')));
         
         if (!signatureData) {
           console.log('⚠️ No signature found, clearing state');
@@ -132,7 +132,7 @@ export const useWeb3 = () => {
           return;
         }
         
-        console.log('✅ Signature found, proceeding with auto-connect');
+        console.log(' Signature found, proceeding with auto-connect');
 
         const isCorrectNetwork = await checkNetwork(provider);
         if (!isCorrectNetwork) {
@@ -142,14 +142,14 @@ export const useWeb3 = () => {
           return;
         }
 
-        console.log('✅ Auto-connecting to existing session');
+        console.log(' Auto-connecting to existing session');
         setWeb3State({
           provider,
           signer,
           userAddress,
           connected: true,
         });
-        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+        setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
       } catch (err) {
         console.error('Check existing connection error:', err);
       }
@@ -198,7 +198,7 @@ export const useWeb3 = () => {
           connected: true,
         });
         localStorage.removeItem('wallet-disconnected');
-        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+        setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
       } catch (err) {
         console.error('Account change error:', err);
         setStatus(`❌ Account change failed: ${(err as any)?.message ?? 'Unknown error'}`);
@@ -209,7 +209,7 @@ export const useWeb3 = () => {
       if (!web3State.connected || !web3State.provider) return;
       const isCorrectNetwork = await checkNetwork(web3State.provider);
       if (isCorrectNetwork) {
-        setStatus(`✅ Wallet connected: ${web3State.userAddress} (Base Sepolia testnet)`);
+        setStatus(` Wallet connected: ${web3State.userAddress} (Base Sepolia testnet)`);
       } else {
         setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
       }
@@ -430,7 +430,7 @@ export const useWeb3 = () => {
           return;
         }
 
-        console.log('✅ Setting web3 state for address:', userAddress);
+        console.log(' Setting web3 state for address:', userAddress);
         setWeb3State({
           provider,
           signer,
@@ -438,8 +438,8 @@ export const useWeb3 = () => {
           connected: true,
         });
         localStorage.removeItem('wallet-disconnected');
-        setStatus(`✅ Wallet connected: ${userAddress} (Base Sepolia testnet)`);
-        console.log('✅ Web3 state updated successfully');
+        setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
+        console.log(' Web3 state updated successfully');
 
         // Clear connecting flag after a short delay to ensure state is settled
         setTimeout(() => {

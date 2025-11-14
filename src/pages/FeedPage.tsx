@@ -63,12 +63,22 @@ const FeedPage = () => {
     }
   };
 
+  // Get allowed symbols from customImages
+  const allowedSymbols = new Set(Object.keys(customImages));
+
   const datasetEntries = Object.entries(datasets).filter(([_, meta]) => {
+    // Only show datasets whose symbol is in customImages
+    const symbol = meta.symbol?.toUpperCase?.() ?? '';
+    if (!allowedSymbols.has(symbol)) {
+      return false;
+    }
+    
+    // Apply search filter if query exists
     if (searchQuery === '') return true;
     const query = searchQuery.toLowerCase();
-    const symbol = meta.symbol?.toLowerCase?.() ?? '';
+    const symbolLower = meta.symbol?.toLowerCase?.() ?? '';
     const name = meta.name?.toLowerCase?.() ?? '';
-    return symbol.includes(query) || name.includes(query);
+    return symbolLower.includes(query) || name.includes(query);
   });
 
   const handleTokenClick = (tokenAddress: string) => {

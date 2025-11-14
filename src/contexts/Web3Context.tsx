@@ -63,7 +63,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       // Check if user manually disconnected
       const userDisconnected = localStorage.getItem('wallet-disconnected');
       if (userDisconnected === 'true') {
-        console.log('⏭️ User manually disconnected, skipping auto-reconnect');
+        console.log('User manually disconnected, skipping auto-reconnect');
         return;
       }
 
@@ -99,19 +99,19 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         // Check if signature exists
         const signatureKey = buildSignatureStorageKey(address);
         const storedSignature = localStorage.getItem(signatureKey);
-        console.log('🔑 Checking signature for', address);
-        console.log('🔑 Storage key:', signatureKey);
-        console.log('🔑 Signature exists:', !!storedSignature);
+        console.log('Checking signature for', address);
+        console.log('Storage key:', signatureKey);
+        console.log('Signature exists:', !!storedSignature);
 
         if (storedSignature) {
-          console.log('✅ Found existing signature, auto-signing in');
+          console.log('Found existing signature, auto-signing in');
           setSignedIn(true);
-          setStatus(`✅ Wallet connected: ${address} (Base Sepolia testnet)`);
+          setStatus(`Wallet connected: ${address} (Base Sepolia testnet)`);
           setIsReconnecting(false);
           // Track wallet connection on auto-reconnect
           void trackWalletConnection(address);
         } else if (!isRequestingSignatureRef.current) {
-          console.log('📝 No signature found, requesting new one');
+          console.log('No signature found, requesting new one');
           isRequestingSignatureRef.current = true;
           // Request signature
           try {
@@ -121,7 +121,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
             setIsReconnecting(false);
           }
         } else {
-          console.log('⏭️ Signature request already in progress, skipping');
+          console.log('Signature request already in progress, skipping');
           setIsReconnecting(false);
         }
       } catch (error) {
@@ -141,13 +141,13 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     const ensureCorrectChain = async () => {
       if (isConnected && chain?.id !== baseSepolia.id && switchChainAsync) {
         try {
-          setStatus('🔄 Switching to Base Sepolia...');
+          setStatus('Switching to Base Sepolia...');
           await switchChainAsync({ chainId: baseSepolia.id });
-          setStatus('✅ Switched to Base Sepolia');
+          setStatus('Switched to Base Sepolia');
         } catch (error: any) {
           console.error('Failed to switch chain:', error);
           if (error.code !== 4001) {
-            setStatus('❌ Please switch to Base Sepolia testnet manually');
+            setStatus('Please switch to Base Sepolia testnet manually');
           }
         }
       }
@@ -161,22 +161,22 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       const storageKey = buildSignatureStorageKey(walletAddress);
       const existingSignature = localStorage.getItem(storageKey);
 
-      console.log('🔐 requestSignature called for:', walletAddress);
-      console.log('🔐 Checking storage key:', storageKey);
-      console.log('🔐 Existing signature:', !!existingSignature);
+      console.log('requestSignature called for:', walletAddress);
+      console.log('Checking storage key:', storageKey);
+      console.log('Existing signature:', !!existingSignature);
 
       if (existingSignature) {
-        console.log('✅ Signature already exists, skipping sign request');
+        console.log('Signature already exists, skipping sign request');
         setSignedIn(true);
         return;
       }
 
       const message = buildSignMessage(walletAddress);
-      setStatus('🔐 Please sign the message to authenticate...');
+      setStatus('Please sign the message to authenticate...');
 
-      console.log('📝 Requesting signature via Wagmi...');
+      console.log('Requesting signature via Wagmi...');
       const signature = await signMessageAsync({ message });
-      console.log('✅ Signature received:', signature.substring(0, 20) + '...');
+      console.log('Signature received:', signature.substring(0, 20) + '...');
 
       const signatureData = JSON.stringify({
         signature,
@@ -185,21 +185,21 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       });
 
       localStorage.setItem(storageKey, signatureData);
-      console.log('💾 Signature saved to localStorage with key:', storageKey);
+      console.log('Signature saved to localStorage with key:', storageKey);
       
       // Verify it was saved
       const verification = localStorage.getItem(storageKey);
-      console.log('✅ Verification - signature saved:', !!verification);
+      console.log('Verification - signature saved:', !!verification);
       
       setSignedIn(true);
-      setStatus('✅ Signed in successfully');
+      setStatus('Signed in successfully');
       
       // Track wallet connection after successful sign-in
       void trackWalletConnection(walletAddress);
     } catch (error: any) {
       console.error('Signature error:', error);
       if (error.name !== 'UserRejectedRequestError' && error.code !== 4001) {
-        setStatus('❌ Signature required to continue');
+        setStatus('Signature required to continue');
       }
       // Disconnect if signature is declined
       await disconnectAsync();
@@ -216,7 +216,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        setStatus('🔌 Connecting wallet...');
+        setStatus('Connecting wallet...');
 
         // Find the connector
         let selectedConnector = connectors.find((c) => {
@@ -243,13 +243,13 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         const result = await connectAsync({ connector: selectedConnector, chainId: baseSepolia.id });
         
         if (result.accounts && result.accounts.length > 0) {
-          console.log('✅ Wallet connected successfully:', result.accounts[0]);
+          console.log('Wallet connected successfully:', result.accounts[0]);
           // Provider and signature will be handled by useEffect
         }
       } catch (error: any) {
         console.error('Connect error:', error);
         if (error.code !== 4001) {
-          setStatus(`❌ Connection failed: ${error.message}`);
+          setStatus(`Connection failed: ${error.message}`);
         }
       }
     },
@@ -262,7 +262,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       if (address) {
         const signatureKey = buildSignatureStorageKey(address);
         localStorage.removeItem(signatureKey);
-        console.log('🗑️ Cleared signature for:', address);
+        console.log('Cleared signature for:', address);
       }
       
       // Set disconnect flag BEFORE calling disconnectAsync
@@ -278,7 +278,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       // Now disconnect from Wagmi
       await disconnectAsync();
       
-      console.log('✅ Disconnected successfully');
+      console.log('Disconnected successfully');
     } catch (error) {
       console.error('Disconnect error:', error);
     }

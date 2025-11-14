@@ -50,6 +50,9 @@ const TokenDetailPage = () => {
   const [toasts, setToasts] = useState<
     { id: number; type: "success" | "error"; message: string }[]
   >([]);
+  const [hasDownloadAccess, setHasDownloadAccess] = useState<boolean>(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<string>("0.00");
   const publicProvider = getPublicRpcProvider();
 
 
@@ -96,11 +99,71 @@ const TokenDetailPage = () => {
   };
 
 
+  const checkAccessStatus = async () => {
+    if (!userAddress || !dataset?.symbol) {
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
+      return;
+    }
+
+    try {
+      const accessUrl = getApiUrl(`/access/${userAddress}/${dataset.symbol}`);
+      const response = await fetch(accessUrl);
+      
+      if (response.status === 200) {
+        const data = await response.json();
+        if (data.download || data.downloadUrl) {
+          setHasDownloadAccess(true);
+          setDownloadUrl(data.download || data.downloadUrl);
+        } else {
+          setHasDownloadAccess(false);
+          setDownloadUrl(null);
+        }
+      } else {
+        setHasDownloadAccess(false);
+        setDownloadUrl(null);
+      }
+    } catch (err) {
+      console.error("Error checking access status:", err);
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!downloadUrl) return;
+    
+    try {
+      await triggerFileDownload(downloadUrl, `${dataset?.symbol || "dataset"}.zip`);
+      showToast("Download started", "success");
+    } catch (err) {
+      console.error("Download error:", err);
+      showToast("Download failed. Please try again.", "error");
+    }
+  };
+
+  const setMaxBuy = () => {
+    setBuyAmount(usdcBalance);
+  };
+
+  const setMaxSell = () => {
+    setSellAmount(balance);
+  };
+
   useEffect(() => {
     if (tokenAddress) {
       loadDataset();
     }
   }, [tokenAddress]);
+
+  useEffect(() => {
+    if (connected && userAddress && dataset?.symbol) {
+      checkAccessStatus();
+    } else {
+      setHasDownloadAccess(false);
+      setDownloadUrl(null);
+    }
+  }, [connected, userAddress, dataset?.symbol]);
 
 
   useEffect(() => {
@@ -130,8 +193,8 @@ const TokenDetailPage = () => {
       const resp = await fetch(getApiUrl("/datasets"));
       const data = await resp.json();
 
-      console.log('📦 All datasets:', Object.keys(data));
-      console.log('🔍 Looking for token:', tokenAddress);
+      console.log('All datasets:', Object.keys(data));
+      console.log('Looking for token:', tokenAddress);
 
       // Try case-insensitive match
       const normalizedAddress = tokenAddress!.toLowerCase();
@@ -144,14 +207,14 @@ const TokenDetailPage = () => {
         );
         if (matchingKey) {
           foundDataset = data[matchingKey];
-          console.log('✅ Found dataset with case-insensitive match:', matchingKey);
+          console.log('Found dataset with case-insensitive match:', matchingKey);
         }
       }
 
       if (foundDataset) {
         setDataset(foundDataset);
       } else {
-        console.error('❌ Dataset not found for address:', tokenAddress);
+        console.error('Dataset not found for address:', tokenAddress);
         console.log('Available addresses:', Object.keys(data));
         setStatus("Dataset not found");
       }
@@ -171,9 +234,15 @@ const TokenDetailPage = () => {
       const bal = await retryContractCall(() => token.balanceOf(userAddress));
       setBalanceRaw(bal);
       setBalance(ethers.formatUnits(bal, 18));
+      
+      // Also read USDC balance for max button
+      const usdc = new ethers.Contract(BASE_SEPOLIA_USDC, USDC_ABI, publicProvider);
+      const usdcBal = await retryContractCall(() => usdc.balanceOf(userAddress));
+      setUsdcBalance(ethers.formatUnits(usdcBal, 6));
     } catch (err) {
       setBalance("n/a");
       setBalanceRaw(0n);
+      setUsdcBalance("0.00");
     }
   };
 
@@ -277,8 +346,8 @@ const TokenDetailPage = () => {
       const usdcBalance: bigint = await retryContractCall(() =>
         usdc.balanceOf(userAddress)
       );
-      console.log('💵 Your USDC balance:', ethers.formatUnits(usdcBalance, 6));
-      console.log('💵 Amount needed:', ethers.formatUnits(usdcAmount, 6));
+      console.log('Your USDC balance:', ethers.formatUnits(usdcBalance, 6));
+      console.log('Amount needed:', ethers.formatUnits(usdcAmount, 6));
       
       if (usdcBalance < usdcAmount) {
         const errorMsg = `Insufficient USDC balance. You have ${ethers.formatUnits(usdcBalance, 6)} USDC but need ${ethers.formatUnits(usdcAmount, 6)} USDC`;
@@ -290,17 +359,17 @@ const TokenDetailPage = () => {
       let currentAllowance: bigint = await retryContractCall(() =>
         usdc.allowance(userAddress, dataset.marketplace!)
       );
-      console.log('💰 Current USDC allowance:', ethers.formatUnits(currentAllowance, 6));
+      console.log('Current USDC allowance:', ethers.formatUnits(currentAllowance, 6));
       
       if (currentAllowance < usdcAmount) {
         setStatus("Approving USDC spending cap...");
-        console.log('🔓 Requesting approval for spending cap...');
+        console.log('Requesting approval for spending cap...');
         const approveTx = await retryContractCall(() =>
           usdc.approve(dataset.marketplace!, ethers.MaxUint256)
         );
-        console.log('⏳ Waiting for approval transaction to confirm...');
+        console.log('Waiting for approval transaction to confirm...');
         await approveTx.wait();
-        console.log('✅ Approval confirmed, verifying allowance...');
+        console.log('Approval confirmed, verifying allowance...');
         
         // Wait and retry to verify allowance is updated on-chain
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -309,10 +378,10 @@ const TokenDetailPage = () => {
           currentAllowance = await retryContractCall(() =>
             usdc.allowance(userAddress, dataset.marketplace!)
           );
-          console.log(`🔍 Allowance check (${4-retries}/3):`, ethers.formatUnits(currentAllowance, 6));
+          console.log(`Allowance check (${4-retries}/3):`, ethers.formatUnits(currentAllowance, 6));
           
           if (currentAllowance >= usdcAmount) {
-            console.log('✅ Allowance verified, proceeding to buy...');
+            console.log('Allowance verified, proceeding to buy...');
             break;
           }
           
@@ -328,13 +397,13 @@ const TokenDetailPage = () => {
       }
 
       setStatus("Executing buy transaction...");
-      console.log('💸 Initiating buy transaction...');
+      console.log('Initiating buy transaction...');
       const tx = await retryContractCall(() =>
         marketplace.buy(usdcAmount, 0)
       );
-      console.log('⏳ Waiting for buy transaction to confirm...');
+      console.log('Waiting for buy transaction to confirm...');
       await tx.wait();
-      console.log('✅ Buy transaction confirmed!');
+      console.log('Buy transaction confirmed!');
 
 
       setStatus("Buy confirmed!");
@@ -378,8 +447,8 @@ const TokenDetailPage = () => {
       const tokenBalance: bigint = await retryContractCall(() =>
         token.balanceOf(userAddress)
       );
-      console.log('🎫 Your token balance:', ethers.formatUnits(tokenBalance, 18));
-      console.log('🎫 Amount needed:', ethers.formatUnits(tokenAmount, 18));
+      console.log('Your token balance:', ethers.formatUnits(tokenBalance, 18));
+      console.log('Amount needed:', ethers.formatUnits(tokenAmount, 18));
       
       if (tokenBalance < tokenAmount) {
         const errorMsg = `Insufficient token balance. You have ${ethers.formatUnits(tokenBalance, 18)} tokens but need ${ethers.formatUnits(tokenAmount, 18)} tokens`;
@@ -391,17 +460,17 @@ const TokenDetailPage = () => {
       let currentAllowance: bigint = await retryContractCall(() =>
         token.allowance(userAddress, dataset.marketplace!)
       );
-      console.log('🎫 Current token allowance:', ethers.formatUnits(currentAllowance, 18));
+      console.log('Current token allowance:', ethers.formatUnits(currentAllowance, 18));
       
       if (currentAllowance < tokenAmount) {
         setStatus("Approving token spending cap...");
-        console.log('🔓 Requesting approval for token spending cap...');
+        console.log('Requesting approval for token spending cap...');
         const approveTx = await retryContractCall(() =>
           token.approve(dataset.marketplace!, ethers.MaxUint256)
         );
-        console.log('⏳ Waiting for approval transaction to confirm...');
+        console.log('Waiting for approval transaction to confirm...');
         await approveTx.wait();
-        console.log('✅ Approval confirmed, verifying allowance...');
+        console.log('Approval confirmed, verifying allowance...');
         
         // Wait and retry to verify allowance is updated on-chain
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -410,10 +479,10 @@ const TokenDetailPage = () => {
           currentAllowance = await retryContractCall(() =>
             token.allowance(userAddress, dataset.marketplace!)
           );
-          console.log(`🔍 Allowance check (${4-retries}/3):`, ethers.formatUnits(currentAllowance, 18));
+          console.log(`Allowance check (${4-retries}/3):`, ethers.formatUnits(currentAllowance, 18));
           
           if (currentAllowance >= tokenAmount) {
-            console.log('✅ Allowance verified, proceeding to sell...');
+            console.log('Allowance verified, proceeding to sell...');
             break;
           }
           
@@ -429,13 +498,13 @@ const TokenDetailPage = () => {
       }
 
       setStatus("Executing sell transaction...");
-      console.log('💸 Initiating sell transaction...');
+      console.log('Initiating sell transaction...');
       const tx = await retryContractCall(() =>
         marketplace.sell(tokenAmount, 0)
       );
-      console.log('⏳ Waiting for sell transaction to confirm...');
+      console.log('Waiting for sell transaction to confirm...');
       await tx.wait();
-      console.log('✅ Sell transaction confirmed!');
+      console.log('Sell transaction confirmed!');
 
 
       setStatus("Sell confirmed!");
@@ -554,11 +623,10 @@ const TokenDetailPage = () => {
       await burnTx.wait();
 
 
-      setStatus("Burn processed (50% burned, 50% returned). Waiting for download access...");
-      showToast("Burn completed successfully", "success");
+      setStatus("Burn processed (50% burned, 50% returned). Your dataset is ready!");
+      showToast("Burn completed successfully. Your dataset is ready to download!", "success");
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
+      // Try fast-track first
       try {
         const fastTrackResp = await fetch(getApiUrl("/access/fast-track"), {
           method: "POST",
@@ -578,54 +646,45 @@ const TokenDetailPage = () => {
         if (fastTrackResp.ok) {
           const fastTrackData = await fastTrackResp.json();
           if (fastTrackData?.download) {
-            await triggerFileDownload(
-              fastTrackData.download,
-              `${dataset?.symbol || "dataset"}.zip`
-            );
-            setStatus("Download ready!");
+            setHasDownloadAccess(true);
+            setDownloadUrl(fastTrackData.download);
             readBalance();
             updatePrice();
             return;
           }
         }
       } catch (fastTrackError) {
-        console.error("Fast-track download error:", fastTrackError);
+        console.error("Fast-track error:", fastTrackError);
       }
 
-
+      // If fast-track didn't work, retry checking access status
+      let accessGranted = false;
       for (let i = 0; i < 20; i++) {
         await new Promise((r) => setTimeout(r, 1000));
+        
+        // Check access directly
         try {
           const accessUrl = getApiUrl(`/access/${userAddress}/${dataset?.symbol}`);
-          const r = await fetch(accessUrl);
+          const response = await fetch(accessUrl);
           
-          if (r.status === 200) {
-            const j = await r.json();
-            
-            if (j.download || j.downloadUrl) {
-              const downloadUrl = j.download || j.downloadUrl;
-              await triggerFileDownload(
-                downloadUrl,
-                `${dataset?.symbol || "dataset"}.zip`
-              );
-              setStatus("Download ready!");
-              readBalance();
-              updatePrice();
-              return;
+          if (response.status === 200) {
+            const data = await response.json();
+            if (data.download || data.downloadUrl) {
+              setHasDownloadAccess(true);
+              setDownloadUrl(data.download || data.downloadUrl);
+              accessGranted = true;
+              break;
             }
-          } else {
-            const errorText = await r.text();
-            console.error(`[Burn] Error response: ${errorText}`);
           }
-        } catch (e) {
-          console.error(`[Burn] Polling error:`, e);
+        } catch (err) {
+          console.error("Error checking access:", err);
         }
       }
 
-
-      setStatus(
-        "Burn confirmed but download not ready. Try again in a moment."
-      );
+      if (!accessGranted) {
+        setStatus("Burn confirmed. Download access may take a moment to process.");
+      }
+      
       readBalance();
       updatePrice();
     } catch (err: any) {
@@ -769,13 +828,18 @@ const TokenDetailPage = () => {
                     {activeTab === "buy" ? (
                       <div className="trade-group">
                         <label className="trade-label">USDC Amount</label>
-                        <input
-                          type="text"
-                          placeholder="0.00"
-                          value={buyAmount}
-                          onChange={(e) => setBuyAmount(e.target.value)}
-                          className="trade-input"
-                        />
+                        <div className="trade-input-wrapper">
+                          <input
+                            type="text"
+                            placeholder="0.00"
+                            value={buyAmount}
+                            onChange={(e) => setBuyAmount(e.target.value)}
+                            className="trade-input"
+                          />
+                          <button className="max-button" onClick={setMaxBuy}>
+                            MAX
+                          </button>
+                        </div>
                         <button className="trade-btn buy" onClick={handleBuy}>
                           <TrendingUp size={16} strokeWidth={2} />
                           Buy {dataset.symbol}
@@ -784,13 +848,18 @@ const TokenDetailPage = () => {
                     ) : (
                       <div className="trade-group">
                         <label className="trade-label">Token Amount</label>
-                        <input
-                          type="text"
-                          placeholder="0.00"
-                          value={sellAmount}
-                          onChange={(e) => setSellAmount(e.target.value)}
-                          className="trade-input"
-                        />
+                        <div className="trade-input-wrapper">
+                          <input
+                            type="text"
+                            placeholder="0.00"
+                            value={sellAmount}
+                            onChange={(e) => setSellAmount(e.target.value)}
+                            className="trade-input"
+                          />
+                          <button className="max-button" onClick={setMaxSell}>
+                            MAX
+                          </button>
+                        </div>
                         <button className="trade-btn sell" onClick={handleSell}>
                           <TrendingDown size={16} strokeWidth={2} />
                           Sell {dataset.symbol}
@@ -800,14 +869,20 @@ const TokenDetailPage = () => {
                   </div>
 
 
-                  <button className="burn-button" onClick={handleBurn}>
-                    Burn {dataset.symbol} for Access
-                  </button>
-
-                  <p className="burn-requirement">
-                    * You must burn at least $0.50 worth of tokens to unlock the dataset. Half the tokens are burned permanently and half are returned to the pool.
-                  </p>
-
+                  {hasDownloadAccess ? (
+                    <button className="download-button" onClick={handleDownload}>
+                      Your dataset is ready, download it
+                    </button>
+                  ) : (
+                    <>
+                      <button className="burn-button" onClick={handleBurn}>
+                        Burn {dataset.symbol} for Access
+                      </button>
+                      <p className="burn-requirement">
+                        * You must burn at least $0.50 worth of tokens to unlock the dataset. Half the tokens are burned permanently and half are returned to the pool.
+                      </p>
+                    </>
+                  )}
 
                   {status && <div className="status-message">{status}</div>}
                 </div>
