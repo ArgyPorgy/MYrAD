@@ -9,18 +9,19 @@ import { formatFileSize } from '@/utils/web3';
 import { getApiUrl } from '@/config/api';
 import { Upload, FileText, Tag, DollarSign, FileType, Info, X, Check } from 'lucide-react';
 import './CreateDatasetPage.css';
-
 const CreateDatasetPage = () => {
   const navigate = useNavigate();
   const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadedCid, setUploadedCid] = useState<string>('');
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [uploading, setUploading] = useState(false);
+  const [scanPassed, setScanPassed] = useState(false);
+  const [scanning, setScanning] = useState(false); // Track scanning state
+  
   const [datasetName, setDatasetName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
   const [description, setDescription] = useState('');
   const TOTAL_SUPPLY = 1_000_000;
+  
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | 'info' | 'warning'>('info');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,6 +33,41 @@ const CreateDatasetPage = () => {
     setShowToast(true);
   };
 
+  // STEP 1: ONLY scan with VirusTotal (no Lighthouse upload)
+  const scanFile = async (file: File) => {
+    try {
+      setScanning(true);
+      setScanPassed(false);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      showStatus("🔍 Scanning file... You can fill the form while waiting!", "info");
+
+      const response = await fetch(getApiUrl("/upload"), {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.scanPassed) {
+        setScanPassed(true);
+        showStatus("File scan passed! Click 'Create Dataset Token' when ready.", "success");
+      } else {
+        const errorMsg = data.message || data.error || "Scan failed";
+        showStatus(`❌ ${errorMsg}`, "error");
+        setSelectedFile(null);
+      }
+
+      setScanning(false);
+    } catch (err: any) {
+      showStatus(`Scan error: ${err.message}`, "error");
+      setScanning(false);
+      setSelectedFile(null);
+    }
+  };
+
   const handleFileSelect = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
       showStatus('File size exceeds 10MB limit', 'error');
@@ -39,65 +75,7 @@ const CreateDatasetPage = () => {
     }
 
     setSelectedFile(file);
-    await uploadFile(file);
-  };
-
-  const uploadFile = async (file: File) => {
-    try {
-      setUploading(true);
-      setUploadedCid('');
-      setUploadProgress(0);
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = (e.loaded / e.total) * 100;
-          setUploadProgress(percent);
-        }
-      });
-
-      xhr.addEventListener('load', () => {
-        setUploading(false);
-        if (xhr.status === 200) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.cid) {
-              setUploadedCid(response.cid);
-              setUploadProgress(100);
-              showStatus(`File uploaded successfully to IPFS!`, 'success');
-            } else {
-              console.error('No CID in response:', response);
-              showStatus('Upload failed: No CID returned', 'error');
-            }
-          } catch (err: any) {
-            console.error('Parse error:', err);
-            showStatus('Upload failed: Invalid response', 'error');
-          }
-        } else {
-          console.error('Upload failed with status:', xhr.status, xhr.responseText);
-          try {
-            const error = JSON.parse(xhr.responseText);
-            showStatus(`Upload failed: ${error.message || error.error}`, 'error');
-          } catch {
-            showStatus(`Upload failed: Server error (${xhr.status})`, 'error');
-          }
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        showStatus('Upload failed: Network error', 'error');
-        setUploading(false);
-      });
-
-      xhr.open('POST', getApiUrl('/upload'), true);
-      xhr.send(formData);
-    } catch (err: any) {
-      showStatus(`Upload error: ${err.message}`, 'error');
-      setUploading(false);
-    }
+    await scanFile(file);
   };
 
   const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -107,20 +85,13 @@ const CreateDatasetPage = () => {
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      handleFileSelect(file);
-    }
-  };
-
+  // STEP 2: Upload to Lighthouse + Create token
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!uploadedCid) {
-      showStatus('Please upload a file first', 'error');
+    if (!scanPassed || !selectedFile) {
+      showStatus('Please wait for file scan to complete', 'error');
       return;
     }
 
@@ -140,131 +111,47 @@ const CreateDatasetPage = () => {
     }
 
     setIsSubmitting(true);
-    showStatus('Creating dataset token on blockchain...', 'info');
+    showStatus('Uploading to Lighthouse and creating token...', 'info');
 
     try {
-      const payload = {
-        cid: uploadedCid,
-        name: datasetName,
-        symbol: tokenSymbol,
-        description: description,
-        totalSupply: TOTAL_SUPPLY,
-        creatorAddress: userAddress,
-      };
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("name", datasetName);
+      formData.append("symbol", tokenSymbol);
+      formData.append("description", description);
+      formData.append("totalSupply", TOTAL_SUPPLY.toString());
+      formData.append("creatorAddress", userAddress);
 
-      // Add timeout to fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      const response = await fetch(getApiUrl('/create-dataset'), {
+        method: 'POST',
+        body: formData
+      });
 
-      try {
-        const response = await fetch(getApiUrl('/create-dataset'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
+      const data = await response.json();
 
-        clearTimeout(timeoutId);
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          // New async flow - poll for completion
-          if (data.jobId) {
-            showStatus('Creating dataset on blockchain...', 'info');
-            
-            // Poll for status
-            const pollInterval = setInterval(async () => {
-              try {
-                const statusResponse = await fetch(getApiUrl(`/dataset-status/${data.jobId}`));
-                const statusData = await statusResponse.json();
-                if (statusData.status === 'completed' && statusData.tokenAddress) {
-                  clearInterval(pollInterval);
-                  
-                  const tokenAddress = statusData.tokenAddress;
-                  showStatus('Dataset created successfully! Redirecting...', 'success');
-                  
-                  setTimeout(() => {
-                    navigate(`/token/${tokenAddress}`, { 
-                      replace: false,
-                      state: { 
-                        fromCreate: true,
-                        tokenData: {
-                          address: tokenAddress,
-                          name: datasetName,
-                          symbol: tokenSymbol
-                        }
-                      }
-                    });
-                  }, 500);
-                } else if (statusData.status === 'failed') {
-                  clearInterval(pollInterval);
-                  console.error('❌ Dataset creation failed');
-                  showStatus(`Creation failed: ${statusData.message}`, 'error');
-                  setIsSubmitting(false);
-                } else {
-                  // Still processing
-                  showStatus(statusData.message || 'Creating dataset on blockchain...', 'info');
-                }
-              } catch (pollError) {
-                console.error('Poll error:', pollError);
-                // Continue polling even if one request fails
+      if (response.ok && data.success && data.tokenAddress) {
+        showStatus('🎉 Dataset created successfully! Redirecting...', 'success');
+        
+        setTimeout(() => {
+          navigate(`/token/${data.tokenAddress}`, {
+            replace: false,
+            state: {
+              fromCreate: true,
+              tokenData: {
+                address: data.tokenAddress,
+                name: datasetName,
+                symbol: tokenSymbol
               }
-            }, 3000); // Poll every 3 seconds
-            
-            // Timeout after 2 minutes
-            setTimeout(() => {
-              clearInterval(pollInterval);
-              showStatus('Creation is taking longer than expected. Please check My Datasets.', 'error');
-              setIsSubmitting(false);
-            }, 120000);
-            
-          } else if (data.tokenAddress) {
-            // Old sync flow - immediate response (backward compatible)
-            const tokenAddress = data.tokenAddress;
-            
-            showStatus('🎉 Dataset created successfully! Redirecting to token page...', 'success');
-            
-            // Use setTimeout to ensure toast is visible before navigation
-            setTimeout(() => {
-              try {
-                navigate(`/token/${tokenAddress}`, { 
-                  replace: false,
-                  state: { 
-                    fromCreate: true,
-                    tokenData: {
-                      address: tokenAddress,
-                      name: datasetName,
-                      symbol: tokenSymbol
-                    }
-                  }
-                });
-              } catch (navError) {
-                console.error('❌ Navigation error:', navError);
-                window.location.href = `/token/${tokenAddress}`;
-              }
-            }, 1500); // Give time to show the success toast
-          }
-        } else {
-          const errorMsg = data.error || data.message || `Server error (${response.status})`;
-          console.error('❌ Creation failed:', errorMsg);
-          showStatus(`Creation failed: ${errorMsg}`, 'error');
-          setIsSubmitting(false);
-        }
-      } catch (fetchError: any) {
-        clearTimeout(timeoutId);
-        if (fetchError.name === 'AbortError') {
-          console.error('❌ Request timeout');
-          showStatus('Request timeout - please check your connection', 'error');
-        } else {
-          throw fetchError;
-        }
+            }
+          });
+        }, 1500);
+      } else {
+        const errorMsg = data.error || data.message || 'Creation failed';
+        showStatus(`Creation failed: ${errorMsg}`, 'error');
         setIsSubmitting(false);
       }
     } catch (err: any) {
-      console.error('❌ Creation error:', err);
+      console.error('Creation error:', err);
       showStatus(`Error: ${err.message}`, 'error');
       setIsSubmitting(false);
     }
@@ -282,14 +169,11 @@ const CreateDatasetPage = () => {
           onDisconnect={disconnectWallet}
         />
 
-        {/* FULL SCREEN LOADER OVERLAY */}
         {isSubmitting && (
           <div className="loader-overlay">
             <div className="loader-content">
               <CustomLoader />
-              <p className="loader-text">
-                Creating your dataset token...
-              </p>
+              <p className="loader-text">Uploading to IPFS and creating token...</p>
             </div>
           </div>
         )}
@@ -299,7 +183,7 @@ const CreateDatasetPage = () => {
             <div className="page-header">
               <h1 className="page-title">Create Dataset</h1>
               <p className="page-description">
-                Tokenize your data and list it on the marketplace
+                Upload your file and create a dataset token
               </p>
             </div>
 
@@ -309,38 +193,47 @@ const CreateDatasetPage = () => {
                   <Info size={20} strokeWidth={1.5} />
                 </div>
                 <div className="info-content">
-                  <strong>How it works:</strong> Upload your dataset file, provide details, and we'll
-                  create an ERC20 token representing your data. You'll get 10% of tokens, 5% goes to treasury,
-                  and 85% goes to the liquidity pool for trading.
+                  <strong>Time-saving tip:</strong> While your file is being scanned, 
+                  you can fill out the form below. The button will activate once the scan completes!
                 </div>
               </div>
 
               <form onSubmit={handleSubmit} noValidate>
-                {/* File Upload */}
+                {/* File Upload & Scan */}
                 <div className="form-group">
                   <label className="form-label">
                     <Upload size={16} strokeWidth={2} />
-                    Dataset File
+                    Upload File for Scanning
                   </label>
                   <div
                     className={`file-upload ${selectedFile ? 'has-file' : ''}`}
-                    onClick={() => document.getElementById('fileInput')?.click()}
+                    onClick={() => !scanning && !isSubmitting && document.getElementById('fileInput')?.click()}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleDrop}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (!scanning && !isSubmitting) {
+                        const file = e.dataTransfer.files[0];
+                        if (file) handleFileSelect(file);
+                      }
+                    }}
                   >
                     <div className="file-upload-icon">
                       <Upload size={32} strokeWidth={1.5} />
                     </div>
-                    <div className="file-upload-text">Click to upload or drag and drop</div>
-                    <div className="file-upload-sub">Max size: 10MB (PDF, CSV, JSON, ZIP, etc.)</div>
+                    <div className="file-upload-text">
+                      {scanning ? "Scanning file..." : "Click to upload or drag and drop"}
+                    </div>
+                    <div className="file-upload-sub">Max size: 10MB</div>
                     <input
                       type="file"
                       id="fileInput"
                       onChange={handleFileInputChange}
                       style={{ display: 'none' }}
                       accept=".pdf,.csv,.json,.zip,.txt,.xlsx,.xls"
+                      disabled={scanning || isSubmitting}
                     />
                   </div>
+                  
                   {selectedFile && (
                     <div className="file-name active">
                       <FileText size={16} strokeWidth={2} />
@@ -348,25 +241,27 @@ const CreateDatasetPage = () => {
                       <span className="file-size">({formatFileSize(selectedFile.size)})</span>
                     </div>
                   )}
-                  {uploading && (
+                  
+                  {scanning && (
                     <div className="upload-progress active">
                       <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+                        <div className="progress-fill scanning-animation"></div>
                       </div>
                       <div className="progress-text">
-                        {uploadProgress < 100 ? `Uploading: ${Math.round(uploadProgress)}%` : 'Upload complete!'}
+                        🔍 Scanning with VirusTotal... Fill the form below while you wait!
                       </div>
                     </div>
                   )}
-                  {uploadedCid && (
+                  
+                  {scanPassed && (
                     <div className="upload-success-badge">
                       <Check size={16} strokeWidth={2.5} />
-                      <span>File secured on IPFS</span>
+                      <span>✅ File scan passed - Ready to create token</span>
                     </div>
                   )}
                 </div>
 
-                {/* Dataset Name */}
+                {/* Form fields - ALWAYS ENABLED (not disabled during scan) */}
                 <div className="form-group">
                   <label htmlFor="datasetName" className="form-label">
                     <FileType size={16} strokeWidth={2} />
@@ -380,11 +275,10 @@ const CreateDatasetPage = () => {
                     value={datasetName}
                     onChange={(e) => setDatasetName(e.target.value)}
                     required
-                    disabled={isSubmitting}
+                    disabled={isSubmitting} // Only disabled when submitting, NOT when scanning
                   />
                 </div>
 
-                {/* Token Symbol */}
                 <div className="form-group">
                   <label htmlFor="tokenSymbol" className="form-label">
                     <Tag size={16} strokeWidth={2} />
@@ -396,18 +290,16 @@ const CreateDatasetPage = () => {
                     className="form-input"
                     placeholder="e.g., MEDDATA"
                     maxLength={10}
-                    pattern="[A-Z0-9]+"
                     value={tokenSymbol}
                     onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
                     required
-                    disabled={isSubmitting}
+                    disabled={isSubmitting} // Only disabled when submitting, NOT when scanning
                   />
                   <small className="form-hint">
                     Uppercase letters and numbers only, max 10 characters
                   </small>
                 </div>
 
-                {/* Total Supply */}
                 <div className="form-group">
                   <label htmlFor="totalSupply" className="form-label">
                     <DollarSign size={16} strokeWidth={2} />
@@ -417,15 +309,13 @@ const CreateDatasetPage = () => {
                     type="number"
                     id="totalSupply"
                     className="form-input"
-                    placeholder="1000000"
                     value={TOTAL_SUPPLY}
                     readOnly
                     disabled
                   />
-                  <small className="input-helper">Fixed supply of 1,000,000 tokens per dataset.</small>
+                  <small className="input-helper">Fixed supply of 1,000,000 tokens</small>
                 </div>
 
-                {/* Description */}
                 <div className="form-group">
                   <label htmlFor="description" className="form-label">
                     <FileText size={16} strokeWidth={2} />
@@ -434,24 +324,25 @@ const CreateDatasetPage = () => {
                   <textarea
                     id="description"
                     className="form-textarea"
-                    placeholder="Describe your dataset: what it contains, who might be interested, etc."
+                    placeholder="Describe your dataset..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting} // Only disabled when submitting, NOT when scanning
                   />
                 </div>
 
-                {/* Status Message */}
-                {/* {statusMessage && (
-                  <div className={`status-message active ${statusType}`}>
-                    {statusType === 'success' && <Check size={18} strokeWidth={2.5} />}
-                    {statusType === 'error' && <X size={18} strokeWidth={2.5} />}
-                    {statusType === 'info' && <Info size={18} strokeWidth={2} />}
-                    <span>{statusMessage}</span>
+                {/* Button status message */}
+                {scanning && (
+                  <div className="info-box" style={{ marginBottom: '1rem' }}>
+                    <div className="info-icon">
+                      <Info size={20} strokeWidth={1.5} />
+                    </div>
+                    <div className="info-content">
+                      Button will be enabled once scan completes...
+                    </div>
                   </div>
-                )} */}
+                )}
 
-                {/* Buttons */}
                 <div className="button-group">
                   <button 
                     type="button" 
@@ -465,10 +356,18 @@ const CreateDatasetPage = () => {
                   <button 
                     type="submit" 
                     className="btn btn-primary" 
-                    disabled={isSubmitting || !uploadedCid}
+                    disabled={
+                      scanning ||           // Disabled while scanning
+                      !scanPassed ||        // Disabled if scan not passed
+                      !selectedFile ||      // Disabled if no file
+                      !datasetName ||       // Disabled if no name
+                      !tokenSymbol ||       // Disabled if no symbol
+                      !connected ||         // Disabled if wallet not connected
+                      isSubmitting          // Disabled while submitting
+                    }
                   >
                     <Check size={16} strokeWidth={2} />
-                    {isSubmitting ? 'Creating...' : 'Create Dataset Token'}
+                    {isSubmitting ? 'Creating...' : scanning ? 'Scanning...' : 'Create Dataset Token'}
                   </button>
                 </div>
               </form>
@@ -477,7 +376,6 @@ const CreateDatasetPage = () => {
         </div>
       </main>
       
-      {/* Toast Notification */}
       {showToast && (
         <Toast
           message={statusMessage}
