@@ -1,7 +1,11 @@
 import fetch from "node-fetch";
 import FormData from "form-data";
+import dotenv from "dotenv";
 
-const VT_API_KEY = "f6c993911283771cd18a0bc8c0d9cdf6942b9666653530edea01f29317cffea0";
+dotenv.config();
+
+const VT_API_KEY = process.env.VT_API_KEY;
+
 
 export async function scanFileWithVirusTotal(buffer, fileName) {
   const form = new FormData();
