@@ -12,10 +12,10 @@ import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnect
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
+import { scanFileWithVirusTotal, getAnalysis } from "./virusTotal.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const { PORT, DATASETS_FILE, DB_FILE, RPC_URLS } = config;
 
 // ERC20 ABI for balance checking
@@ -457,58 +457,101 @@ app.post("/access/fast-track", async (req, res) => {
   }
 });
 
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No file provided" });
+      return res.status(400).json({ error: "Argument 'file' is missing" });
     }
 
-    const base64Data = req.file.buffer.toString("base64");
-    const cid = await uploadBase64ToLighthouse(base64Data, req.file.originalname);
+    const file = req.file;
 
+    // ONLY VirusTotal Scan - NO Lighthouse upload
+    const scan = await scanFileWithVirusTotal(file.buffer, file.originalname);
+
+    if (!scan?.data?.id) {
+      return res.status(500).json({
+        error: "vt_upload_failed",
+        message: scan?.error?.message || "VirusTotal upload failed",
+      });
+    }
+
+    const analysisId = scan.data.id;
+
+    // Poll for analysis
+    let result;
+    for (let i = 0; i < 3; i++) {
+      result = await getAnalysis(analysisId);
+      if (result?.data?.attributes?.status === "completed") break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    if (!result?.data?.attributes?.stats) {
+      return res.status(500).json({
+        error: "vt_analysis_failed",
+        message: "VirusTotal analysis failed",
+      });
+    }
+
+    const stats = result.data.attributes.stats;
+
+    // Check if malicious
+    if (stats.malicious > 0 || stats.suspicious > 0) {
+      return res.status(400).json({
+        error: "malicious",
+        message: "VirusTotal flagged this file",
+        stats
+      });
+    }
+
+    // Return SUCCESS but NO CID yet
+    // Store file temporarily in memory or temp storage
     res.json({
       success: true,
-      cid: cid,
-      filename: req.file.originalname,
-      size: req.file.size,
-      ipfsUrl: `ipfs://${cid}`,
-      gatewayUrl: `https://gateway.lighthouse.storage/ipfs/${cid}`,
+      scanPassed: true,
+      filename: file.originalname,
+      size: file.size,
+      stats: stats,
+      message: "File scanned successfully. Now create your token."
     });
+
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("Scan error:", err);
     res.status(500).json({
-      error: "Upload failed",
-      message: err.message,
+      error: "scan_failed",
+      message: err.message
     });
   }
 });
 
-app.post("/create-dataset", async (req, res) => {
+app.post("/create-dataset", upload.single("file"), async (req, res) => {
   try {
-    const { cid, name, symbol, description, totalSupply, creatorAddress } = req.body;
+    // NOW we need the file uploaded again
+    if (!req.file) {
+      return res.status(400).json({ error: "File is required" });
+    }
 
-    if (!cid || !name || !symbol) {
-      console.warn("Missing required fields");
+    const { name, symbol, description, totalSupply, creatorAddress } = req.body;
+
+    if (!name || !symbol) {
       return res.status(400).json({
-        error: "Missing required fields: cid, name, symbol",
+        error: "Missing required fields: name, symbol",
       });
     }
 
     if (!creatorAddress || !ethers.isAddress(creatorAddress)) {
-      console.warn("Missing or invalid creator address");
       return res.status(400).json({
         error: "Valid creator wallet address is required",
       });
     }
 
     if (!/^[A-Z0-9]{1,10}$/.test(symbol)) {
-      console.warn(`Invalid symbol format: ${symbol}`);
       return res.status(400).json({
         error: "Symbol must be 1-10 uppercase letters/numbers",
       });
     }
 
-    const supply = totalSupply || 1000000;
+    const supply = 1000000;
     if (supply <= 0 || !Number.isInteger(supply)) {
       return res.status(400).json({
         error: "Total supply must be a positive integer",
@@ -516,67 +559,54 @@ app.post("/create-dataset", async (req, res) => {
     }
 
     if (!process.env.FACTORY_ADDRESS) {
-      console.warn("FACTORY_ADDRESS not configured");
       return res.status(400).json({
         error: "FACTORY_ADDRESS not configured",
-        message: "Please deploy factory first and set FACTORY_ADDRESS in .env",
       });
     }
 
     if (!process.env.MYRAD_TREASURY || !ethers.isAddress(process.env.MYRAD_TREASURY)) {
-      console.warn("MYRAD_TREASURY not configured");
       return res.status(400).json({
         error: "MYRAD_TREASURY not configured",
-        message: "Please set MYRAD_TREASURY in .env",
       });
     }
 
-    // Preserve description as-is (don't convert undefined to empty string)
-    // If description is provided (even if empty string), pass it through
-    // If description is undefined/null, pass undefined so it can be saved as null in DB
+    // NOW upload to Lighthouse (only when actually creating token)
+    const file = req.file;
+    const base64Data = file.buffer.toString("base64");
+    const cid = await uploadBase64ToLighthouse(base64Data, file.originalname);
+
+    // Create token with the CID
     const descriptionToPass = description !== undefined ? description : undefined;
     const result = await createDatasetToken(cid, name, symbol, descriptionToPass, supply, creatorAddress);
 
-    // No need to save to userDatasets.json - PostgreSQL and blockchain are the source of truth
-    const responseData = {
+    res.json({
       success: true,
       tokenAddress: result.tokenAddress,
       marketplaceAddress: result.marketplaceAddress,
       symbol: result.symbol,
       name: result.name,
-      cid: result.cid,
+      cid: cid,
       message: "Dataset created successfully",
-    };
-
-    res.json(responseData);
+    });
   } catch (err) {
     console.error("❌ Dataset creation error:", err.message);
-    console.error("   Stack:", err.stack);
-
+    
     let errorMessage = err.message;
     if (err.message.includes("FACTORY_ADDRESS")) {
       errorMessage = "Factory address not configured. Deploy factory first.";
     } else if (err.message.includes("Insufficient USDC")) {
       errorMessage = "You need more USDC. Get faucet USDC from Base Sepolia.";
-    } else if (err.message.includes("not found")) {
-      errorMessage = "Contract artifacts not found. Run: npx hardhat compile";
-    } else if (err.message.includes("nonce")) {
-      errorMessage = "Transaction nonce error. Check RPC connection.";
-    } else if (err.message.includes("insufficient")) {
-      errorMessage = "Insufficient balance for gas. Get more testnet ETH.";
-    } else if (err.message.includes("timeout")) {
-      errorMessage = "RPC request timeout. Check network connection.";
     }
 
-    const errorResponse = {
+    res.status(500).json({
       error: "Failed to create dataset",
       message: errorMessage,
       details: err.message,
-    };
-
-    res.status(500).json(errorResponse);
+    });
   }
 });
+
+
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
