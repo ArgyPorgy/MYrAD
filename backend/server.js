@@ -8,7 +8,7 @@ import multer from "multer";
 import { uploadBase64ToLighthouse } from "./uploadService.js";
 import { createDatasetToken } from "./createDatasetAPI.js";
 import { initSchema } from './db.js';
-import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress } from './storage.js';
+import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers } from './storage.js';
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
@@ -170,6 +170,54 @@ app.get("/datasets", async (req, res) => {
   if (!fs.existsSync(DATASETS_FILE)) return res.json({});
   const data = JSON.parse(fs.readFileSync(DATASETS_FILE));
   res.json(data);
+});
+
+app.post("/track-wallet", async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    
+    if (!walletAddress || !ethers.isAddress(walletAddress)) {
+      return res.status(400).json({ error: "Valid wallet address is required" });
+    }
+
+    const user = await trackUserConnection(walletAddress);
+    
+    if (user) {
+      return res.json({
+        success: true,
+        walletAddress: user.wallet_address,
+        firstConnectedAt: user.first_connected_at,
+        lastConnectedAt: user.last_connected_at,
+        connectionCount: user.connection_count
+      });
+    } else {
+      // Database not configured, but don't fail the request
+      return res.json({ success: true, message: "Tracking disabled (no database)" });
+    }
+  } catch (err) {
+    console.error("Track wallet error:", err);
+    // Don't fail the request if tracking fails
+    return res.json({ success: false, error: "Failed to track wallet connection" });
+  }
+});
+
+app.get("/users", async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    return res.json({
+      success: true,
+      count: users.length,
+      users: users.map(u => ({
+        walletAddress: u.wallet_address,
+        firstConnectedAt: u.first_connected_at,
+        lastConnectedAt: u.last_connected_at,
+        connectionCount: u.connection_count
+      }))
+    });
+  } catch (err) {
+    console.error("Get users error:", err);
+    return res.status(500).json({ error: "Failed to fetch users" });
+  }
 });
 
 app.get("/price/:marketplaceAddress/:tokenAddress", async (req, res) => {
