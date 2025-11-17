@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Rss, ShoppingBag, Plus, Folder, Droplet, Users } from 'lucide-react';
+import { BarChart3, Rss, ShoppingBag, Plus, Folder, Droplet, Users, User, LayoutDashboard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import './Sidebar.css';
 
@@ -10,7 +10,7 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const isActive = (path: string): boolean => location.pathname === path;
 
 
@@ -26,7 +26,7 @@ const Sidebar = () => {
         setIsCollapsed(true);
       }
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -39,7 +39,7 @@ const Sidebar = () => {
         alert('No Ethereum wallet found. Please install MetaMask or another wallet extension.');
         return;
       }
-      
+
       await window.ethereum.request({
         method: 'wallet_addEthereumChain',
         params: [
@@ -187,6 +187,29 @@ const Sidebar = () => {
             <Users size={20} strokeWidth={1.5} />
             {(!isCollapsed || (isMobile && isOpen)) && <span>Community Data</span>}
           </Link>
+
+
+          <Link
+            to="/Leaderboard"
+            className={`nav-item ${isActive('/Leaderboard') ? 'active' : ''}`}
+            title="Leaderboard"
+            onClick={handleNavClick}
+          >
+            <LayoutDashboard size={20} strokeWidth={1.5} />
+            {(!isCollapsed || (isMobile && isOpen)) && <span>Leaderboard</span>}
+          </Link>
+
+
+          <Link
+            to="/profile"
+            className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
+            title="Profile"
+            onClick={handleNavClick}
+          >
+            <User size={20} strokeWidth={1.5} />
+            {(!isCollapsed || (isMobile && isOpen)) && <span>Profile</span>}
+          </Link>
+
         </nav>
 
 

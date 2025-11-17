@@ -1,112 +1,64 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
-import { Activity, TrendingUp, Wallet } from 'lucide-react';
+import { Activity, Wallet, Database, Users } from 'lucide-react';
 import CustomLoader from '@/components/CustomLoader';
 import './DashboardPage.css';
 
-interface UserDataset {
-  tokenAddress: string;
-  type: 'created' | 'bought';
-}
-
 const DashboardPage = () => {
   const { userAddress, connected, connectWallet, disconnectWallet } = useWeb3();
-  const [datasetsOwned, setDatasetsOwned] = useState(0);
-  const [totalTrades, setTotalTrades] = useState(0);
-  const [displayedDatasets, setDisplayedDatasets] = useState(0);
-  const [displayedTrades, setDisplayedTrades] = useState(0);
+
+  // Updated Global stats
+  const [globalTrades, setGlobalTrades] = useState<number | null>(null);
+const [globalDatacoins, setGlobalDatacoins] = useState<number | null>(null);
+const [globalUsers, setGlobalUsers] = useState<number | null>(null);
+
+
   const [loading, setLoading] = useState(true);
-  const [, setCardHovered] = useState<string | null>(null);
-  const counterIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (connected && userAddress) {
-      loadDashboardData();
+      loadGlobalStats();
     } else {
-      setDatasetsOwned(0);
-      setTotalTrades(0);
-      setDisplayedDatasets(0);
-      setDisplayedTrades(0);
       setLoading(false);
     }
   }, [connected, userAddress]);
 
-  // Counter animation effect
-  useEffect(() => {
-    if (loading) return;
-
-    if (counterIntervalRef.current) {
-      clearInterval(counterIntervalRef.current);
-    }
-
-    const animationDuration = 800;
-    const steps = 30;
-    const datasetsDiff = datasetsOwned - displayedDatasets;
-    const tradesDiff = totalTrades - displayedTrades;
-    let currentStep = 0;
-
-    counterIntervalRef.current = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-
-      if (datasetsDiff !== 0) {
-        setDisplayedDatasets(
-          Math.floor(displayedDatasets + datasetsDiff * progress)
-        );
-      }
-
-      if (tradesDiff !== 0) {
-        setDisplayedTrades(
-          Math.floor(displayedTrades + tradesDiff * progress)
-        );
-      }
-
-      if (currentStep >= steps) {
-        clearInterval(counterIntervalRef.current!);
-        setDisplayedDatasets(datasetsOwned);
-        setDisplayedTrades(totalTrades);
-      }
-    }, animationDuration / steps);
-
-    return () => {
-      if (counterIntervalRef.current) {
-        clearInterval(counterIntervalRef.current);
-      }
-    };
-  }, [datasetsOwned, totalTrades, loading, displayedDatasets, displayedTrades]);
-
-  const loadDashboardData = async () => {
-    if (!userAddress) return;
-
+  const loadGlobalStats = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(getApiUrl(`/api/my-datasets/${userAddress}`));
+      const datacoinRes = await fetch(getApiUrl(`/api/datacoin/total-created`));
+      const usersRes = await fetch(getApiUrl(`/api/users/total`));
+      const tradesRes = await fetch(getApiUrl(`/api/datacoin/total-transactions`));
 
-      if (response.ok) {
-        const data = await response.json();
-        const datasets: UserDataset[] = Array.isArray(data)
-          ? data
-          : data.datasets || [];
+if (datacoinRes.ok) {
+  const data = await datacoinRes.json();
+  console.log("DATACOIN RESPONSE:", data);   
+  setGlobalDatacoins(Number(data.totalCreated) || 0);
+}
 
-        const uniqueTokens = new Set(
-          datasets.map((d) => d.tokenAddress.toLowerCase())
-        );
-        setDatasetsOwned(uniqueTokens.size);
 
-        const purchasedCount = datasets.filter((d) => d.type === 'bought').length;
-        setTotalTrades(
-          data.tradeCount !== undefined ? data.tradeCount : purchasedCount
-        );
+      if (usersRes.ok) {
+        const users = await usersRes.json();
+        setGlobalUsers(users.totalUsers || 0);
       }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
+
+      if (tradesRes.ok) {
+        const trades = await tradesRes.json();
+        if (typeof trades.totalTx === "number") {
+          setGlobalTrades(trades.totalTx);
+        }
+
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error loading global stats:", err);
       setLoading(false);
     }
   };
+
 
   return (
     <div className="app-layout">
@@ -125,7 +77,7 @@ const DashboardPage = () => {
             <div className="page-header">
               <h1 className="page-title">Dashboard</h1>
               <p className="page-description">
-                Overview of your activity and analytics
+                Overview of your activity and global analytics
               </p>
             </div>
 
@@ -136,19 +88,14 @@ const DashboardPage = () => {
                 tabIndex={0}
                 onClick={() => connectWallet()}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    connectWallet();
-                  }
+                  if (e.key === 'Enter' || e.key === ' ') connectWallet();
                 }}
               >
                 <div className="connect-icon">
                   <Wallet size={48} strokeWidth={1.5} />
                 </div>
                 <h3>Connect Your Wallet</h3>
-                <p>
-                  Please connect your wallet to view your dashboard and start
-                  trading datasets
-                </p>
+                <p>Please connect your wallet to view your dashboard</p>
               </div>
             ) : loading ? (
               <div className="dashboard-loading-container">
@@ -157,45 +104,52 @@ const DashboardPage = () => {
               </div>
             ) : (
               <>
-                <div className="dashboard-grid">
-                  <div
-                    className="dashboard-card"
-                    onMouseEnter={() => setCardHovered('datasets')}
-                    onMouseLeave={() => setCardHovered(null)}
-                  >
-                    <div className="card-header">
-                      <h3 className="card-title">Datasets Owned</h3>
-                      <div className="card-icon">
-                        <TrendingUp size={20} strokeWidth={1.5} />
-                      </div>
-                    </div>
-                    <div className="card-value">{displayedDatasets}</div>
-                    <p className="card-description">
-                      Unique datasets in your portfolio
-                    </p>
-                    <div className="card-footer">
-                      <span className="stat-badge">Active</span>
-                    </div>
-                  </div>
+                <h2 className="section-title" style={{ marginTop: '20px' }}>
+                  Platform Analytics
+                </h2>
 
-                  <div
-                    className="dashboard-card"
-                    onMouseEnter={() => setCardHovered('trades')}
-                    onMouseLeave={() => setCardHovered(null)}
-                  >
+                <div className="dashboard-grid">
+
+                  {/* Global Trades */}
+                  <div className="dashboard-card">
                     <div className="card-header">
-                      <h3 className="card-title">Total Trades</h3>
+                      <h3 className="card-title">Total Trades (Global)</h3>
                       <div className="card-icon">
                         <Activity size={20} strokeWidth={1.5} />
                       </div>
                     </div>
-                    <div className="card-value">{displayedTrades}</div>
-                    <p className="card-description">
-                      Purchased datasets acquired
-                    </p>
-                    <div className="card-footer">
-                      <span className="stat-badge">Transactions</span>
+                    <div className="card-value">
+  {!globalTrades ? "Loading..." : globalTrades}
                     </div>
+                    <p className="card-description">All trades on the platform</p>
+                  </div>
+
+                  {/* DataCoins Created */}
+                  <div className="dashboard-card">
+                    <div className="card-header">
+                      <h3 className="card-title">DataCoins Created</h3>
+                      <div className="card-icon">
+                        <Database size={20} strokeWidth={1.5} />
+                      </div>
+                    </div>
+<div className="card-value">
+  {globalDatacoins === null ? "Loading..." : globalDatacoins}
+</div>
+                    <p className="card-description">Total DataCoins minted</p>
+                  </div>
+
+                  {/* Total Users */}
+                  <div className="dashboard-card">
+                    <div className="card-header">
+                      <h3 className="card-title">Total Users</h3>
+                      <div className="card-icon">
+                        <Users size={20} strokeWidth={1.5} />
+                      </div>
+                    </div>
+<div className="card-value">
+  {globalUsers === null ? "Loading..." : globalUsers}
+</div>
+                    <p className="card-description">Registered platform users</p>
                   </div>
                 </div>
 
@@ -206,9 +160,7 @@ const DashboardPage = () => {
                   <div className="activity-list">
                     <div className="empty-state">
                       <h3>No activity yet</h3>
-                      <p>
-                        Your trading activity and transactions will appear here
-                      </p>
+                      <p>Available On Mainnet</p>
                     </div>
                   </div>
                 </div>
