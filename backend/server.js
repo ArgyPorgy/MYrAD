@@ -12,7 +12,6 @@ import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnect
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
-import { scanFileWithVirusTotal, getAnalysis } from "./virusTotal.js";
 import { getTotalTxForAllTokens } from "./txCounter.js";
 
 import { scanFileComprehensive } from "./virusTotal.js";
