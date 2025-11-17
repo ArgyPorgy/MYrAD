@@ -220,16 +220,36 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
         // Find the connector
         let selectedConnector = connectors.find((c) => {
-          if (connectorId === 'metamask') return c.id === 'io.metamask' || c.name === 'MetaMask';
+          if (connectorId === 'metamask') {
+            // Check multiple possible IDs and names for MetaMask
+            return c.id === 'io.metamask' || 
+                   c.id === 'metaMaskSDK' ||
+                   c.name?.toLowerCase().includes('metamask') ||
+                   (c.type === 'injected' && typeof window !== 'undefined' && 
+                    (window as any).ethereum?.isMetaMask && 
+                    !(window as any).ethereum?.isRabby && 
+                    !(window as any).ethereum?.isOkxWallet);
+          }
           if (connectorId === 'rabby') return c.id === 'rabby';
           if (connectorId === 'okx') return c.id === 'okx';
-          if (connectorId === 'coinbase') return c.id === 'coinbaseWalletSDK';
-          if (connectorId === 'walletconnect') return c.id === 'walletConnect';
+          if (connectorId === 'coinbase') return c.id === 'coinbaseWalletSDK' || c.id === 'coinbaseWallet';
+          if (connectorId === 'walletconnect') return c.id === 'walletConnect' || c.id === 'walletConnect';
           return false;
         });
 
-        // Fallback to injected if specific connector not found
-        if (!selectedConnector && connectorId !== 'walletconnect') {
+        // Fallback for MetaMask - try to find injected connector that is MetaMask
+        if (!selectedConnector && connectorId === 'metamask') {
+          selectedConnector = connectors.find((c) => {
+            if (c.type === 'injected' && typeof window !== 'undefined') {
+              const ethereum = (window as any).ethereum;
+              return ethereum?.isMetaMask && !ethereum?.isRabby && !ethereum?.isOkxWallet;
+            }
+            return false;
+          });
+        }
+
+        // Fallback to injected if specific connector not found (but not for walletconnect)
+        if (!selectedConnector && connectorId !== 'walletconnect' && connectorId !== 'metamask') {
           selectedConnector = connectors.find((c) => c.type === 'injected');
         }
 

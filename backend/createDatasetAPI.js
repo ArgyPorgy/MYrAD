@@ -92,19 +92,53 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     
     const wallet = new ethers.Wallet(privateKey, provider);
 
+    // Helper function to send transaction with proper nonce management and retry
+    const sendTransactionWithNonce = async (txFunction, label) => {
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          // Send transaction (ethers.js handles nonce automatically)
+          const tx = await txFunction();
+          
+          // Wait for receipt
+          const receipt = await waitForReceiptWithRetry(tx, label, provider);
+          return receipt;
+        } catch (err) {
+          // Check if it's a nonce error
+          const isNonceError = err.message?.includes("nonce") || 
+                               err.code === "NONCE_EXPIRED" ||
+                               err.info?.error?.message?.includes("nonce") ||
+                               err.info?.error?.message?.includes("nonce too low");
+          
+          if (isNonceError && retries > 1) {
+            retries--;
+            console.log(`   ⚠️  Nonce error on ${label}, waiting and retrying... (${retries} attempts left)`);
+            // Wait longer to ensure previous transaction is processed
+            await sleep(3000);
+            // Get fresh nonce count to reset ethers.js internal nonce tracking
+            await provider.getTransactionCount(wallet.address, "pending");
+            continue;
+          }
+          throw err;
+        }
+      }
+    };
+
     // Get factory contract
     const factory = new ethers.Contract(factoryAddr, FACTORY_ABI, wallet);
 
     // Step 1: Create token via factory
     const totalSupplyWei = ethers.parseUnits(totalSupply.toString(), 18);
-    const createTx = await factory.createDataCoin(
-      name,
-      symbol,
-      totalSupplyWei,
-      creatorAddress,  // Store creator address in contract
-      cid
+    const receipt = await sendTransactionWithNonce(
+      () => factory.createDataCoin(
+        name,
+        symbol,
+        totalSupplyWei,
+        creatorAddress,  // Store creator address in contract
+        cid
+      ),
+      "Token creation"
     );
-    const receipt = await waitForReceiptWithRetry(createTx, "Token creation", provider);
 
     // Get the token address from the event
     const event = receipt.logs.find(log => {
@@ -155,11 +189,13 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     const LIQUIDITY_ALLOCATION = totalSupplyWei - CREATOR_ALLOCATION - TREASURY_ALLOCATION;
 
     try {
-      const creatorTransferTx = await token.transfer(
-        ethers.getAddress(creatorAddress),
-        CREATOR_ALLOCATION
+      await sendTransactionWithNonce(
+        () => token.transfer(
+          ethers.getAddress(creatorAddress),
+          CREATOR_ALLOCATION
+        ),
+        "Creator distribution"
       );
-      await waitForReceiptWithRetry(creatorTransferTx, "Creator distribution", provider);
     } catch (err) {
       console.error('   ❌ Creator transfer failed:', err);
       console.error('   Transaction data:', err.transaction);
@@ -168,11 +204,13 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     await sleep(2000);
 
     try {
-      const treasuryTransferTx = await token.transfer(
-        ethers.getAddress(treasuryAddr),
-        TREASURY_ALLOCATION
+      await sendTransactionWithNonce(
+        () => token.transfer(
+          ethers.getAddress(treasuryAddr),
+          TREASURY_ALLOCATION
+        ),
+        "Treasury distribution"
       );
-      await waitForReceiptWithRetry(treasuryTransferTx, "Treasury distribution", provider);
     } catch (err) {
       console.error('   ❌ Treasury transfer failed:', err);
       throw err;
@@ -193,8 +231,10 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     }
 
     // Approve tokens to bonding curve (unlimited)
-    const approveTokenTx = await token.approve(bondingCurveAddr, ethers.MaxUint256);
-    await waitForReceiptWithRetry(approveTokenTx, "Token approval", provider);
+    await sendTransactionWithNonce(
+      () => token.approve(bondingCurveAddr, ethers.MaxUint256),
+      "Token approval"
+    );
     
     // Wait a bit longer for approval to be confirmed
     await sleep(3000);
@@ -220,8 +260,10 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     }
 
     // Approve USDC to bonding curve (unlimited)
-    const approveUsdcTx = await usdc.approve(bondingCurveAddr, ethers.MaxUint256);
-    await waitForReceiptWithRetry(approveUsdcTx, "USDC approval", provider);
+    await sendTransactionWithNonce(
+      () => usdc.approve(bondingCurveAddr, ethers.MaxUint256),
+      "USDC approval"
+    );
     
     // Wait a bit longer for approval to be confirmed
     await sleep(3000);
@@ -247,11 +289,13 @@ async function createDatasetToken(cid, name, symbol, description, totalSupply = 
     }
 
     // Initialize pool with liquidity
-    const initPoolTx = await bondingCurve.initPool(
-      LIQUIDITY_ALLOCATION, 
-      INITIAL_USDC
+    await sendTransactionWithNonce(
+      () => bondingCurve.initPool(
+        LIQUIDITY_ALLOCATION, 
+        INITIAL_USDC
+      ),
+      "Pool initialization"
     );
-    await waitForReceiptWithRetry(initPoolTx, "Pool initialization", provider);
 
     // Step 4: Persist in PostgreSQL (preferred)
     if (process.env.DATABASE_URL) {

@@ -43,7 +43,7 @@ function saveFaucetCooldowns(cooldowns) {
   }
 }
 
-// Check if user can claim (24 hour cooldown)
+// Check if user can claim (36 hour cooldown)
 function canClaim(userAddress, faucetType) {
   const cooldowns = loadFaucetCooldowns();
   const key = `${userAddress.toLowerCase()}_${faucetType}`;
@@ -56,7 +56,7 @@ function canClaim(userAddress, faucetType) {
   const lastClaimTime = new Date(lastClaim).getTime();
   const now = Date.now();
   const timeElapsed = now - lastClaimTime;
-  const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const cooldownMs = 36 * 60 * 60 * 1000; // 36 hours in milliseconds
   
   if (timeElapsed >= cooldownMs) {
     return { canClaim: true, timeRemaining: 0 };

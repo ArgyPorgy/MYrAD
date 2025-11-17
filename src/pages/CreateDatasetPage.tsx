@@ -8,6 +8,7 @@ import Toast from '@/components/Toast';
 import { formatFileSize } from '@/utils/web3';
 import { getApiUrl } from '@/config/api';
 import { Upload, FileText, Tag, DollarSign, FileType, Info, X, Check } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import './CreateDatasetPage.css';
 const CreateDatasetPage = () => {
   const navigate = useNavigate();
@@ -33,6 +34,109 @@ const CreateDatasetPage = () => {
     setShowToast(true);
   };
 
+  const triggerConfetti = () => {
+    try {
+      const duration = 5000; // 5 seconds of celebration
+      const animationEnd = Date.now() + duration;
+      const defaults = { 
+        startVelocity: 40, 
+        spread: 360, 
+        ticks: 100, // Longer particle lifetime
+        zIndex: 99999, // Very high z-index to ensure it's on top
+        colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'],
+        gravity: 0.8, // Slower fall for longer visibility
+        decay: 0.9 // Slower decay
+      };
+
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min;
+      }
+
+      // Immediate big burst from center
+      confetti({
+        ...defaults,
+        particleCount: 200,
+        origin: { x: 0.5, y: 0.5 },
+        angle: 60,
+        spread: 70
+      });
+      confetti({
+        ...defaults,
+        particleCount: 200,
+        origin: { x: 0.5, y: 0.5 },
+        angle: 120,
+        spread: 70
+      });
+      confetti({
+        ...defaults,
+        particleCount: 200,
+        origin: { x: 0.5, y: 0.5 },
+        angle: 90,
+        spread: 70
+      });
+
+      // Continuous party popper effect from sides
+      const interval: NodeJS.Timeout = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          return;
+        }
+
+        const particleCount = 80 * (timeLeft / duration);
+        
+        // Launch from left side (party popper effect)
+        confetti({
+          ...defaults,
+          particleCount: Math.max(20, particleCount),
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        
+        // Launch from right side (party popper effect)
+        confetti({
+          ...defaults,
+          particleCount: Math.max(20, particleCount),
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 200); // Check every 200ms for smoother effect
+
+      // Additional bursts at intervals
+      setTimeout(() => {
+        confetti({
+          ...defaults,
+          particleCount: 150,
+          origin: { x: 0.5, y: 0.5 },
+          angle: 45,
+          spread: 60
+        });
+      }, 1000);
+
+      setTimeout(() => {
+        confetti({
+          ...defaults,
+          particleCount: 150,
+          origin: { x: 0.5, y: 0.5 },
+          angle: 135,
+          spread: 60
+        });
+      }, 2000);
+
+      setTimeout(() => {
+        confetti({
+          ...defaults,
+          particleCount: 150,
+          origin: { x: 0.5, y: 0.5 },
+          angle: 90,
+          spread: 60
+        });
+      }, 3000);
+     
+    } catch (err) {
+      console.error('Error triggering confetti:', err);
+    }
+  };
+
   // STEP 1: ONLY scan with VirusTotal (no Lighthouse upload)
   const scanFile = async (file: File) => {
     try {
@@ -55,14 +159,33 @@ const CreateDatasetPage = () => {
         setScanPassed(true);
         showStatus("File scan passed! Click 'Create Dataset Token' when ready.", "success");
       } else {
-        const errorMsg = data.message || data.error || "Scan failed";
-        showStatus(`${errorMsg}`, "error");
+        // Check if it's a VirusTotal error
+        const isVirusTotalError = data.error === "scan_failed" || 
+                                   data.error === "vt_scan_failed" ||
+                                   data.message?.toLowerCase().includes("virustotal") ||
+                                   data.message?.toLowerCase().includes("scan failed");
+        
+        if (isVirusTotalError) {
+          showStatus("VirusTotal scan error. Please refresh the page & try again.", "error");
+        } else {
+          const errorMsg = data.message || data.error || "Scan failed";
+          showStatus(`${errorMsg}`, "error");
+        }
         setSelectedFile(null);
       }
 
       setScanning(false);
     } catch (err: any) {
-      showStatus(`Scan error: ${err.message}`, "error");
+      // Check if it's a VirusTotal/scan related error
+      const isVirusTotalError = err.message?.toLowerCase().includes("virustotal") ||
+                                 err.message?.toLowerCase().includes("scan") ||
+                                 err.message?.toLowerCase().includes("timeout");
+      
+      if (isVirusTotalError) {
+        showStatus("VirusTotal scan error. Please refresh the page & try again.", "error");
+      } else {
+        showStatus(`Scan error: ${err.message}`, "error");
+      }
       setScanning(false);
       setSelectedFile(null);
     }
@@ -140,29 +263,64 @@ const CreateDatasetPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success && data.tokenAddress) {
-        showStatus('🎉 Dataset created successfully! Redirecting...', 'success');
+        // Update state first
+        setIsSubmitting(false);
+        showStatus('Dataset created successfully!', 'success');
         
-        setTimeout(() => {
-          navigate(`/token/${data.tokenAddress}`, {
-            replace: false,
-            state: {
-              fromCreate: true,
-              tokenData: {
-                address: data.tokenAddress,
-                name: datasetName,
-                symbol: tokenSymbol
-              }
+        // Trigger confetti celebration after React finishes updating DOM
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            try {
+              triggerConfetti();
+            } catch (confettiErr) {
+              console.error('Confetti error:', confettiErr);
             }
-          });
-        }, 1500);
+          }, 200);
+        });
+        
+        // Keep notification visible for 5 seconds, then hide it
+        setTimeout(() => {
+          setShowToast(false);
+        }, 5000);
       } else {
-        const errorMsg = data.error || data.message || 'Creation failed';
-        showStatus(`Creation failed: ${errorMsg}`, 'error');
+        let errorMsg = data.error || data.message || 'Creation failed';
+        
+        // Handle duplicate file error specifically
+        if (data.error === 'duplicate_file') {
+          errorMsg = data.message || 'This file has already been uploaded. Each file can only be used once to create a dataset token.';
+          if (data.existingToken) {
+            errorMsg += ` The file is already associated with token: ${data.existingToken.name} (${data.existingToken.symbol})`;
+          }
+        }
+        
+        // Check if it's a VirusTotal error
+        const isVirusTotalError = data.error === "scan_failed" || 
+                                   data.error === "vt_scan_failed" ||
+                                   data.message?.toLowerCase().includes("virustotal") ||
+                                   data.message?.toLowerCase().includes("scan failed") ||
+                                   data.error === "duplicate_check_failed";
+        
+        if (isVirusTotalError) {
+          showStatus("VirusTotal scan error. Please refresh the page & try again.", 'error');
+        } else {
+          showStatus(`Creation failed: ${errorMsg}`, 'error');
+        }
         setIsSubmitting(false);
       }
     } catch (err: any) {
       console.error('Creation error:', err);
-      showStatus(`Error: ${err.message}`, 'error');
+      
+      // Check if it's a VirusTotal/scan related error
+      const isVirusTotalError = err.message?.toLowerCase().includes("virustotal") ||
+                                 err.message?.toLowerCase().includes("scan") ||
+                                 err.message?.toLowerCase().includes("timeout");
+      
+      if (isVirusTotalError) {
+        showStatus("VirusTotal scan error. Please refresh the page & try again.", 'error');
+      } else {
+        showStatus(`Error: ${err.message}`, 'error');
+      }
       setIsSubmitting(false);
     }
   };

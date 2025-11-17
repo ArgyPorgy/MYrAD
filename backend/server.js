@@ -8,7 +8,7 @@ import multer from "multer";
 import { uploadBase64ToLighthouse } from "./uploadService.js";
 import { createDatasetToken } from "./createDatasetAPI.js";
 import { initSchema } from './db.js';
-import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers, getTotalDatasetsCount,getTotalUsersCount,getAllTokenAddresses } from './storage.js';
+import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers, getTotalDatasetsCount,getTotalUsersCount,getAllTokenAddresses, getCoinByCid } from './storage.js';
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
@@ -586,6 +586,53 @@ app.post("/create-dataset", upload.single("file"), async (req, res) => {
     const base64Data = uploadFile.buffer.toString("base64");
     const cid = await uploadBase64ToLighthouse(base64Data, uploadFile.originalname);
 
+    // Normalize CID for checking (remove any ipfs:// prefix and trim)
+    const normalizedCid = (cid || '').toString().replace(/^ipfs:\/\//, '').trim();
+    
+    if (!normalizedCid) {
+      return res.status(400).json({
+        error: "invalid_cid",
+        message: "Failed to get CID from file upload"
+      });
+    }
+
+    console.log(`[CREATE DATASET] Starting duplicate check for CID: "${normalizedCid}"`);
+
+    // Check if this CID already exists in the database (duplicate file check)
+    // This MUST complete successfully before proceeding
+    let existingCoin;
+    try {
+      existingCoin = await getCoinByCid(normalizedCid);
+    } catch (checkErr) {
+      console.error(`[CREATE DATASET] ❌ Duplicate check failed:`, checkErr);
+      return res.status(500).json({
+        error: "duplicate_check_failed",
+        message: "Failed to verify if file is duplicate. Please try again.",
+        details: checkErr.message
+      });
+    }
+
+    if (existingCoin) {
+      console.error(`[CREATE DATASET] ❌ BLOCKED: Duplicate file detected!`, {
+        cid: normalizedCid,
+        existingToken: existingCoin.token_address,
+        existingName: existingCoin.name,
+        existingSymbol: existingCoin.symbol,
+        storedCid: existingCoin.cid
+      });
+      return res.status(400).json({
+        error: "duplicate_file",
+        message: "This file has already been uploaded. Each file can only be used once to create a dataset token.",
+        existingToken: {
+          address: existingCoin.token_address,
+          name: existingCoin.name,
+          symbol: existingCoin.symbol
+        }
+      });
+    }
+    
+    console.log(`[CREATE DATASET] ✅ Duplicate check passed for CID: "${normalizedCid}" - proceeding with token creation`);
+
     // Create token with the CID
     const descriptionToPass = description !== undefined ? description : undefined;
     const result = await createDatasetToken(cid, name, symbol, descriptionToPass, supply, creatorAddress);
@@ -683,17 +730,17 @@ app.post("/faucet/usdc", async (req, res) => {
       });
     }
 
-    // Send 5 USDC
-    const result = await sendUSDC(userAddress, "5");
+    // Send 3 USDC
+    const result = await sendUSDC(userAddress, "3");
     
     // Record claim
     recordClaim(userAddress, 'usdc');
 
     res.json({
       success: true,
-      message: "5 USDC sent successfully",
+      message: "3 USDC sent successfully",
       txHash: result.txHash,
-      amount: "5"
+      amount: "3"
     });
   } catch (err) {
     console.error("USDC faucet error:", err);

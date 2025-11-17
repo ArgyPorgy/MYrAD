@@ -108,7 +108,7 @@ const FaucetPage = () => {
             <div className="page-header">
               <h1 className="page-title">Testnet Faucet</h1>
               <p className="page-description">
-                Get free test tokens for Base Sepolia testnet. Each faucet can be claimed once per 24 hours.
+                Get free test tokens for Base Sepolia testnet. Each faucet can be claimed once per 36 hours.
               </p>
             </div>
 
@@ -133,7 +133,7 @@ const FaucetPage = () => {
                     </div>
                     <div className="info-content">
                       <strong>How it works:</strong> Click on either button to receive test tokens directly to your connected wallet. 
-                      You can claim from each faucet once every 24 hours.
+                      You can claim from each faucet once every 36 hours.
                     </div>
                   </div>
 
@@ -187,7 +187,7 @@ const FaucetPage = () => {
                         </div>
                         <h3 className="faucet-card-title">USDC Faucet</h3>
                       </div>
-                      <div className="faucet-card-amount">5 USDC</div>
+                      <div className="faucet-card-amount">3 USDC</div>
                       <p className="faucet-card-description">
                         Get free USDC for trading and testing
                       </p>
@@ -214,7 +214,7 @@ const FaucetPage = () => {
                         ) : (
                           <>
                             <Droplet size={16} strokeWidth={2} />
-                            Claim 5 USDC
+                            Claim 3 USDC
                           </>
                         )}
                       </button>

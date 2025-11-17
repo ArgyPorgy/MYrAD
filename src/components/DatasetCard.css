@@ -169,16 +169,16 @@
 }
 
 .btn-download {
-  background: #f0f0f0;
-  color: #000000;
-  border-color: #d0d0d0;
+  background: #949494;
+  color: #ffffff;
+  border-color: #7a7a7a;
 }
 
 .btn-download:hover {
-  background: #e5e5e5;
+  background: #7a7a7a;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-  border-color: #c0c0c0;
+  box-shadow: 0 4px 15px rgba(148, 148, 148, 0.3);
+  border-color: #6a6a6a;
 }
 
 .btn-primary {

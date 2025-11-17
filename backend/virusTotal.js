@@ -5,9 +5,101 @@ import crypto from "crypto";
 
 dotenv.config();
 
-const VT_API_KEY = process.env.VT_API_KEY;
-const MAX_POLL_ATTEMPTS = 30; // 60 attempts = ~2 minutes max wait time
-const POLL_INTERVAL_MS = 1000; // 2 seconds between polls
+// Get all API keys from environment
+const VT_API_KEYS = [
+  process.env.VT_API_KEY_1,
+  process.env.VT_API_KEY_2,
+  process.env.VT_API_KEY_3
+].filter(key => key && key.trim()); // Remove empty keys
+
+// Fallback to old VT_API_KEY if new keys not set
+if (VT_API_KEYS.length === 0 && process.env.VT_API_KEY) {
+  VT_API_KEYS.push(process.env.VT_API_KEY);
+}
+
+// Log API key configuration (without exposing keys)
+if (VT_API_KEYS.length > 0) {
+  console.log(`[VT API] Configured ${VT_API_KEYS.length} VirusTotal API key(s) for fallback`);
+} else {
+  console.warn('[VT API] ⚠️  No VirusTotal API keys configured!');
+}
+
+const MAX_POLL_ATTEMPTS = 90; // 90 attempts = 90 seconds max wait time (90 × 1 second)
+const POLL_INTERVAL_MS = 1000; // 1 second between polls (faster detection)
+
+// Helper function to try API call with multiple keys (fallback mechanism)
+async function tryWithApiKeys(apiCall, operationName = 'API call') {
+  if (VT_API_KEYS.length === 0) {
+    throw new Error('No VirusTotal API keys configured');
+  }
+
+  let lastError = null;
+
+  for (let i = 0; i < VT_API_KEYS.length; i++) {
+    const apiKey = VT_API_KEYS[i];
+    try {
+      const result = await apiCall(apiKey);
+      
+      // Check for rate limit (429) - try next key
+      if (result && result.status === 429) {
+        lastError = new Error(`Rate limit hit on API key ${i + 1}`);
+        if (i < VT_API_KEYS.length - 1) {
+          console.log(`[VT API] Rate limit on key ${i + 1}, trying next key...`);
+          continue; // Try next key silently
+        }
+        // Last key, return the error result
+        throw lastError;
+      }
+      
+      // Check for 403 Forbidden (might also be rate limit related)
+      if (result && result.status === 403) {
+        lastError = new Error(`Forbidden (403) on API key ${i + 1} - possibly rate limited`);
+        if (i < VT_API_KEYS.length - 1) {
+          console.log(`[VT API] 403 error on key ${i + 1}, trying next key...`);
+          continue;
+        }
+        throw lastError;
+      }
+      
+      // Success or other non-rate-limit status - return immediately
+      if (i > 0) {
+        console.log(`[VT API] ${operationName} succeeded with API key ${i + 1} (after ${i} failed attempt(s))`);
+      }
+      return result;
+      
+    } catch (err) {
+      lastError = err;
+      
+      // Check if it's a rate limit error in the error message
+      const isRateLimit = err.message && (
+        err.message.includes('429') || 
+        err.message.includes('rate limit') || 
+        err.message.includes('Rate limit') ||
+        err.message.includes('Too Many Requests')
+      );
+      
+      if (isRateLimit && i < VT_API_KEYS.length - 1) {
+        console.log(`[VT API] Rate limit error on key ${i + 1}, trying next key...`);
+        continue; // Try next key silently
+      }
+      
+      // For other errors or if it's the last key, throw it
+      if (i === VT_API_KEYS.length - 1) {
+        throw err;
+      }
+      
+      // Otherwise, try next key (for non-fatal errors)
+      console.log(`[VT API] Error on key ${i + 1} (${err.message}), trying next key...`);
+    }
+  }
+
+  // All keys failed
+  if (lastError) {
+    throw lastError;
+  }
+  
+  throw new Error(`All ${VT_API_KEYS.length} API keys failed for ${operationName}`);
+}
 
 // Calculate SHA-256 hash of file buffer
 function calculateFileHash(buffer) {
@@ -17,20 +109,33 @@ function calculateFileHash(buffer) {
 // Check if file has been scanned before by hash (faster than uploading)
 export async function getFileReport(fileHash) {
   try {
-    const response = await fetch(`https://www.virustotal.com/api/v3/files/${fileHash}`, {
-      method: "GET",
-      headers: { "x-apikey": VT_API_KEY }
-    });
+    const result = await tryWithApiKeys(async (apiKey) => {
+      const response = await fetch(`https://www.virustotal.com/api/v3/files/${fileHash}`, {
+        method: "GET",
+        headers: { "x-apikey": apiKey }
+      });
 
-    if (response.status === 404) {
+      if (response.status === 404) {
+        return { status: 404, data: null }; // File not found, needs to be uploaded
+      }
+
+      if (response.status === 429) {
+        return { status: 429, error: 'Rate limit' };
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`VirusTotal API error: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
+      }
+
+      return { status: response.status, data: await response.json() };
+    }, 'getFileReport');
+
+    if (result.status === 404) {
       return null; // File not found, needs to be uploaded
     }
 
-    if (!response.ok) {
-      throw new Error(`VirusTotal API error: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
+    return result.data;
   } catch (err) {
     console.error("Error getting file report:", err);
     return null;
@@ -41,31 +146,47 @@ export async function scanFileWithVirusTotal(buffer, fileName) {
   const form = new FormData();
   form.append("file", buffer, fileName);
 
+  const result = await tryWithApiKeys(async (apiKey) => {
   const response = await fetch("https://www.virustotal.com/api/v3/files", {
     method: "POST",
-    headers: { "x-apikey": VT_API_KEY },
+      headers: { "x-apikey": apiKey },
     body: form
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`VirusTotal upload failed: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
-  }
+    if (response.status === 429) {
+      return { status: 429, error: 'Rate limit' };
+    }
 
-  return await response.json();
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`VirusTotal upload failed: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
+    }
+
+    return { status: response.status, data: await response.json() };
+  }, 'scanFileWithVirusTotal');
+
+  return result.data;
 }
 
 export async function getAnalysis(analysisId) {
+  const result = await tryWithApiKeys(async (apiKey) => {
   const response = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
     method: "GET",
-    headers: { "x-apikey": VT_API_KEY }
-  });
+      headers: { "x-apikey": apiKey }
+    });
 
-  if (!response.ok) {
-    throw new Error(`VirusTotal analysis fetch failed: ${response.status} ${response.statusText}`);
-  }
+    if (response.status === 429) {
+      return { status: 429, error: 'Rate limit' };
+    }
 
-  return await response.json();
+    if (!response.ok) {
+      throw new Error(`VirusTotal analysis fetch failed: ${response.status} ${response.statusText}`);
+    }
+
+    return { status: response.status, data: await response.json() };
+  }, 'getAnalysis');
+
+  return result.data;
 }
 
 // Comprehensive check of VirusTotal results
@@ -236,25 +357,10 @@ export async function scanFileComprehensive(buffer, fileName) {
     console.log(`Poll attempt ${attempts}/${MAX_POLL_ATTEMPTS}: Status = ${status}`);
     
     if (status === "completed") {
-      // Analysis completed, now get the full file report using the hash
+      // Analysis completed - use results immediately (no need to wait for file report)
       const fileHashFromAnalysis = result?.data?.attributes?.sha256;
-      if (fileHashFromAnalysis) {
-        // Wait a bit more for results to be fully processed
-        await new Promise((r) => setTimeout(r, 1000));
-        vtData = await getFileReport(fileHashFromAnalysis);
-        
-        if (vtData && vtData.data) {
-          const safetyCheck = isFileSafe(vtData, fileName);
-          return {
-            hash: fileHashFromAnalysis,
-            data: vtData.data,
-            safetyCheck: safetyCheck,
-            fromCache: false
-          };
-        }
-      }
       
-      // Fallback: use analysis results directly if file report not available
+      // Use analysis results directly (faster than waiting for file report)
       if (result?.data?.attributes?.stats) {
         const safetyCheck = isFileSafe({
           data: {
@@ -267,6 +373,26 @@ export async function scanFileComprehensive(buffer, fileName) {
           safetyCheck: safetyCheck,
           fromCache: false
         };
+      }
+      
+      // Fallback: try to get file report if stats not available in analysis
+      if (fileHashFromAnalysis) {
+        // Try file report but don't wait long
+        try {
+          vtData = await getFileReport(fileHashFromAnalysis);
+          if (vtData && vtData.data) {
+            const safetyCheck = isFileSafe(vtData, fileName);
+            return {
+              hash: fileHashFromAnalysis,
+              data: vtData.data,
+              safetyCheck: safetyCheck,
+              fromCache: false
+            };
+          }
+        } catch (err) {
+          // If file report fails, use analysis results
+          console.log("File report not available, using analysis results");
+        }
       }
     } else if (status === "queued" || status === "in-progress") {
       // Still processing, wait and retry

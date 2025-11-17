@@ -29,6 +29,7 @@ async function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_coins_creator ON coins(LOWER(creator_address));
       CREATE INDEX IF NOT EXISTS idx_coins_symbol ON coins(symbol);
       CREATE INDEX IF NOT EXISTS idx_coins_created_at ON coins(created_at DESC);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_coins_cid_unique ON coins(cid) WHERE cid IS NOT NULL;
       
       CREATE TABLE IF NOT EXISTS users (
         wallet_address TEXT PRIMARY KEY,

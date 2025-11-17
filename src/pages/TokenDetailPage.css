@@ -505,16 +505,16 @@
 }
 
 .download-button {
-  background: #f5f5f5;
-  color: #000000;
+  background: #949494;
+  color: #ffffff;
   text-transform: none;
   font-size: 14px;
 }
 
 .download-button:hover {
-  background: #e8e8e8;
+  background: #7a7a7a;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(148, 148, 148, 0.3);
 }
 
 .burn-button::before {
@@ -546,9 +546,9 @@
 }
 
 .download-button:active {
-  background: #e0e0e0;
+  background: #6a6a6a;
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(148, 148, 148, 0.2);
 }
 
 .burn-requirement {

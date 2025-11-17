@@ -8,7 +8,21 @@ export const config = createConfig({
   chains: [baseSepolia],
   connectors: [
     injected({ 
-      target: 'metaMask',
+      target() {
+        // Explicitly target MetaMask provider
+        if (typeof window !== 'undefined' && (window as any).ethereum) {
+          const ethereum = (window as any).ethereum;
+          // Check if it's MetaMask (not Rabby or OKX)
+          if (ethereum.isMetaMask && !ethereum.isRabby && !ethereum.isOkxWallet) {
+            return {
+              id: 'io.metamask',
+              name: 'MetaMask',
+              provider: ethereum,
+            };
+          }
+        }
+        return undefined;
+      },
       shimDisconnect: false,
     }),
     injected({
@@ -44,6 +58,12 @@ export const config = createConfig({
         icons: ['https://pbs.twimg.com/profile_images/1977080620548255745/uoo-Vir5_400x400.jpg'],
       },
       showQrModal: true,
+      qrModalOptions: {
+        themeMode: 'dark',
+        themeVariables: {
+          '--wcm-z-index': '9999',
+        },
+      },
     }),
   ],
   transports: {

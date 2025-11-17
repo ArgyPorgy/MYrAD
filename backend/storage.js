@@ -14,11 +14,15 @@ async function insertCoin({ tokenAddress, name, symbol, cid, description, creato
       total_supply = EXCLUDED.total_supply
     RETURNING *;
   `;
+  
+  // Normalize CID before storing (remove ipfs:// prefix and trim)
+  const normalizedCid = cid ? (cid.toString().replace(/^ipfs:\/\//, '').trim() || null) : null;
+  
   const params = [
     tokenAddress.toLowerCase(),
     name,
     symbol,
-    cid || null,
+    normalizedCid,
     // Save description if provided - trim whitespace, only use null if undefined/null/empty after trim
     (description !== undefined && description !== null && typeof description === 'string' && description.trim()) 
       ? description.trim() 
@@ -138,6 +142,90 @@ export async function getAllTokenAddresses() {
   } catch (err) {
     console.error("Error getting token addresses:", err);
     return [];
+  }
+}
+
+export async function getCoinByCid(cid) {
+  try {
+    if (!process.env.DATABASE_URL) {
+      console.error('[DUPLICATE CHECK] ❌ DATABASE_URL not configured - DUPLICATE CHECK DISABLED!');
+      throw new Error('DATABASE_URL not configured - cannot check for duplicates');
+    }
+    
+    // Normalize CID - remove ipfs:// prefix and trim whitespace
+    const normalizedCid = (cid || '').toString().replace(/^ipfs:\/\//, '').trim();
+    
+    if (!normalizedCid) {
+      console.error('[DUPLICATE CHECK] ❌ Empty CID after normalization');
+      throw new Error('Empty CID - cannot check for duplicates');
+    }
+    
+    console.log(`[DUPLICATE CHECK] 🔍 Checking for CID: "${normalizedCid}" (length: ${normalizedCid.length})`);
+    
+    // First, let's see what CIDs exist in the database (for debugging)
+    const allCidsQuery = 'SELECT cid, token_address, name, symbol FROM coins WHERE cid IS NOT NULL LIMIT 10';
+    const allCidsRes = await query(allCidsQuery, []);
+    console.log(`[DUPLICATE CHECK] 📊 Found ${allCidsRes.rows.length} coins with CIDs in database`);
+    if (allCidsRes.rows.length > 0) {
+      console.log(`[DUPLICATE CHECK] Sample CIDs in DB:`, allCidsRes.rows.map(r => ({
+        cid: r.cid,
+        cidLength: r.cid?.length,
+        name: r.name,
+        symbol: r.symbol
+      })));
+    }
+    
+    // Simple, direct query - check for exact match first
+    const sql = 'SELECT * FROM coins WHERE cid = $1 LIMIT 1';
+    console.log(`[DUPLICATE CHECK] 🔍 Executing query: ${sql} with param: "${normalizedCid}"`);
+    const res = await query(sql, [normalizedCid]);
+    
+    console.log(`[DUPLICATE CHECK] Query returned ${res.rows?.length || 0} rows`);
+    
+    if (res.rows && res.rows.length > 0) {
+      const found = res.rows[0];
+      console.log(`[DUPLICATE CHECK] ❌ FOUND DUPLICATE!`, {
+        checkingCid: normalizedCid,
+        checkingCidLength: normalizedCid.length,
+        existingToken: found.token_address,
+        existingName: found.name,
+        existingSymbol: found.symbol,
+        storedCid: found.cid,
+        storedCidLength: found.cid?.length,
+        cidsMatch: found.cid === normalizedCid
+      });
+      return found;
+    }
+    
+    // Also check with TRIM in case there are whitespace issues in stored CIDs
+    const sqlTrimmed = 'SELECT * FROM coins WHERE TRIM(COALESCE(cid, \'\')) = $1 LIMIT 1';
+    console.log(`[DUPLICATE CHECK] 🔍 Executing trimmed query: ${sqlTrimmed} with param: "${normalizedCid}"`);
+    const resTrimmed = await query(sqlTrimmed, [normalizedCid]);
+    
+    console.log(`[DUPLICATE CHECK] Trimmed query returned ${resTrimmed.rows?.length || 0} rows`);
+    
+    if (resTrimmed.rows && resTrimmed.rows.length > 0) {
+      const found = resTrimmed.rows[0];
+      console.log(`[DUPLICATE CHECK] ❌ FOUND DUPLICATE (with TRIM)!`, {
+        checkingCid: normalizedCid,
+        existingToken: found.token_address,
+        existingName: found.name,
+        existingSymbol: found.symbol
+      });
+      return found;
+    }
+    
+    console.log(`[DUPLICATE CHECK] ✅ No duplicate found for CID: "${normalizedCid}"`);
+    return null;
+  } catch (err) {
+    // If there's an error checking, we should BLOCK creation to be safe
+    console.error('[DUPLICATE CHECK] ❌ ERROR checking for duplicate CID:', err);
+    console.error('[DUPLICATE CHECK] Error details:', {
+      message: err.message,
+      stack: err.stack,
+      cid: cid
+    });
+    throw new Error(`Failed to check for duplicate CID: ${err.message}`);
   }
 }
 
