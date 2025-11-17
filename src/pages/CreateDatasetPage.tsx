@@ -34,6 +34,24 @@ const CreateDatasetPage = () => {
     setShowToast(true);
   };
 
+  const resetForm = () => {
+    // Reset all form fields
+    setDatasetName('');
+    setTokenSymbol('');
+    setDescription('');
+    
+    // Reset file and scan state
+    setSelectedFile(null);
+    setScanPassed(false);
+    setScanning(false);
+    
+    // Clear file input element
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const triggerConfetti = () => {
     try {
       const duration = 5000; // 5 seconds of celebration
@@ -279,9 +297,11 @@ const CreateDatasetPage = () => {
           }, 200);
         });
         
-        // Keep notification visible for 5 seconds, then hide it
+        // Keep notification visible for 5 seconds, then hide it and reset form
         setTimeout(() => {
           setShowToast(false);
+          // Reset form after confetti animation completes (5 seconds)
+          resetForm();
         }, 5000);
       } else {
         let errorMsg = data.error || data.message || 'Creation failed';
