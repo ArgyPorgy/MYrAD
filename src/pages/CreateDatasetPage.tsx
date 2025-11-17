@@ -74,6 +74,16 @@ const CreateDatasetPage = () => {
       return;
     }
 
+    // Block media files (MP3, MP4, etc.)
+    const fileName = file.name.toLowerCase();
+    const fileExt = fileName.split('.').pop() || '';
+    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 
+                               'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
+    if (blockedExtensions.includes(fileExt)) {
+      showStatus(`Media files (${fileExt.toUpperCase()}) are not allowed. Please upload data files only.`, 'error');
+      return;
+    }
+
     setSelectedFile(file);
     await scanFile(file);
   };

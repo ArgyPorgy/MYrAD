@@ -15,6 +15,7 @@ import { signDownloadUrl, saveAccess } from "./utils.js";
 import { scanFileWithVirusTotal, getAnalysis } from "./virusTotal.js";
 import { getTotalTxForAllTokens } from "./txCounter.js";
 
+import { scanFileComprehensive } from "./virusTotal.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,7 +140,7 @@ function clearPoolCacheFor(marketplaceAddress, tokenAddress) {
 }
 
 app.get("/", (req, res) => {
-  res.send("🚀 MYRAD Backend API running ✅");
+  res.send("MYRAD Backend API running");
 });
 
 app.get("/datasets", async (req, res) => {
@@ -467,53 +468,49 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     const file = req.file;
+    const fileName = file.originalname.toLowerCase();
+    const fileExt = fileName.split('.').pop() || '';
 
-    // ONLY VirusTotal Scan - NO Lighthouse upload
-    const scan = await scanFileWithVirusTotal(file.buffer, file.originalname);
-
-    if (!scan?.data?.id) {
-      return res.status(500).json({
-        error: "vt_upload_failed",
-        message: scan?.error?.message || "VirusTotal upload failed",
+    // Block media files (MP3, MP4, etc.)
+    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 
+                               'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
+    if (blockedExtensions.includes(fileExt)) {
+      return res.status(400).json({
+        error: "file_type_not_allowed",
+        message: `Media files (${fileExt.toUpperCase()}) are not allowed. Please upload data files only.`
       });
     }
 
-    const analysisId = scan.data.id;
+    // Comprehensive VirusTotal scan with proper checks
+    const scanResult = await scanFileComprehensive(file.buffer, file.originalname);
 
-    // Poll for analysis
-    let result;
-    for (let i = 0; i < 3; i++) {
-      result = await getAnalysis(analysisId);
-      if (result?.data?.attributes?.status === "completed") break;
-      await new Promise((r) => setTimeout(r, 1500));
-    }
-
-    if (!result?.data?.attributes?.stats) {
+    if (!scanResult.safetyCheck) {
       return res.status(500).json({
-        error: "vt_analysis_failed",
-        message: "VirusTotal analysis failed",
+        error: "vt_scan_failed",
+        message: "VirusTotal scan failed to return safety check",
       });
     }
 
-    const stats = result.data.attributes.stats;
-
-    // Check if malicious
-    if (stats.malicious > 0 || stats.suspicious > 0) {
+    // Check if file is safe
+    if (!scanResult.safetyCheck.safe) {
       return res.status(400).json({
         error: "malicious",
-        message: "VirusTotal flagged this file",
-        stats
+        message: scanResult.safetyCheck.reason || "VirusTotal flagged this file as unsafe",
+        stats: scanResult.safetyCheck.stats,
+        results: scanResult.safetyCheck.results,
+        hash: scanResult.hash
       });
     }
 
-    // Return SUCCESS but NO CID yet
-    // Store file temporarily in memory or temp storage
+    // File is safe - return success
     res.json({
       success: true,
       scanPassed: true,
       filename: file.originalname,
       size: file.size,
-      stats: stats,
+      stats: scanResult.safetyCheck.stats,
+      hash: scanResult.hash,
+      fromCache: scanResult.fromCache,
       message: "File scanned successfully. Now create your token."
     });
 
@@ -521,7 +518,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     console.error("Scan error:", err);
     res.status(500).json({
       error: "scan_failed",
-      message: err.message
+      message: err.message || "VirusTotal scan failed"
     });
   }
 });
@@ -531,6 +528,20 @@ app.post("/create-dataset", upload.single("file"), async (req, res) => {
     // NOW we need the file uploaded again
     if (!req.file) {
       return res.status(400).json({ error: "File is required" });
+    }
+
+    const uploadFile = req.file;
+    const fileName = uploadFile.originalname.toLowerCase();
+    const fileExt = fileName.split('.').pop() || '';
+
+    // Block media files (MP3, MP4, etc.)
+    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 
+                               'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
+    if (blockedExtensions.includes(fileExt)) {
+      return res.status(400).json({
+        error: "file_type_not_allowed",
+        message: `Media files (${fileExt.toUpperCase()}) are not allowed. Please upload data files only.`
+      });
     }
 
     const { name, symbol, description, totalSupply, creatorAddress } = req.body;
@@ -573,9 +584,8 @@ app.post("/create-dataset", upload.single("file"), async (req, res) => {
     }
 
     // NOW upload to Lighthouse (only when actually creating token)
-    const file = req.file;
-    const base64Data = file.buffer.toString("base64");
-    const cid = await uploadBase64ToLighthouse(base64Data, file.originalname);
+    const base64Data = uploadFile.buffer.toString("base64");
+    const cid = await uploadBase64ToLighthouse(base64Data, uploadFile.originalname);
 
     // Create token with the CID
     const descriptionToPass = description !== undefined ? description : undefined;
@@ -898,7 +908,7 @@ app.get("*", (req, res) => {
           </style>
         </head>
         <body>
-          <h1>🚀 MYRAD Backend API Running</h1>
+          <h1>MYRAD Backend API Running</h1>
           <p>Frontend not built yet. Run <code>npm run build</code> to build the frontend.</p>
           <p>API is available at: <a href="/health">/health</a></p>
         </body>
