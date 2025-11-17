@@ -27,7 +27,17 @@ if (VT_API_KEYS.length > 0) {
 const MAX_POLL_ATTEMPTS = 90; // 90 attempts = 90 seconds max wait time (90 × 1 second)
 const POLL_INTERVAL_MS = 1000; // 1 second between polls (faster detection)
 
+// Round-robin key selector for load distribution across parallel requests
+let keyRotationCounter = 0;
+function getNextKeyIndex() {
+  if (VT_API_KEYS.length === 0) return 0;
+  const index = keyRotationCounter % VT_API_KEYS.length;
+  keyRotationCounter = (keyRotationCounter + 1) % VT_API_KEYS.length;
+  return index;
+}
+
 // Helper function to try API call with multiple keys (fallback mechanism with retry and backoff)
+// Uses round-robin to start with different keys for parallel requests
 async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt = 0) {
   if (VT_API_KEYS.length === 0) {
     throw new Error('No VirusTotal API keys configured');
@@ -38,7 +48,12 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
   let lastError = null;
   let allKeysRateLimited = true;
 
-  for (let i = 0; i < VT_API_KEYS.length; i++) {
+  // Start with a different key for each request (round-robin) to distribute load
+  const startIndex = getNextKeyIndex();
+  
+  // Try all keys starting from the round-robin index
+  for (let offset = 0; offset < VT_API_KEYS.length; offset++) {
+    const i = (startIndex + offset) % VT_API_KEYS.length;
     const apiKey = VT_API_KEYS[i];
     
     // Try this key with retries
@@ -405,7 +420,6 @@ export async function scanFileComprehensive(buffer, fileName) {
     result = await getAnalysis(analysisId);
     
     const status = result?.data?.attributes?.status;
-    console.log(`Poll attempt ${attempts}/${MAX_POLL_ATTEMPTS}: Status = ${status}`);
     
     if (status === "completed") {
       // Analysis completed - use results immediately (no need to wait for file report)
@@ -456,5 +470,5 @@ export async function scanFileComprehensive(buffer, fileName) {
   }
 
   // Timeout: analysis took too long
-  throw new Error(`VirusTotal analysis timeout after ${MAX_POLL_ATTEMPTS} attempts (~${Math.round(MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS / 1000)}s). Please try again later.`);
+  throw new Error(`VirusTotal analysis timeout. Please try again later.`);
 }
