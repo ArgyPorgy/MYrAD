@@ -515,6 +515,23 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
   } catch (err) {
     console.error("Scan error:", err);
+    
+    // Check if it's a rate limit error
+    const isRateLimitError = err.message && (
+      err.message.includes('rate-limited') ||
+      err.message.includes('rate limit') ||
+      err.message.includes('Rate limit') ||
+      err.message.includes('429') ||
+      err.message.includes('403')
+    );
+    
+    if (isRateLimitError) {
+      return res.status(429).json({
+        error: "vt_scan_failed",
+        message: "VirusTotal scan error. Please refresh the page & try again."
+      });
+    }
+    
     res.status(500).json({
       error: "scan_failed",
       message: err.message || "VirusTotal scan failed"

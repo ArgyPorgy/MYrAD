@@ -27,73 +27,124 @@ if (VT_API_KEYS.length > 0) {
 const MAX_POLL_ATTEMPTS = 90; // 90 attempts = 90 seconds max wait time (90 × 1 second)
 const POLL_INTERVAL_MS = 1000; // 1 second between polls (faster detection)
 
-// Helper function to try API call with multiple keys (fallback mechanism)
-async function tryWithApiKeys(apiCall, operationName = 'API call') {
+// Helper function to try API call with multiple keys (fallback mechanism with retry and backoff)
+async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt = 0) {
   if (VT_API_KEYS.length === 0) {
     throw new Error('No VirusTotal API keys configured');
   }
 
+  const MAX_RETRIES = 2; // Retry each key up to 2 times with backoff
+  const BASE_DELAY_MS = 2000; // 2 seconds base delay
   let lastError = null;
+  let allKeysRateLimited = true;
 
   for (let i = 0; i < VT_API_KEYS.length; i++) {
     const apiKey = VT_API_KEYS[i];
-    try {
-      const result = await apiCall(apiKey);
-      
-      // Check for rate limit (429) - try next key
-      if (result && result.status === 429) {
-        lastError = new Error(`Rate limit hit on API key ${i + 1}`);
-        if (i < VT_API_KEYS.length - 1) {
-          console.log(`[VT API] Rate limit on key ${i + 1}, trying next key...`);
-          continue; // Try next key silently
+    
+    // Try this key with retries
+    for (let retry = 0; retry <= MAX_RETRIES; retry++) {
+      try {
+        // Add exponential backoff delay before retry (except first attempt)
+        if (retry > 0) {
+          const delay = BASE_DELAY_MS * Math.pow(2, retry - 1); // 2s, 4s, 8s
+          console.log(`[VT API] Retrying key ${i + 1} after ${delay}ms delay (attempt ${retry + 1}/${MAX_RETRIES + 1})...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
-        // Last key, return the error result
-        throw lastError;
-      }
-      
-      // Check for 403 Forbidden (might also be rate limit related)
-      if (result && result.status === 403) {
-        lastError = new Error(`Forbidden (403) on API key ${i + 1} - possibly rate limited`);
-        if (i < VT_API_KEYS.length - 1) {
-          console.log(`[VT API] 403 error on key ${i + 1}, trying next key...`);
-          continue;
+        
+        const result = await apiCall(apiKey);
+        
+        // Check for rate limit (429) - retry with backoff or try next key
+        if (result && result.status === 429) {
+          if (retry < MAX_RETRIES) {
+            // Retry this key with backoff
+            console.log(`[VT API] Rate limit on key ${i + 1}, will retry with backoff...`);
+            lastError = new Error(`Rate limit hit on API key ${i + 1}`);
+            allKeysRateLimited = true;
+            continue; // Retry this key
+          } else {
+            // Max retries reached for this key, try next key
+            lastError = new Error(`Rate limit hit on API key ${i + 1} after ${MAX_RETRIES + 1} attempts`);
+            if (i < VT_API_KEYS.length - 1) {
+              console.log(`[VT API] Rate limit on key ${i + 1} after retries, trying next key...`);
+              allKeysRateLimited = true;
+              break; // Try next key
+            }
+            // Last key, throw error
+            throw lastError;
+          }
         }
-        throw lastError;
+        
+        // Check for 403 Forbidden (might also be rate limit related)
+        if (result && result.status === 403) {
+          if (retry < MAX_RETRIES) {
+            console.log(`[VT API] 403 error on key ${i + 1}, will retry with backoff...`);
+            lastError = new Error(`Forbidden (403) on API key ${i + 1} - possibly rate limited`);
+            allKeysRateLimited = true;
+            continue; // Retry this key
+          } else {
+            lastError = new Error(`Forbidden (403) on API key ${i + 1} after ${MAX_RETRIES + 1} attempts`);
+            if (i < VT_API_KEYS.length - 1) {
+              console.log(`[VT API] 403 error on key ${i + 1} after retries, trying next key...`);
+              allKeysRateLimited = true;
+              break; // Try next key
+            }
+            throw lastError;
+          }
+        }
+        
+        // Success! Reset rate limit flag
+        allKeysRateLimited = false;
+        
+        // Log if we used a fallback key or retry
+        if (i > 0 || retry > 0) {
+          console.log(`[VT API] ${operationName} succeeded with API key ${i + 1} (after ${i} key switch(es) and ${retry} retry/ies)`);
+        }
+        return result;
+        
+      } catch (err) {
+        lastError = err;
+        
+        // Check if it's a rate limit error in the error message
+        const isRateLimit = err.message && (
+          err.message.includes('429') || 
+          err.message.includes('rate limit') || 
+          err.message.includes('Rate limit') ||
+          err.message.includes('Too Many Requests') ||
+          err.message.includes('403')
+        );
+        
+        if (isRateLimit) {
+          allKeysRateLimited = true;
+          if (retry < MAX_RETRIES) {
+            // Retry this key with backoff
+            console.log(`[VT API] Rate limit error on key ${i + 1}, will retry with backoff...`);
+            continue; // Retry this key
+          } else if (i < VT_API_KEYS.length - 1) {
+            // Max retries reached, try next key
+            console.log(`[VT API] Rate limit error on key ${i + 1} after retries, trying next key...`);
+            break; // Try next key
+          } else {
+            // Last key, last retry - throw error
+            throw err;
+          }
+        } else {
+          // Non-rate-limit error - don't retry, try next key or throw
+          allKeysRateLimited = false;
+          if (i === VT_API_KEYS.length - 1) {
+            throw err;
+          }
+          console.log(`[VT API] Error on key ${i + 1} (${err.message}), trying next key...`);
+          break; // Try next key
+        }
       }
-      
-      // Success or other non-rate-limit status - return immediately
-      if (i > 0) {
-        console.log(`[VT API] ${operationName} succeeded with API key ${i + 1} (after ${i} failed attempt(s))`);
-      }
-      return result;
-      
-    } catch (err) {
-      lastError = err;
-      
-      // Check if it's a rate limit error in the error message
-      const isRateLimit = err.message && (
-        err.message.includes('429') || 
-        err.message.includes('rate limit') || 
-        err.message.includes('Rate limit') ||
-        err.message.includes('Too Many Requests')
-      );
-      
-      if (isRateLimit && i < VT_API_KEYS.length - 1) {
-        console.log(`[VT API] Rate limit error on key ${i + 1}, trying next key...`);
-        continue; // Try next key silently
-      }
-      
-      // For other errors or if it's the last key, throw it
-      if (i === VT_API_KEYS.length - 1) {
-        throw err;
-      }
-      
-      // Otherwise, try next key (for non-fatal errors)
-      console.log(`[VT API] Error on key ${i + 1} (${err.message}), trying next key...`);
     }
   }
 
-  // All keys failed
+  // All keys failed - provide helpful error message
+  if (allKeysRateLimited && lastError) {
+    throw new Error(`All ${VT_API_KEYS.length} VirusTotal is rate-limited. Please wait a few minutes and try again.`);
+  }
+  
   if (lastError) {
     throw lastError;
   }
