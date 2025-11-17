@@ -13,6 +13,8 @@ import FeedPage from '@/pages/FeedPage';
 import LandingPage from './pages/LandingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import CommunityPage from './pages/CommunityPage';
+import ProfilePage from './pages/profilePage';
+import LeaderBoard from './pages/LeaderBoard';
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ function App() {
               <Route path="/my-datasets" element={<MyDatasetsPage />} />
               <Route path="/faucet" element={<FaucetPage />} />
               <Route path="/community" element={<CommunityPage />} />
+              <Route path="/leaderboard" element={<LeaderBoard />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Router>

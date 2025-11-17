@@ -8,11 +8,13 @@ import multer from "multer";
 import { uploadBase64ToLighthouse } from "./uploadService.js";
 import { createDatasetToken } from "./createDatasetAPI.js";
 import { initSchema } from './db.js';
-import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers } from './storage.js';
+import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers, getTotalDatasetsCount,getTotalUsersCount,getAllTokenAddresses } from './storage.js';
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
 import { scanFileWithVirusTotal, getAnalysis } from "./virusTotal.js";
+import { getTotalTxForAllTokens } from "./txCounter.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -842,6 +844,40 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
   }
 });
 
+app.get("/api/datacoin/total-created", async (req, res) => {
+  try {
+    const totalCreated = await getTotalDatasetsCount();
+
+    res.json({ totalCreated });
+    
+  } catch (error) {
+    console.error("Error fetching global datacoins/dataset count:", error);
+    res.status(500).json({ error: "Failed to fetch total datacoins/dataset count" });
+  }
+});
+
+app.get("/api/users/total", async (req, res) => {
+  try {
+    const totalUsers = await getTotalUsersCount();
+    res.json({ totalUsers });
+  } catch (err) {
+    console.error("Error fetching user count:", err);
+    res.status(500).json({ error: "Failed to fetch total user count" });
+  }
+});
+
+app.get("/api/datacoin/total-transactions", async (req, res) => {
+  try {
+    const addrs = await getAllTokenAddresses();
+    const totalTx = await getTotalTxForAllTokens();
+    res.json({ totalTx });
+  } catch (err) {
+    console.error("Error calculating total transactions:", err);
+    res.status(500).json({ error: "Failed to compute datacoin transactions" });
+  }
+});
+
+
 // Serve frontend for all other routes (SPA fallback)
 // Only if the request accepts HTML (not for API calls)
 app.get("*", (req, res) => {
@@ -881,4 +917,5 @@ app.listen(PORT, async () => {
     console.warn('[db] init error:', e.message);
   }
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  console.log(`🚀 MYRAD Backend API listening at ${url}`) ;
 });

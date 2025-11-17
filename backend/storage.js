@@ -98,6 +98,13 @@ async function getAllUsers() {
   }
 }
 
+export async function getTotalUsersCount() {
+  const sql = `SELECT COUNT(*) AS count FROM users;`;
+  const result = await query(sql, []);
+  return Number(result.rows[0].count);
+}
+
+
 async function getUserByWalletAddress(walletAddress) {
   try {
     if (!process.env.DATABASE_URL) {
@@ -111,4 +118,39 @@ async function getUserByWalletAddress(walletAddress) {
   }
 }
 
-export { insertCoin, getAllCoins, getCoinByTokenAddress, getCoinsByCreator, trackUserConnection, getAllUsers, getUserByWalletAddress };
+export async function getTotalDatasetsCount() {
+  const sql = `SELECT COUNT(*) AS count FROM coins;`;
+  const result = await query(sql, []);
+  return Number(result.rows[0].count);
+}
+
+export async function getAllTokenAddresses() {
+  try {
+    if (!process.env.DATABASE_URL) {
+      return [];
+    }
+
+    const sql = `SELECT token_address FROM coins ORDER BY created_at DESC`;
+    const result = await query(sql, []);
+    
+    // Return as an array of strings
+    return result.rows.map(row => row.token_address);
+  } catch (err) {
+    console.error("Error getting token addresses:", err);
+    return [];
+  }
+}
+
+export { 
+  insertCoin, 
+  getAllCoins, 
+  getCoinByTokenAddress, 
+  getCoinsByCreator, 
+  trackUserConnection, 
+  getAllUsers, 
+  getUserByWalletAddress
+};
+
+
+
+
