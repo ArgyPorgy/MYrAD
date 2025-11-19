@@ -13,7 +13,7 @@ import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
 import { getTotalTxForAllTokens } from "./txCounter.js";
-
+import rateLimit from "express-rate-limit";
 import { scanFileComprehensive } from "./virusTotal.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +36,21 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false
 }));
+
+const createDatasetLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 3,              // allow 3 dataset creations per minute
+  message: {
+    success: false,
+    error: "Too many dataset creation attempts. Please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+
+  // Rate-limit per creator wallet instead of only IP
+  keyGenerator: (req) =>
+    req.body.creatorAddress?.toLowerCase() || req.ip,
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -146,13 +161,17 @@ app.get("/datasets", async (req, res) => {
   try {
     if (process.env.DATABASE_URL) {
       const coins = await getAllCoins();
+
       // Keep response compatible with old frontend (map keyed by token address)
       const map = {};
+
       for (const c of coins) {
         map[c.token_address] = {
           name: c.name,
           symbol: c.symbol,
-          cid: c.cid,
+          // ❌ REMOVE CID — DO NOT SEND TO CLIENT
+          // cid: c.cid,
+
           description: c.description,
           token_address: c.token_address,
           marketplace: c.marketplace_address,
@@ -163,16 +182,29 @@ app.get("/datasets", async (req, res) => {
           created_at: new Date(c.created_at).getTime(),
         };
       }
+
       return res.json(map);
     }
   } catch (e) {
     console.error('DB /datasets error:', e);
   }
+
   // Fallback to JSON file if DB not configured or error
   if (!fs.existsSync(DATASETS_FILE)) return res.json({});
+
   const data = JSON.parse(fs.readFileSync(DATASETS_FILE));
-  res.json(data);
+
+  // ❌ REMOVE CID FROM OLD JSON FILE TOO
+  const sanitized = {};
+  for (const key of Object.keys(data)) {
+    const d = data[key];
+    const { cid, ...rest } = d;
+    sanitized[key] = rest;
+  }
+
+  res.json(sanitized);
 });
+
 
 app.post("/track-wallet", async (req, res) => {
   try {
@@ -539,7 +571,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-app.post("/create-dataset", upload.single("file"), async (req, res) => {
+app.post("/create-dataset", createDatasetLimiter, upload.single("file"), async (req, res) => {
   try {
     // NOW we need the file uploaded again
     if (!req.file) {
@@ -803,7 +835,8 @@ app.get("/faucet/status/:userAddress", (req, res) => {
 app.get("/api/my-datasets/:userAddress", async (req, res) => {
   try {
     const { userAddress } = req.params;
-    
+
+    // Validate wallet address
     if (!ethers.isAddress(userAddress)) {
       return res.status(400).json({ error: "Invalid address" });
     }
@@ -811,29 +844,29 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
     const userAddressLower = userAddress.toLowerCase();
     const datasetsWithBalance = [];
 
-    // 1. Get 'created' datasets: Query PostgreSQL for tokens where user is creator
+    // 1. Fetch created datasets
     if (process.env.DATABASE_URL) {
       try {
         const createdCoins = await getCoinsByCreator(userAddress);
+
         for (const coin of createdCoins) {
           try {
-            // Fetch real-time balance for created tokens
             const token = new ethers.Contract(coin.token_address, ERC20_ABI, provider);
             const balance = await token.balanceOf(userAddress);
-            
+
             datasetsWithBalance.push({
               userAddress: userAddressLower,
               tokenAddress: coin.token_address.toLowerCase(),
               name: coin.name,
               symbol: coin.symbol,
               description: coin.description || "",
-              cid: coin.cid || "",
+              // 🚫 Removed CID for security
               totalSupply: Number(coin.total_supply),
               creatorAddress: coin.creator_address.toLowerCase(),
               marketplaceAddress: coin.marketplace_address.toLowerCase(),
-              type: 'created',
+              type: "created",
               amount: balance.toString(),
-              realTimeBalance: balance.toString()
+              realTimeBalance: balance.toString(),
             });
           } catch (err) {
             console.error(`Error fetching balance for created token ${coin.token_address}:`, err);
@@ -844,31 +877,25 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
       }
     }
 
-    // 2. Get 'bought' datasets: Query all tokens from PostgreSQL, check on-chain balance
-    // Only include tokens where user has balance > 0 (they bought/sold)
+    // 2. Fetch bought datasets
     if (process.env.DATABASE_URL) {
       try {
         const allCoins = await getAllCoins();
-        
-        // Filter out tokens user already has in 'created' list to avoid duplicates
+
+        // Already created → avoid duplicates
         const createdTokenAddrs = new Set(
-          datasetsWithBalance.map(d => d.tokenAddress.toLowerCase())
+          datasetsWithBalance.map((d) => d.tokenAddress)
         );
-        
+
         for (const coin of allCoins) {
           const tokenAddrLower = coin.token_address.toLowerCase();
-          
-          // Skip if user created this token (already in created list)
-          if (createdTokenAddrs.has(tokenAddrLower)) {
-            continue;
-          }
-          
+
+          if (createdTokenAddrs.has(tokenAddrLower)) continue;
+
           try {
-            // Check if user has any balance of this token
             const token = new ethers.Contract(coin.token_address, ERC20_ABI, provider);
             const balance = await token.balanceOf(userAddress);
-            
-            // Only include if user has balance > 0 (they bought this token)
+
             if (balance > 0n) {
               datasetsWithBalance.push({
                 userAddress: userAddressLower,
@@ -876,46 +903,53 @@ app.get("/api/my-datasets/:userAddress", async (req, res) => {
                 name: coin.name,
                 symbol: coin.symbol,
                 description: coin.description || "",
-                cid: coin.cid || "",
+                // 🚫 Removed CID for security
                 totalSupply: Number(coin.total_supply),
                 creatorAddress: coin.creator_address.toLowerCase(),
                 marketplaceAddress: coin.marketplace_address.toLowerCase(),
-                type: 'bought',
+                type: "bought",
                 amount: balance.toString(),
-                realTimeBalance: balance.toString()
+                realTimeBalance: balance.toString(),
               });
             }
           } catch (err) {
             console.error(`Error checking balance for token ${coin.token_address}:`, err);
-            // Skip tokens we can't query
           }
         }
       } catch (err) {
         console.error("Error fetching all coins from DB:", err);
       }
     }
-    
-    // Sort by creation time (if available) or by symbol
+
+    // Sorting
     datasetsWithBalance.sort((a, b) => {
-      // Created datasets first, then by symbol
-      if (a.type === 'created' && b.type !== 'created') return -1;
-      if (a.type !== 'created' && b.type === 'created') return 1;
+      if (a.type === "created" && b.type !== "created") return -1;
+      if (a.type !== "created" && b.type === "created") return 1;
       return a.symbol.localeCompare(b.symbol);
     });
-    
-    // Count purchased datasets (same logic as "Purchased Datasets" on My Datasets page)
-    // This matches what the user sees - number of bought datasets they currently own
-    const purchasedDatasetsCount = datasetsWithBalance.filter(d => d.type === 'bought').length;
-    
-    res.json({
-      datasets: datasetsWithBalance,
-      tradeCount: purchasedDatasetsCount  // Match the "Purchased Datasets" count
+
+    // Count bought datasets
+    const purchasedDatasetsCount = datasetsWithBalance.filter(
+      (d) => d.type === "bought"
+    ).length;
+
+    // 🚫 In case CID still sneaks in, sanitize final response
+    const safeDatasets = datasetsWithBalance.map((d) => {
+      const { cid, ...rest } = d; // Strip CID safely
+      return rest;
+    });
+
+    // Final response
+    return res.json({
+      datasets: safeDatasets,
+      tradeCount: purchasedDatasetsCount,
     });
   } catch (err) {
     console.error("My datasets error:", err);
-    res.status(500).json({ error: "Failed to fetch datasets" });
+    return res.status(500).json({ error: "Failed to fetch datasets" });
   }
 });
+
 
 app.get("/api/datacoin/total-created", async (req, res) => {
   try {
