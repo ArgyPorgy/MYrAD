@@ -466,5 +466,18 @@
     "creator": "0xEFD65171fF223deAF4EF1ac118fD8022050BAFD0",
     "total_supply": 1000000,
     "created_at": 1763390485622
+  },
+  "0xcaadaaadbd4adf251261d25967ae1a1e54ef5205": {
+    "name": "TEST",
+    "symbol": "TST",
+    "cid": "bafkreicdcua6weclnheqdokrwlikwnuqg4uzot3zts7aqvqkgg7cxgua4y",
+    "description": "",
+    "token_address": "0xCaAdAAadbd4Adf251261D25967ae1A1e54EF5205",
+    "marketplace": "0x09d8B398197B0C6CC0f2839FB81EB058438c313A",
+    "marketplace_address": "0x09d8B398197B0C6CC0f2839FB81EB058438c313A",
+    "bonding_curve": "0x09d8B398197B0C6CC0f2839FB81EB058438c313A",
+    "creator": "0x342F483f1dDfcdE701e7dB281C6e56aC4C7b05c9",
+    "total_supply": 1000000,
+    "created_at": 1763754307915
   }
 }

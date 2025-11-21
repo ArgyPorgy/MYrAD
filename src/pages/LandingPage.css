@@ -1,0 +1,862 @@
+/* Landing Page Scoped Styles */
+.myrad-app {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+    background: #000000;
+    color: #ffffff;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+.myrad-app * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.myrad-app a {
+    text-decoration: none;
+    color: #ffffff;
+}
+
+.myrad-app .bg-dots {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.myrad-app .dot {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #333333;
+    border-radius: 50%;
+    animation: float 20s infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translateY(-20px) translateX(10px);
+        opacity: 0.6;
+    }
+}
+
+.myrad-app nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 24px 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(20px);
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid #222;
+}
+
+.myrad-app .logo {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.myrad-app .nav-links {
+    display: flex;
+    gap: 48px;
+    align-items: center;
+}
+
+.myrad-app .nav-links a {
+    color: #cccccc;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.myrad-app .nav-links a:hover {
+    color: #ffffff;
+}
+
+.myrad-app .nav-cta {
+    padding: 10px 24px;
+    background: #ffffff;
+    border: none;
+    border-radius: 6px;
+    color: #000000;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.myrad-app .nav-cta:hover {
+    background: #e5e5e5;
+    transform: translateY(-1px);
+}
+
+.myrad-app .mobile-menu {
+    display: none;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.myrad-app .mobile-menu span {
+    width: 24px;
+    height: 2px;
+    background: #ffffff;
+    transition: all 0.3s;
+}
+
+.myrad-app .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 140px 80px 80px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.myrad-app .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(90deg, #111 0%, #222 50%, #111 100%);
+    border: 1px solid #333;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #fff;
+    margin-bottom: 32px;
+    letter-spacing: -0.2px;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.myrad-app .hero-badge::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+    transform: skewX(-25deg);
+    animation: shine 2.5s infinite;
+}
+
+@keyframes shine {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 150%;
+    }
+}
+
+.myrad-app .hero h1 {
+    font-size: 56px;
+    font-weight: 700;
+    margin-bottom: 28px;
+    line-height: 1.1;
+    color: #ffffff;
+}
+
+.myrad-app .hero h1 .italic {
+    font-style: italic;
+}
+
+.myrad-app .hero p {
+    font-size: 18px;
+    color: #aaaaaa;
+    max-width: 650px;
+    margin: 0 auto 48px;
+    line-height: 1.6;
+}
+
+.myrad-app .hero-buttons {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.myrad-app .primary-btn {
+    padding: 16px 32px;
+    background: #ffffff;
+    border: none;
+    border-radius: 6px;
+    color: #000000;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.myrad-app .primary-btn:hover {
+    background: #e5e5e5;
+    transform: translateY(-2px);
+}
+
+.myrad-app .secondary-btn {
+    padding: 16px 32px;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.myrad-app .secondary-btn:hover {
+    border-color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.myrad-app .features {
+    padding: 100px 0;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+.myrad-app .section-header {
+    text-align: center;
+    margin-bottom: 80px;
+    padding: 0 80px;
+}
+
+.myrad-app .section-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 16px;
+}
+
+.myrad-app .section-subtitle {
+    font-size: 18px;
+    color: #888;
+    font-weight: 400;
+    margin-top: 16px;
+}
+
+.myrad-app .carousel-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding: 40px 0;
+}
+
+.myrad-app .carousel-wrapper::before,
+.myrad-app .carousel-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 150px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.myrad-app .carousel-wrapper::before {
+    left: 0;
+    background: linear-gradient(to right, #000000 0%, transparent 100%);
+}
+
+.myrad-app .carousel-wrapper::after {
+    right: 0;
+    background: linear-gradient(to left, #000000 0%, transparent 100%);
+}
+
+.myrad-app .carousel-track {
+    display: flex;
+    gap: 32px;
+    animation: scroll 30s linear infinite;
+    width: fit-content;
+}
+
+.myrad-app .carousel-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(calc(-420px * 6 - 32px * 6));
+    }
+}
+
+.myrad-app .feature-card-modern {
+    min-width: 420px;
+    height: 320px;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border: 1px solid #2a2a2a;
+    border-radius: 24px;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.myrad-app .feature-card-modern::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.myrad-app .feature-card-modern:hover {
+    transform: translateY(-12px) scale(1.02);
+    border-color: #444;
+    box-shadow: 0 30px 80px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+}
+
+.myrad-app .feature-card-modern:hover::before {
+    opacity: 1;
+}
+
+.myrad-app .feature-icon-modern {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 24px;
+    position: relative;
+    transition: all 0.4s ease;
+}
+
+.myrad-app .feature-icon-modern svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1));
+}
+
+.myrad-app .feature-card-modern:hover .feature-icon-modern {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.myrad-app .feature-card-modern h3 {
+    font-size: 22px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.myrad-app .feature-card-modern p {
+    color: #b0b0b0;
+    line-height: 1.7;
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+.myrad-app .how-it-works {
+    padding: 120px 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.myrad-app .timeline-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 0;
+}
+
+.myrad-app .timeline-step {
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.myrad-app .timeline-step::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.myrad-app .timeline-step:hover {
+    transform: translateY(-8px);
+    border-color: #444;
+    box-shadow: 0 20px 60px rgba(255, 255, 255, 0.1);
+}
+
+.myrad-app .timeline-step:hover::before {
+    opacity: 1;
+}
+
+.myrad-app .step-icon-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.myrad-app .step-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border: 2px solid #333;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.myrad-app .step-icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.myrad-app .timeline-step:hover .step-icon {
+    transform: scale(1.1) rotate(-5deg);
+    border-color: #555;
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+}
+
+.myrad-app .timeline-step:hover .step-icon::before {
+    opacity: 1;
+}
+
+.myrad-app .step-icon svg {
+    width: 40px;
+    height: 40px;
+    color: #ffffff;
+    z-index: 1;
+}
+
+.myrad-app .step-number-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 32px;
+    height: 32px;
+    background: #ffffff;
+    color: #000000;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+    z-index: 2;
+}
+
+.myrad-app .step-info {
+    flex: 1;
+    z-index: 1;
+}
+
+.myrad-app .step-info h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.myrad-app .step-info p {
+    color: #aaaaaa;
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.myrad-app .cta-section {
+    padding: 120px 80px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.myrad-app .cta-box {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 100px 80px;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    border: 1px solid #2a2a2a;
+    border-radius: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.myrad-app .cta-box::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.myrad-app .cta-box:hover {
+    transform: translateY(-8px);
+    border-color: #444;
+    box-shadow: 0 30px 80px rgba(255, 255, 255, 0.15);
+}
+
+.myrad-app .cta-box:hover::before {
+    opacity: 1;
+}
+
+.myrad-app .cta-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+.myrad-app .cta-box h2 {
+    font-size: 38px;
+    margin-bottom: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    position: relative;
+    z-index: 1;
+    letter-spacing: -0.5px;
+}
+
+.myrad-app .cta-box p {
+    font-size: 16px;
+    color: #b0b0b0;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+    line-height: 1.6;
+}
+
+.myrad-app .cta-btn {
+    position: relative;
+    z-index: 1;
+    padding: 18px 48px;
+    font-size: 16px;
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+}
+
+.myrad-app .cta-btn:hover {
+    box-shadow: 0 12px 32px rgba(255, 255, 255, 0.25);
+}
+
+.myrad-app footer {
+    padding: 60px 20px 30px;
+    border-top: 1px solid #222;
+    background-color: #000;
+    color: #fff;
+    position: relative;
+    z-index: 1;
+}
+
+.myrad-app .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.myrad-app .footer-brand h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.myrad-app .footer-brand p {
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.myrad-app .footer-column h4 {
+    font-size: 14px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.myrad-app .footer-column a {
+    display: block;
+    color: #aaa;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: color 0.3s ease;
+}
+
+.myrad-app .footer-column a:hover {
+    color: #fff;
+}
+
+.myrad-app .footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid #222;
+    color: #999;
+    font-size: 13px;
+}
+
+.myrad-app .logo img {
+    height: 32px;
+    width: auto;
+    display: block;
+}
+
+.myrad-app .inline-logo {
+    height: 50px;
+    width: auto;
+    vertical-align: middle;
+    margin: 0 5px;
+}
+
+@media (max-width: 1024px) {
+    .myrad-app nav {
+        padding: 20px 40px;
+    }
+
+    .myrad-app .hero,
+    .myrad-app .how-it-works,
+    .myrad-app .cta-section {
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .myrad-app .section-header {
+        padding: 0 40px;
+    }
+
+    .myrad-app .hero h1 {
+        font-size: 48px;
+    }
+
+    .myrad-app .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 40px;
+    }
+
+    .myrad-app .feature-card-modern {
+        min-width: 380px;
+        height: 300px;
+    }
+
+    @keyframes scroll {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(calc(-380px * 6 - 32px * 6));
+        }
+    }
+
+    .myrad-app .timeline-container {
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 30px;
+    }
+
+    .myrad-app .timeline-step {
+        padding: 32px;
+    }
+
+    .myrad-app .cta-box {
+        padding: 80px 60px;
+    }
+
+    .myrad-app .cta-glow {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .myrad-app nav {
+        padding: 20px 24px;
+    }
+
+    .myrad-app .nav-links {
+        display: none;
+    }
+
+    .myrad-app .mobile-menu {
+        display: flex;
+    }
+
+    .myrad-app .hero {
+        padding: 120px 24px 60px;
+    }
+
+    .myrad-app .hero h1 {
+        font-size: 36px;
+    }
+
+    .myrad-app .hero p {
+        font-size: 16px;
+    }
+
+    .myrad-app .section-header {
+        padding: 0 24px;
+    }
+
+    .myrad-app .section-title {
+        font-size: 32px;
+    }
+
+    .myrad-app .features {
+        padding: 60px 0;
+    }
+
+    .myrad-app .feature-card-modern {
+        min-width: 300px;
+        height: 280px;
+        padding: 32px;
+    }
+
+    @keyframes scroll {
+        0% {
+            transform: translateX(0);
+        }
+
+        100% {
+            transform: translateX(calc(-300px * 6 - 32px * 6));
+        }
+    }
+
+    .myrad-app .how-it-works {
+        padding: 60px 24px;
+    }
+
+    .myrad-app .timeline-container {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .myrad-app .timeline-step {
+        padding: 24px;
+        gap: 16px;
+    }
+
+    .myrad-app .step-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .myrad-app .step-icon svg {
+        width: 30px;
+        height: 30px;
+    }
+
+    .myrad-app .step-number-badge {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
+    .myrad-app .step-info h3 {
+        font-size: 18px;
+    }
+
+    .myrad-app .step-info p {
+        font-size: 13px;
+    }
+
+    .myrad-app .cta-section {
+        padding: 60px 24px;
+    }
+
+    .myrad-app .cta-box {
+        padding: 60px 32px;
+    }
+
+    .myrad-app .cta-box h2 {
+        font-size: 28px;
+    }
+
+    .myrad-app .cta-box p {
+        font-size: 15px;
+    }
+
+    .myrad-app .cta-glow {
+        width: 200px;
+        height: 200px;
+    }
+
+    .myrad-app .footer-content {
+        grid-template-columns: 1fr;
+        padding: 0 24px;
+        gap: 32px;
+    }
+}
