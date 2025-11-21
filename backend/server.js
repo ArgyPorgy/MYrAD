@@ -8,7 +8,7 @@ import multer from "multer";
 import { uploadBase64ToLighthouse } from "./uploadService.js";
 import { createDatasetToken } from "./createDatasetAPI.js";
 import { initSchema } from './db.js';
-import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers, getTotalDatasetsCount,getTotalUsersCount,getAllTokenAddresses, getCoinByCid } from './storage.js';
+import { getAllCoins, getCoinsByCreator, getCoinByTokenAddress, trackUserConnection, getAllUsers, getTotalDatasetsCount, getTotalUsersCount, getAllTokenAddresses, getCoinByCid } from './storage.js';
 import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
@@ -209,13 +209,13 @@ app.get("/datasets", async (req, res) => {
 app.post("/track-wallet", async (req, res) => {
   try {
     const { walletAddress } = req.body;
-    
+
     if (!walletAddress || !ethers.isAddress(walletAddress)) {
       return res.status(400).json({ error: "Valid wallet address is required" });
     }
 
     const user = await trackUserConnection(walletAddress);
-    
+
     if (user) {
       return res.json({
         success: true,
@@ -297,7 +297,7 @@ app.get("/quote/buy/:marketplaceAddress/:tokenAddress/:usdcAmount", async (req, 
     }
 
     const usdcValue = ethers.parseUnits(usdcAmount, 6);
-    
+
     // Calculate using constant product formula: k = rToken * rUSDC
     // newRUSDC = rUSDC + usdcToPool
     // newRToken = k / newRUSDC
@@ -333,7 +333,7 @@ app.get("/quote/sell/:marketplaceAddress/:tokenAddress/:tokenAmount", async (req
     }
 
     const tokenValue = ethers.parseUnits(tokenAmount, 18);
-    
+
     // Calculate using constant product formula
     const k = rToken * rUSDC;
     const newRToken = rToken + tokenValue;
@@ -503,8 +503,8 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     const fileExt = fileName.split('.').pop() || '';
 
     // Block media files (MP3, MP4, etc.)
-    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 
-                               'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
+    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv',
+      'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
     if (blockedExtensions.includes(fileExt)) {
       return res.status(400).json({
         error: "file_type_not_allowed",
@@ -547,7 +547,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
   } catch (err) {
     console.error("Scan error:", err);
-    
+
     // Check if it's a rate limit error
     const isRateLimitError = err.message && (
       err.message.includes('rate-limited') ||
@@ -556,14 +556,14 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       err.message.includes('429') ||
       err.message.includes('403')
     );
-    
+
     if (isRateLimitError) {
       return res.status(429).json({
         error: "vt_scan_failed",
         message: "VirusTotal scan error. Please refresh the page & try again."
       });
     }
-    
+
     res.status(500).json({
       error: "scan_failed",
       message: err.message || "VirusTotal scan failed"
@@ -583,8 +583,8 @@ app.post("/create-dataset", createDatasetLimiter, upload.single("file"), async (
     const fileExt = fileName.split('.').pop() || '';
 
     // Block media files (MP3, MP4, etc.)
-    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 
-                               'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
+    const blockedExtensions = ['mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv',
+      'm4a', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4v', '3gp'];
     if (blockedExtensions.includes(fileExt)) {
       return res.status(400).json({
         error: "file_type_not_allowed",
@@ -637,7 +637,7 @@ app.post("/create-dataset", createDatasetLimiter, upload.single("file"), async (
 
     // Normalize CID for checking (remove any ipfs:// prefix and trim)
     const normalizedCid = (cid || '').toString().replace(/^ipfs:\/\//, '').trim();
-    
+
     if (!normalizedCid) {
       return res.status(400).json({
         error: "invalid_cid",
@@ -679,7 +679,7 @@ app.post("/create-dataset", createDatasetLimiter, upload.single("file"), async (
         }
       });
     }
-    
+
     console.log(`[CREATE DATASET] ✅ Duplicate check passed for CID: "${normalizedCid}" - proceeding with token creation`);
 
     // Create token with the CID
@@ -697,7 +697,7 @@ app.post("/create-dataset", createDatasetLimiter, upload.single("file"), async (
     });
   } catch (err) {
     console.error("❌ Dataset creation error:", err.message);
-    
+
     let errorMessage = err.message;
     if (err.message.includes("FACTORY_ADDRESS")) {
       errorMessage = "Factory address not configured. Deploy factory first.";
@@ -741,7 +741,7 @@ app.post("/faucet/eth", async (req, res) => {
 
     // Send 0.001 ETH
     const result = await sendETH(userAddress, "0.001");
-    
+
     // Record claim
     recordClaim(userAddress, 'eth');
 
@@ -781,7 +781,7 @@ app.post("/faucet/usdc", async (req, res) => {
 
     // Send 3 USDC
     const result = await sendUSDC(userAddress, "3");
-    
+
     // Record claim
     recordClaim(userAddress, 'usdc');
 
@@ -956,7 +956,7 @@ app.get("/api/datacoin/total-created", async (req, res) => {
     const totalCreated = await getTotalDatasetsCount();
 
     res.json({ totalCreated });
-    
+
   } catch (error) {
     console.error("Error fetching global datacoins/dataset count:", error);
     res.status(500).json({ error: "Failed to fetch total datacoins/dataset count" });
@@ -1024,5 +1024,5 @@ app.listen(PORT, async () => {
     console.warn('[db] init error:', e.message);
   }
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-  console.log(`🚀 MYRAD Backend API listening at ${url}`) ;
+  console.log(`🚀 MYRAD Backend API listening at ${url}`);
 });
