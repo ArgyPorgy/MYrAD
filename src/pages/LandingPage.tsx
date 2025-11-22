@@ -306,7 +306,7 @@ const LandingPage = () => {
                 }}>
                     <h2 style={{ fontSize: 38, fontWeight: 700, marginBottom: 16, letterSpacing: '-1px' }}>Ready to get started?</h2>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-                        Join thousands of data owners monetizing their datasets on MYRAD.
+                        Join thousands of data owners monetizing their data on MYRAD.
                     </p>
                     <button
                         className="btn-main"
