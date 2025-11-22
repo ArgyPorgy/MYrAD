@@ -18,7 +18,7 @@ const LandingPage = () => {
         { title: 'No real data marketplace', desc: "There's no open way to price, tokenize, or trade datasets." },
         { title: 'No quality verification', desc: "Users can't easily know which datasets are clean, accurate, or trustworthy." },
         { title: 'No contribution incentives', desc: 'Communities have no reason to submit or improve data, which keeps quality low.' },
-        { title: 'Built on Base', desc: 'Faster onboarding, lower fees, and immediate ecosystem access.' },
+        { title: 'Built on Base and Filecoin', desc: 'Built on Base and Filecoin for scalable transactions, secure storage, and faster, low-fee onboarding.' },
         { title: 'Community Driven Coverage', desc: 'Anyone can contribute data and earn.' }
     ];
 
@@ -161,7 +161,7 @@ const LandingPage = () => {
                     MYRAD
                 </div>
                 <div style={{ display: 'flex', gap: 36, alignItems: 'center' }}>
-                    {['Features', 'How It Works', 'Docs'].map(item => (
+                    {['Features', 'How to Get Started', 'Docs'].map(item => (
                         <a
                             key={item}
                             href={item === 'Docs' ? 'https://docs.myradhq.xyz' : `#${item.toLowerCase().replace(/\s/g, '-')}`}
@@ -214,7 +214,7 @@ const LandingPage = () => {
                         fontSize: 18, color: 'rgba(255,255,255,0.4)', maxWidth: 480, marginBottom: 48,
                         lineHeight: 1.7, fontWeight: 400, animationDelay: '0.3s'
                     }}>
-                        Your data is collected, packaged, and sold without your knowledge
+                        Contribute, tokenize, and earn from your data
                     </p>
                     <div className="fade-in" style={{ display: 'flex', gap: 12, animationDelay: '0.4s', flexWrap: 'wrap', justifyContent: 'center' }}>
                         <button
@@ -265,7 +265,7 @@ const LandingPage = () => {
             <section id="how-it-works" style={{ padding: '100px 48px', position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto' }}>
                 <div style={{ marginBottom: 60 }}>
                     <p style={{ color: accent, fontSize: 13, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Process</p>
-                    <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-1.5px', color: '#fff' }}>How It Works</h2>
+                    <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-1.5px', color: '#fff' }}>How to Get Started</h2>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
                     <div className="card" onClick={() => navigate('/community')} style={{
