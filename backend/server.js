@@ -13,7 +13,7 @@ import { canClaim, recordClaim, sendETH, sendUSDC } from './faucet.js';
 import { fileURLToPath } from "url";
 import { signDownloadUrl, saveAccess } from "./utils.js";
 import { getTotalTxForAllTokens } from "./txCounter.js";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { scanFileComprehensive } from "./virusTotal.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,8 +48,14 @@ const createDatasetLimiter = rateLimit({
   legacyHeaders: false,
 
   // Rate-limit per creator wallet instead of only IP
-  keyGenerator: (req) =>
-    req.body.creatorAddress?.toLowerCase() || req.ip,
+  keyGenerator: (req) => {
+    // Use wallet address if available, otherwise use IP (with IPv6 support)
+    if (req.body?.creatorAddress) {
+      return req.body.creatorAddress.toLowerCase();
+    }
+    // Use the proper IP key generator for IPv6 support
+    return ipKeyGenerator(req);
+  },
 });
 
 const upload = multer({
