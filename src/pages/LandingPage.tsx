@@ -262,7 +262,7 @@ const LandingPage = () => {
             </section>
 
             {/* How It Works - Minimal */}
-            <section id="how-it-works" style={{ padding: '100px 48px', position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto' }}>
+            <section id="how-to-get-started" style={{ padding: '100px 48px', position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto' }}>
                 <div style={{ marginBottom: 60 }}>
                     <p style={{ color: accent, fontSize: 13, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Process</p>
                     <h2 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-1.5px', color: '#fff' }}>How to Get Started</h2>
@@ -306,7 +306,7 @@ const LandingPage = () => {
                 }}>
                     <h2 style={{ fontSize: 38, fontWeight: 700, marginBottom: 16, letterSpacing: '-1px' }}>Ready to get started?</h2>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-                        Join thousands of data owners monetizing their datasets on MYRAD.
+                        Join thousands of data owners monetizing their data on MYRAD.
                     </p>
                     <button
                         className="btn-main"
@@ -336,7 +336,7 @@ const LandingPage = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 64, flexWrap: 'wrap' }}>
                         {[
-                            { title: 'Product', links: [{ label: 'Features', url: '#features' }, { label: 'How it Works', url: '#how-it-works' }] },
+                            { title: 'Product', links: [{ label: 'Features', url: '#features' }, { label: 'How to Get Started', url: '#how-to-get-started' }] },
                             { title: 'Company', links: [{ label: 'About', url: '#' }, { label: 'Team', url: '#' }] },
                             { title: 'Connect', links: [{ label: 'X', url: 'https://x.com/myrad_hq' }, { label: 'Telegram', url: 'https://t.me/+d0dhyHWulJU4NTc1' }] }
                         ].map((col, i) => (
