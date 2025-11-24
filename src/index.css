@@ -7,8 +7,13 @@
   box-sizing: border-box;
 }
 
+/* Smooth scrolling for premium feel */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background: #000;
   color: #fff;
   margin: 0;
@@ -16,6 +21,16 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings use Space Grotesk */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 #root {
@@ -41,4 +56,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #2a2a2a;
 }
-

@@ -50,12 +50,12 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
 
   // Start with a different key for each request (round-robin) to distribute load
   const startIndex = getNextKeyIndex();
-  
+
   // Try all keys starting from the round-robin index
   for (let offset = 0; offset < VT_API_KEYS.length; offset++) {
     const i = (startIndex + offset) % VT_API_KEYS.length;
     const apiKey = VT_API_KEYS[i];
-    
+
     // Try this key with retries
     for (let retry = 0; retry <= MAX_RETRIES; retry++) {
       try {
@@ -65,9 +65,9 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
           console.log(`[VT API] Retrying key ${i + 1} after ${delay}ms delay (attempt ${retry + 1}/${MAX_RETRIES + 1})...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
-        
+
         const result = await apiCall(apiKey);
-        
+
         // Check for rate limit (429) - retry with backoff or try next key
         if (result && result.status === 429) {
           if (retry < MAX_RETRIES) {
@@ -88,7 +88,7 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
             throw lastError;
           }
         }
-        
+
         // Check for 403 Forbidden (might also be rate limit related)
         if (result && result.status === 403) {
           if (retry < MAX_RETRIES) {
@@ -106,28 +106,28 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
             throw lastError;
           }
         }
-        
+
         // Success! Reset rate limit flag
         allKeysRateLimited = false;
-        
+
         // Log if we used a fallback key or retry
         if (i > 0 || retry > 0) {
           console.log(`[VT API] ${operationName} succeeded with API key ${i + 1} (after ${i} key switch(es) and ${retry} retry/ies)`);
         }
         return result;
-        
+
       } catch (err) {
         lastError = err;
-        
+
         // Check if it's a rate limit error in the error message
         const isRateLimit = err.message && (
-          err.message.includes('429') || 
-          err.message.includes('rate limit') || 
+          err.message.includes('429') ||
+          err.message.includes('rate limit') ||
           err.message.includes('Rate limit') ||
           err.message.includes('Too Many Requests') ||
           err.message.includes('403')
         );
-        
+
         if (isRateLimit) {
           allKeysRateLimited = true;
           if (retry < MAX_RETRIES) {
@@ -159,11 +159,11 @@ async function tryWithApiKeys(apiCall, operationName = 'API call', retryAttempt 
   if (allKeysRateLimited && lastError) {
     throw new Error(`All ${VT_API_KEYS.length} VirusTotal is rate-limited. Please wait a few minutes and try again.`);
   }
-  
+
   if (lastError) {
     throw lastError;
   }
-  
+
   throw new Error(`All ${VT_API_KEYS.length} API keys failed for ${operationName}`);
 }
 
@@ -213,11 +213,11 @@ export async function scanFileWithVirusTotal(buffer, fileName) {
   form.append("file", buffer, fileName);
 
   const result = await tryWithApiKeys(async (apiKey) => {
-  const response = await fetch("https://www.virustotal.com/api/v3/files", {
-    method: "POST",
+    const response = await fetch("https://www.virustotal.com/api/v3/files", {
+      method: "POST",
       headers: { "x-apikey": apiKey },
-    body: form
-  });
+      body: form
+    });
 
     if (response.status === 429) {
       return { status: 429, error: 'Rate limit' };
@@ -236,8 +236,8 @@ export async function scanFileWithVirusTotal(buffer, fileName) {
 
 export async function getAnalysis(analysisId) {
   const result = await tryWithApiKeys(async (apiKey) => {
-  const response = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
-    method: "GET",
+    const response = await fetch(`https://www.virustotal.com/api/v3/analyses/${analysisId}`, {
+      method: "GET",
       headers: { "x-apikey": apiKey }
     });
 
@@ -263,7 +263,7 @@ export function isFileSafe(vtData, fileName = '') {
   }
 
   const attributes = vtData.data.attributes;
-  
+
   // Check stats
   const stats = attributes.stats || {};
   const malicious = stats.malicious || 0;
@@ -275,11 +275,11 @@ export function isFileSafe(vtData, fileName = '') {
 
   // Get file extension to determine if it's a code file
   const fileExt = fileName.toLowerCase().split('.').pop() || '';
-  const codeExtensions = ['py', 'js', 'ts', 'jsx', 'tsx', 'java', 'cpp', 'c', 'h', 'hpp', 
-                          'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'sh', 
-                          'bash', 'zsh', 'ps1', 'bat', 'cmd', 'yml', 'yaml', 'json', 
-                          'xml', 'html', 'css', 'sql', 'r', 'm', 'pl', 'lua', 'vim', 
-                          'md', 'txt', 'log', 'conf', 'config', 'ini', 'toml', 'lock'];
+  const codeExtensions = ['py', 'js', 'ts', 'jsx', 'tsx', 'java', 'cpp', 'c', 'h', 'hpp',
+    'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'sh',
+    'bash', 'zsh', 'ps1', 'bat', 'cmd', 'yml', 'yaml', 'json',
+    'xml', 'html', 'css', 'sql', 'r', 'm', 'pl', 'lua', 'vim',
+    'md', 'txt', 'log', 'conf', 'config', 'ini', 'toml', 'lock'];
   const isCodeFile = codeExtensions.includes(fileExt);
 
   // Threshold-based approach:
@@ -324,12 +324,12 @@ export function isFileSafe(vtData, fileName = '') {
   // Check individual scan results for high-confidence threats
   const results = attributes.last_analysis_results || {};
   const engineResults = Object.values(results);
-  
+
   // Count how many engines flagged it
   let maliciousCount = 0;
   let suspiciousCount = 0;
   const flaggedEngines = [];
-  
+
   for (const result of engineResults) {
     if (result?.category === 'malicious') {
       maliciousCount++;
@@ -386,9 +386,9 @@ export async function scanFileComprehensive(buffer, fileName) {
   // Step 1: Calculate file hash and check if already scanned
   const fileHash = calculateFileHash(buffer);
   console.log(`Checking VirusTotal for file hash: ${fileHash}`);
-  
+
   let vtData = await getFileReport(fileHash);
-  
+
   if (vtData && vtData.data) {
     console.log("File found in VirusTotal database, using existing scan results");
     const safetyCheck = isFileSafe(vtData, fileName);
@@ -403,7 +403,7 @@ export async function scanFileComprehensive(buffer, fileName) {
   // Step 2: File not found, upload for new scan
   console.log("File not in VirusTotal database, uploading for analysis");
   const uploadResult = await scanFileWithVirusTotal(buffer, fileName);
-  
+
   if (!uploadResult?.data?.id) {
     throw new Error(uploadResult?.error?.message || "VirusTotal upload failed - no analysis ID returned");
   }
@@ -414,17 +414,17 @@ export async function scanFileComprehensive(buffer, fileName) {
   // Step 3: Poll for analysis results with proper timeout
   let result;
   let attempts = 0;
-  
+
   while (attempts < MAX_POLL_ATTEMPTS) {
     attempts++;
     result = await getAnalysis(analysisId);
-    
+
     const status = result?.data?.attributes?.status;
-    
+
     if (status === "completed") {
       // Analysis completed - use results immediately (no need to wait for file report)
       const fileHashFromAnalysis = result?.data?.attributes?.sha256;
-      
+
       // Use analysis results directly (faster than waiting for file report)
       if (result?.data?.attributes?.stats) {
         const safetyCheck = isFileSafe({
@@ -439,7 +439,7 @@ export async function scanFileComprehensive(buffer, fileName) {
           fromCache: false
         };
       }
-      
+
       // Fallback: try to get file report if stats not available in analysis
       if (fileHashFromAnalysis) {
         // Try file report but don't wait long
