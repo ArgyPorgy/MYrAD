@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Snowflake, ArrowLeftRight, Gem, BarChart3, Globe2, Lock, UserCheck, UploadCloud, Coins, Repeat, Flame, TrendingUp } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 const LandingPage = () => {
 
@@ -111,6 +112,12 @@ const LandingPage = () => {
 
   return (
     <>
+      <SEO
+        title="MYrAD - Decentralized Data Marketplace"
+        description="Tokenize and trade datasets on the blockchain. MYrAD enables data creators to mint ERC20 tokens representing their datasets, trade them using automated market makers, and grant dataset access through a burn-to-download mechanism on Base blockchain."
+        keywords="data marketplace, blockchain, dataset tokenization, ERC20 tokens, Base blockchain, decentralized data, data trading, IPFS, Web3, AMM, automated market maker, data monetization"
+        canonicalUrl="https://myradhq.xyz/"
+      />
       <style>{`
   * {
           margin: 0;

@@ -9,6 +9,7 @@ import {
   Activity
 } from 'lucide-react';
 import CustomLoader from '@/components/CustomLoader';
+import SEO from '@/components/SEO';
 import './DashboardPage.css'; // Reuse same styling
 
 interface UserDataset {
@@ -70,6 +71,13 @@ const ProfilePage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Profile"
+        description="View your MYrAD profile and analytics. Track your wallet address, total datasets, trades, and activity on the decentralized data marketplace."
+        keywords="profile, user profile, wallet profile, trading profile, dataset profile"
+        canonicalUrl="https://myradhq.xyz/profile"
+        noindex={true}
+      />
       <Sidebar />
 
       <main className="main-content">

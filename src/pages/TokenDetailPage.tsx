@@ -21,6 +21,7 @@ import {
   TrendingDown,
   Wallet,
 } from "lucide-react";
+import SEO from "@/components/SEO";
 import "./TokenDetailPage.css";
 
 const MIN_BURN_USDC = ethers.parseUnits("0.5", 6);
@@ -760,6 +761,12 @@ const TokenDetailPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title={dataset ? `${dataset.name || dataset.symbol} - Dataset Token` : "Dataset Token Details"}
+        description={dataset ? `Trade ${dataset.name || dataset.symbol} dataset tokens on MYrAD. Buy, sell, and burn tokens to access the dataset. View real-time prices, reserves, and trading information.` : "View and trade dataset tokens on MYrAD decentralized marketplace."}
+        keywords={dataset ? `${dataset.name}, ${dataset.symbol}, dataset token, token trading, AMM, data token` : "dataset token, token trading, AMM"}
+        canonicalUrl={`https://myradhq.xyz/token/${tokenAddress}`}
+      />
       <Sidebar />
       <main className="main-content">
         <Header

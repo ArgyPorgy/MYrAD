@@ -7,6 +7,7 @@ import { DatasetsMap } from '@/types/web3';
 import { getApiUrl } from '@/config/api';
 import { Search, Heart } from 'lucide-react';
 import CustomLoader from '@/components/CustomLoader';
+import SEO from '@/components/SEO';
 import './FeedPage.css';
 
 const FeedPage = () => {
@@ -95,6 +96,12 @@ const FeedPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Data Feed"
+        description="Explore and discover available datasets on MYrAD. Browse tokenized datasets, search by name or symbol, and find new data opportunities on the decentralized marketplace."
+        keywords="data feed, datasets, browse datasets, tokenized data, data discovery, dataset search"
+        canonicalUrl="https://myradhq.xyz/feed"
+      />
       <Sidebar />
       <main className="main-content">
         <Header

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import SEO from '@/components/SEO';
 import './CommunityPage.css';
 
 
@@ -26,6 +27,12 @@ const CommunityPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Leaderboard"
+        description="View top performers on MYrAD marketplace. See leading data creators, traders, and most active users in the decentralized data marketplace."
+        keywords="leaderboard, top traders, top creators, rankings, marketplace leaders"
+        canonicalUrl="https://myradhq.xyz/leaderboard"
+      />
       <Sidebar />
 
 

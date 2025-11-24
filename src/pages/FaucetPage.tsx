@@ -4,6 +4,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
 import { Droplet, AlertCircle, Check, X, Info} from 'lucide-react';
+import SEO from '@/components/SEO';
 import './FaucetPage.css';
 
 
@@ -92,6 +93,12 @@ const FaucetPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Faucet"
+        description="Get free testnet tokens for MYrAD. Claim ETH and USDC on Base Sepolia testnet to start trading datasets and testing the decentralized data marketplace."
+        keywords="faucet, testnet tokens, free tokens, Base Sepolia, testnet ETH, testnet USDC, blockchain faucet"
+        canonicalUrl="https://myradhq.xyz/faucet"
+      />
       <Sidebar />
       
       <main className="main-content">

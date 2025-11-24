@@ -7,6 +7,7 @@ import CustomLoader from '@/components/CustomLoader';
 import { Link, useNavigate } from 'react-router-dom';
 import { getApiUrl } from '@/config/api';
 import { Plus, Folder, ShoppingCart} from 'lucide-react';
+import SEO from '@/components/SEO';
 import './MyDatasetsPage.css';
 
 interface UserDataset {
@@ -72,6 +73,12 @@ const MyDatasetsPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="My Datasets"
+        description="Manage your tokenized datasets on MYrAD. View all datasets you've created, track their performance, and access your data tokens on the decentralized marketplace."
+        keywords="my datasets, manage datasets, user datasets, created datasets, dataset management"
+        canonicalUrl="https://myradhq.xyz/my-datasets"
+      />
       <Sidebar />
       
       <main className="main-content">

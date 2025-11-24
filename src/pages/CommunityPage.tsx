@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWeb3 } from '@/contexts/Web3Context';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import SEO from '@/components/SEO';
 import './CommunityPage.css';
 
 
@@ -26,6 +27,13 @@ const CommunityPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Community"
+        description="Join the MYrAD community. Connect with data creators, traders, and enthusiasts in the decentralized data marketplace ecosystem."
+        keywords="community, MYrAD community, data marketplace community, Web3 community"
+        canonicalUrl="https://myradhq.xyz/community"
+        noindex={true}
+      />
       <Sidebar />
 
 

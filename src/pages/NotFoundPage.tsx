@@ -1,5 +1,6 @@
 import { Home, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import SEO from '@/components/SEO';
 
 const NotFoundPage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -26,6 +27,12 @@ const NotFoundPage = () => {
 
   return (
     <>
+      <SEO
+        title="404 - Page Not Found"
+        description="The page you're looking for doesn't exist on MYrAD. Return to the homepage or browse our decentralized data marketplace."
+        canonicalUrl="https://myradhq.xyz/404"
+        noindex={true}
+      />
       <style>{`
         .notfound-container {
           min-height: 100vh;

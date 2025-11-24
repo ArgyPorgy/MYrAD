@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import { getApiUrl } from '@/config/api';
 import { Activity, Wallet, Database, Users, RefreshCw } from 'lucide-react';
 import CustomLoader from '@/components/CustomLoader';
+import SEO from '@/components/SEO';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
@@ -254,6 +255,12 @@ const DashboardPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Dashboard"
+        description="View global statistics and analytics for MYrAD marketplace. Track total trades, datasets, users, and platform activity on the decentralized data marketplace."
+        keywords="dashboard, analytics, statistics, data marketplace, blockchain analytics, trading stats"
+        canonicalUrl="https://myradhq.xyz/dashboard"
+      />
       <Sidebar />
 
       <main className="main-content">

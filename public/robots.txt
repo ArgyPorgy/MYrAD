@@ -1,5 +1,25 @@
-User-agent: *
+# SEO Optimized robots.txt for MYrAD
+# Allows all search engines to crawl and index the site
+
+# Google Bot - Full access
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Google Image Bot
+User-agent: Googlebot-Image
 Allow: /
 
+# Bing Bot - Full access
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+# All other search engines and crawlers
+User-agent: *
+Allow: /
+Crawl-delay: 1
+
+# Sitemap location
 Sitemap: https://myradhq.xyz/sitemap.xml
 

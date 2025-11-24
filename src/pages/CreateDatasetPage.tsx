@@ -9,6 +9,7 @@ import { formatFileSize } from '@/utils/web3';
 import { getApiUrl } from '@/config/api';
 import { Upload, FileText, Tag, DollarSign, FileType, Info, X, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import SEO from '@/components/SEO';
 import './CreateDatasetPage.css';
 const CreateDatasetPage = () => {
   const navigate = useNavigate();
@@ -347,6 +348,12 @@ const CreateDatasetPage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Create Dataset"
+        description="Upload and tokenize your dataset on MYrAD. Create ERC20 tokens representing your data, upload to IPFS, and initialize a liquidity pool to start trading on the decentralized marketplace."
+        keywords="create dataset, upload dataset, tokenize data, mint dataset token, IPFS upload, data tokenization, create data token"
+        canonicalUrl="https://myradhq.xyz/create"
+      />
       <Sidebar />
       
       <main className="main-content">

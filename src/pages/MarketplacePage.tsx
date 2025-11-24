@@ -7,6 +7,7 @@ import CustomLoader from '@/components/CustomLoader';
 import { DatasetsMap, Dataset } from '@/types/web3';
 import { getApiUrl } from '@/config/api';
 import { Search, Copy, Check } from 'lucide-react';
+import SEO from '@/components/SEO';
 import './MarketplacePage.css';
 
 
@@ -93,6 +94,12 @@ const MarketplacePage = () => {
 
   return (
     <div className="app-layout">
+      <SEO
+        title="Marketplace"
+        description="Trade tokenized datasets on MYrAD marketplace. Buy and sell dataset tokens with USDC using automated market makers. View real-time prices, reserves, and trading opportunities."
+        keywords="marketplace, trade datasets, buy datasets, sell datasets, AMM trading, dataset tokens, USDC trading, token trading"
+        canonicalUrl="https://myradhq.xyz/marketplace"
+      />
       <Sidebar />
 
 

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from '@/config/wagmi';
@@ -20,28 +21,30 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <Web3Provider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/feed" element={<FeedPage />} />
-              <Route path="/marketplace" element={<MarketplacePage />} />
-              <Route path="/token/:tokenAddress" element={<TokenDetailPage />} />
-              <Route path="/create" element={<CreateDatasetPage />} />
-              <Route path="/my-datasets" element={<MyDatasetsPage />} />
-              <Route path="/faucet" element={<FaucetPage />} />
-              <Route path="/community" element={<CommunityPage />} />
-              <Route path="/leaderboard" element={<LeaderBoard />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Router>
-        </Web3Provider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <HelmetProvider>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <Web3Provider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/feed" element={<FeedPage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/token/:tokenAddress" element={<TokenDetailPage />} />
+                <Route path="/create" element={<CreateDatasetPage />} />
+                <Route path="/my-datasets" element={<MyDatasetsPage />} />
+                <Route path="/faucet" element={<FaucetPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/leaderboard" element={<LeaderBoard />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Router>
+          </Web3Provider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </HelmetProvider>
   );
 }
 
