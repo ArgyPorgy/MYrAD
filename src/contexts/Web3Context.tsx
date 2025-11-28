@@ -218,6 +218,12 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
         setStatus('Connecting wallet...');
 
+        // Debug: Log all available connectors
+        if (connectorId === 'walletconnect') {
+          console.log('🔍 Looking for WalletConnect connector. Available connectors:', 
+            connectors.map(c => ({ id: c.id, name: c.name, type: c.type })));
+        }
+
         // Find the connector
         let selectedConnector = connectors.find((c) => {
           if (connectorId === 'metamask') {
@@ -233,7 +239,13 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           if (connectorId === 'rabby') return c.id === 'rabby';
           if (connectorId === 'okx') return c.id === 'okx';
           if (connectorId === 'coinbase') return c.id === 'coinbaseWalletSDK' || c.id === 'coinbaseWallet';
-          if (connectorId === 'walletconnect') return c.id === 'walletConnect' || c.id === 'walletConnect';
+          if (connectorId === 'walletconnect') {
+            // Check multiple possible WalletConnect connector IDs
+            return c.id === 'walletConnect' || 
+                   c.id === 'walletConnectSDK' ||
+                   c.type === 'walletConnect' ||
+                   c.name?.toLowerCase().includes('walletconnect');
+          }
           return false;
         });
 
@@ -253,8 +265,23 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           selectedConnector = connectors.find((c) => c.type === 'injected');
         }
 
+        // Additional fallback for WalletConnect - try to find by type
+        if (!selectedConnector && connectorId === 'walletconnect') {
+          selectedConnector = connectors.find((c) => c.type === 'walletConnect');
+          
+          // Check if WalletConnect project ID is configured
+          if (!selectedConnector) {
+            const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+            if (!projectId) {
+              throw new Error('WalletConnect project ID not configured. Please set VITE_WALLETCONNECT_PROJECT_ID in your environment variables.');
+            }
+          }
+        }
+
         if (!selectedConnector) {
-          throw new Error(`Connector ${connectorId} not found`);
+          // Log available connectors for debugging
+          console.error('Available connectors:', connectors.map(c => ({ id: c.id, name: c.name, type: c.type })));
+          throw new Error(`Connector ${connectorId} not found. Available: ${connectors.map(c => c.id).join(', ')}`);
         }
 
         // Clear disconnect flag before connecting

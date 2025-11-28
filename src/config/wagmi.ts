@@ -49,7 +49,7 @@ export const config = createConfig({
       appName: 'MYrAD',
       appLogoUrl: 'https://pbs.twimg.com/profile_images/1977080620548255745/uoo-Vir5_400x400.jpg',
     }),
-    walletConnect({
+    ...(projectId ? [walletConnect({
       projectId,
       metadata: {
         name: 'MYrAD',
@@ -64,7 +64,7 @@ export const config = createConfig({
           '--wcm-z-index': '9999',
         },
       },
-    }),
+    })] : []),
   ],
   transports: {
     [baseSepolia.id]: http(import.meta.env.VITE_BASE_RPC_URL || 'https://sepolia.base.org'),
