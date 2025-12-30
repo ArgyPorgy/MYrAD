@@ -41,6 +41,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
     "tailwindcss": "^4.1.16",
+    "valtio": "^2.2.0",
     "viem": "^2.40.3",
     "wagmi": "^2.19.5"
   },

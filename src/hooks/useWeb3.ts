@@ -1,10 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import EthereumProvider from '@walletconnect/ethereum-provider';
-import { Web3Modal } from '@web3modal/standalone';
+// NOTE: WalletConnect implementation moved to Web3Context.tsx using Wagmi
+// Old deprecated packages removed:
+// - @walletconnect/ethereum-provider
+// - @web3modal/standalone
+// This file is kept for reference but not actively used
+// import EthereumProvider from '@walletconnect/ethereum-provider';
+// import { Web3Modal } from '@web3modal/standalone';
 import { Web3State } from '@/types/web3';
 import { switchToBaseSepolia, checkNetwork } from '@/utils/web3';
-import { BASE_SEPOLIA_CHAIN_ID } from '@/constants/contracts';
+// import { BASE_SEPOLIA_CHAIN_ID } from '@/constants/contracts'; // Not used in this file anymore
 
 const SIGNATURE_STORAGE_PREFIX = 'myrad-signature';
 
@@ -25,7 +30,7 @@ export const useWeb3 = () => {
   });
   const [status, setStatus] = useState<string>('');
   const walletConnectRef = useRef<any>(null);
-  const walletConnectModalRef = useRef<any>(null);
+  // const walletConnectModalRef = useRef<any>(null); // Removed - using Wagmi now
   const isConnectingRef = useRef<boolean>(false);
 
   const clearState = useCallback(() => {
@@ -113,9 +118,9 @@ export const useWeb3 = () => {
           return;
         }
 
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const userAddress = await signer.getAddress();
 
         const signatureKey = buildSignatureStorageKey(userAddress);
         const signatureData = localStorage.getItem(signatureKey);
@@ -133,8 +138,8 @@ export const useWeb3 = () => {
         }
         
         console.log(' Signature found, proceeding with auto-connect');
-
-        const isCorrectNetwork = await checkNetwork(provider);
+          
+          const isCorrectNetwork = await checkNetwork(provider);
         if (!isCorrectNetwork) {
           console.log('❌ Wrong network detected');
           setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
@@ -143,12 +148,12 @@ export const useWeb3 = () => {
         }
 
         console.log(' Auto-connecting to existing session');
-        setWeb3State({
-          provider,
-          signer,
-          userAddress,
-          connected: true,
-        });
+            setWeb3State({
+              provider,
+              signer,
+              userAddress,
+              connected: true,
+            });
         setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
       } catch (err) {
         console.error('Check existing connection error:', err);
@@ -172,12 +177,12 @@ export const useWeb3 = () => {
         return;
       }
 
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
-
-        const isCorrectNetwork = await checkNetwork(provider);
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const userAddress = await signer.getAddress();
+          
+          const isCorrectNetwork = await checkNetwork(provider);
         if (!isCorrectNetwork) {
           setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
           clearState();
@@ -191,29 +196,29 @@ export const useWeb3 = () => {
           return;
         }
 
-        setWeb3State({
-          provider,
-          signer,
-          userAddress,
-          connected: true,
-        });
-        localStorage.removeItem('wallet-disconnected');
+            setWeb3State({
+              provider,
+              signer,
+              userAddress,
+              connected: true,
+            });
+            localStorage.removeItem('wallet-disconnected');
         setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
-      } catch (err) {
+        } catch (err) {
         console.error('Account change error:', err);
         setStatus(`❌ Account change failed: ${(err as any)?.message ?? 'Unknown error'}`);
       }
     };
 
-    const handleChainChanged = async () => {
+      const handleChainChanged = async () => {
       if (!web3State.connected || !web3State.provider) return;
       const isCorrectNetwork = await checkNetwork(web3State.provider);
-      if (isCorrectNetwork) {
+          if (isCorrectNetwork) {
         setStatus(` Wallet connected: ${web3State.userAddress} (Base Sepolia testnet)`);
-      } else {
+          } else {
         setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
-      }
-    };
+        }
+      };
 
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
@@ -293,7 +298,7 @@ export const useWeb3 = () => {
           }
         };
 
-        const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
+        // const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID; // Not used - WalletConnect handled by Wagmi
         let ethereumProvider: any = null;
 
         if (providerType === 'metamask') {
@@ -348,7 +353,13 @@ export const useWeb3 = () => {
           if (!ethereumProvider) {
             throw new Error('Coinbase Wallet extension not detected.');
           }
-        } else if (providerType === 'walletconnect') {
+      } else if (providerType === 'walletconnect') {
+          // NOTE: WalletConnect implementation has been moved to Web3Context.tsx using Wagmi
+          // The deprecated @web3modal/standalone and @walletconnect/ethereum-provider packages
+          // have been removed. Please use the Wagmi-based implementation in Web3Context.tsx
+          throw new Error('WalletConnect is now handled via Wagmi. Use Web3Context instead of this hook.');
+          
+          /* OLD IMPLEMENTATION - REMOVED
           if (!projectId) {
             throw new Error('WalletConnect project ID missing. Set VITE_WALLETCONNECT_PROJECT_ID in your environment.');
           }
@@ -386,13 +397,14 @@ export const useWeb3 = () => {
           wcProvider.removeListener('display_uri', handleDisplayUri);
           ethereumProvider = wcProvider;
           walletConnectRef.current = wcProvider;
+          */
         } else {
           throw new Error('Unsupported wallet type selected.');
         }
 
-        if (providerType !== 'walletconnect') {
-          walletConnectRef.current = null;
-        }
+        // WalletConnect is handled by Wagmi, so clear ref for other providers
+        // (walletconnect case throws above, so this is always true)
+        walletConnectRef.current = null;
 
         if (aggregator && typeof (aggregator as any).setSelectedProvider === 'function' && providerList.includes(ethereumProvider)) {
           try {
@@ -405,17 +417,17 @@ export const useWeb3 = () => {
         await requestAccounts(ethereumProvider);
 
         const switched = await switchToBaseSepolia(ethereumProvider);
-        if (!switched) {
+      if (!switched) {
           setStatus('❌ Failed to switch to Base Sepolia. Please switch manually in your wallet.');
-          return;
-        }
+        return;
+      }
 
         const provider = new ethers.BrowserProvider(ethereumProvider);
         const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
+      const userAddress = await signer.getAddress();
 
         const isCorrectNetwork = await checkNetwork(provider);
-        if (!isCorrectNetwork) {
+      if (!isCorrectNetwork) {
           setStatus('❌ Wrong network! Please switch to Base Sepolia testnet (chainId: 84532)');
           return;
         }
@@ -427,17 +439,17 @@ export const useWeb3 = () => {
           setStatus(error?.message ?? 'Signature declined. Sign in is required to continue.');
           localStorage.setItem('wallet-disconnected', 'true');
           clearState();
-          return;
-        }
+        return;
+      }
 
         console.log(' Setting web3 state for address:', userAddress);
-        setWeb3State({
+      setWeb3State({
           provider,
-          signer,
-          userAddress,
-          connected: true,
-        });
-        localStorage.removeItem('wallet-disconnected');
+        signer,
+        userAddress,
+        connected: true,
+      });
+      localStorage.removeItem('wallet-disconnected');
         setStatus(` Wallet connected: ${userAddress} (Base Sepolia testnet)`);
         console.log(' Web3 state updated successfully');
 
@@ -446,11 +458,11 @@ export const useWeb3 = () => {
           isConnectingRef.current = false;
           console.log('🔓 Connection process complete, re-enabling accountsChanged listener');
         }, 1000);
-      } catch (err: any) {
+    } catch (err: any) {
         console.error('Connect error', err);
         setStatus(`❌ Connect failed: ${err?.message ?? err}`);
         isConnectingRef.current = false;
-      }
+    }
     },
     [clearState, ensureSignature]
   );
@@ -463,7 +475,7 @@ export const useWeb3 = () => {
       if (walletConnectRef.current && typeof walletConnectRef.current.disconnect === 'function') {
         await walletConnectRef.current.disconnect();
       }
-      walletConnectModalRef.current?.closeModal?.();
+      // walletConnectModalRef.current?.closeModal?.(); // Removed - using Wagmi now
     } catch (err) {
       console.error('Disconnect error:', err);
     } finally {
